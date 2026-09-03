@@ -15,6 +15,11 @@ export async function GET(req) {
   if (!process.env.SETUP_TOKEN || token !== process.env.SETUP_TOKEN) {
     return NextResponse.json({ ok: false, error: 'Token inválido' }, { status: 401 });
   }
+  // Cortafuegos extra: una vez inicializada la Sheet, poné ALLOW_SETUP=0 en Vercel para
+  // dejar este endpoint fuera de servicio sin tener que borrar el archivo.
+  if (process.env.ALLOW_SETUP === '0') {
+    return NextResponse.json({ ok: false, error: 'Setup deshabilitado (ALLOW_SETUP=0)' }, { status: 403 });
+  }
 
   const resultado = [];
   for (const [tab, headers] of Object.entries(HEADERS)) {

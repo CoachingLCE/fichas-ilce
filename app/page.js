@@ -88,7 +88,7 @@ export default async function Home() {
       </section>
 
       <p style={{ color: 'rgb(var(--textMuted))', fontSize: 12, marginTop: 30 }}>
-        fichas-ilce · esqueleto v0.1 · el formulario funcional llega en el Paso 3
+        fichas-ilce · v0.2 · ficha pública funcional activa
       </p>
     </main>
   );
