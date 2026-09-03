@@ -3,7 +3,7 @@ import { appendRow } from '../../../lib/sheets';
 import { TABS } from '../../../lib/constants';
 import { validarFicha } from '../../../lib/validacion';
 import { getCurso } from '../../../lib/fichas';
-import { enviarConfirmacionInscripcion } from '../../../lib/mailer';
+import { enviarConfirmacionInscripcion, enviarAvisoEquipo } from '../../../lib/mailer';
 
 export const dynamic = 'force-dynamic';
 
@@ -84,7 +84,7 @@ export async function POST(req) {
     await appendRow(TABS.HISTORIAL, [ahoraISO(), id, form.email || '', 'Ficha enviada', `${curso.nombre} · ${edicionLabel}`]);
   } catch (e) { /* noop */ }
 
-  // Email de confirmación (no bloquea el guardado si falla)
+  // Email de confirmación al estudiante (no bloquea el guardado si falla)
   let emailOk = true;
   try {
     await enviarConfirmacionInscripcion({
@@ -93,6 +93,14 @@ export async function POST(req) {
   } catch (e) {
     emailOk = false;
   }
+
+  // Aviso al equipo (no bloquea el flujo si falla)
+  try {
+    await enviarAvisoEquipo({
+      nombre: form.nom, apellido: form.ape, curso: curso.nombre, edicion: edicionLabel,
+      email: form.email, whatsapp: form.wa, pais: form.pais, medio: form.medio
+    });
+  } catch (e) { /* noop */ }
 
   return NextResponse.json({ ok: true, id, emailOk });
 }

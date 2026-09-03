@@ -78,7 +78,7 @@ export default function FichaWizard({ def }) {
     const e = {};
     const arg = esArgentina(form.pais);
     if (s === 0 && !validarEmail(form.email)) e.email = 'Ingresá un correo válido.';
-    if (s === 1 && !form.edicion) e.edicion = 'Elegí una edición.';
+    if (s === 1 && def.ediciones.length && !form.edicion) e.edicion = 'Elegí una edición.';
     if (s === 2) {
       if (!(form.nom || '').trim()) e.nom = 'Completá tu nombre.';
       if (!(form.ape || '').trim()) e.ape = 'Completá tu apellido.';
@@ -183,7 +183,9 @@ export default function FichaWizard({ def }) {
             <h3>Seleccioná tu edición y horario</h3>
             <p className="f-lead">Elegí el día de cursada que mejor te queda.</p>
             <div className={'field' + (errs.edicion ? ' bad' : '')}>
-              {def.ediciones.map((ed) => <Radio key={ed.id} k="edicion" val={ed.label} label={ed.label} sub={ed.horarios} />)}
+              {def.ediciones.length
+                ? def.ediciones.map((ed) => <Radio key={ed.id} k="edicion" val={ed.label} label={ed.label} sub={ed.horarios} />)
+                : <p className="f-lead">Todavía no hay ediciones abiertas para elegir. Podés continuar y el equipo te asignará la edición al contactarte.</p>}
               {errs.edicion && <div className="err">{errs.edicion}</div>}
             </div>
           </>)}
