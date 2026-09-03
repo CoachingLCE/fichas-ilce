@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Tokens de marca ILCE — mismos nombres que en las otras apps, afinados al manual de identidad */
+:root, [data-theme="dark"] {
+  --bg: 6 20 36;            /* navy profundo, familia #01233f */
+  --surface: 12 30 50;
+  --surface2: 16 38 62;
+  --border: 30 58 88;
+  --text: 236 241 248;
+  --textSec: 150 170 196;
+  --textMuted: 104 126 156;
+  --accentTeal: 5 149 173;      /* #0595ad */
+  --accentTeal2: 3 115 139;     /* #03738b */
+  --accentPurple: 74 18 139;    /* #4a128b */
+  --accentMagenta: 150 25 143;  /* #96198f */
+}
+[data-theme="light"] {
+  --bg: 245 248 251;
+  --surface: 255 255 255;
+  --surface2: 239 244 249;
+  --border: 221 230 240;
+  --text: 10 30 48;
+  --textSec: 74 96 120;
+  --textMuted: 140 158 178;
+  --accentTeal: 3 115 139;
+  --accentTeal2: 6 95 116;
+  --accentPurple: 74 18 139;
+  --accentMagenta: 150 25 143;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: rgb(var(--bg));
+  color: rgb(var(--text));
+  font-family: 'Dosis', system-ui, sans-serif;
+  font-weight: 500;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, .font-display { font-family: 'Jost', system-ui, sans-serif; letter-spacing: .2px; }
+
+svg.mark g { fill: none; stroke: url(#ig); stroke-linecap: round; }
