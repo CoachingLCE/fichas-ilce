@@ -77,7 +77,7 @@ export default function Panel() {
       }
       return true;
     });
-  }, [rows, q, fEstado, fCurso, fEd, fResp, fPais, fDesde, fHasta]);
+  }, [rows, q, fEstado, fCurso, fEd, fPais, fDesde, fHasta]);
 
   function limpiar() { setQ(''); setFEstado(''); setFCurso(''); setFEd(''); setFPais(''); setFDesde(''); setFHasta(''); }
 
