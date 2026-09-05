@@ -1,21 +1,27 @@
 import { NextResponse } from 'next/server';
-import { buscarUsuario, verifyPassword, signToken } from '../../../../lib/auth';
+import { findUsuario } from '../../../../lib/auth';
+import { verifyPassword } from '../../../../lib/passwords';
+import { registrarAccion } from '../../../../lib/auditoria';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(req) {
+// POST /api/auth/login -> { email, password }
+export async function POST(request) {
   let body;
-  try { body = await req.json(); } catch { return NextResponse.json({ ok: false, error: 'JSON inválido' }, { status: 400 }); }
-  const { email, password } = body || {};
-  if (!email || !password) return NextResponse.json({ ok: false, error: 'Completá email y contraseña' }, { status: 400 });
-
-  const u = await buscarUsuario(email);
-  if (!u || (u.Activo && String(u.Activo).toLowerCase() === 'no')) {
-    return NextResponse.json({ ok: false, error: 'Usuario o contraseña incorrectos' }, { status: 401 });
+  try { body = await request.json(); } catch { return NextResponse.json({ error: 'JSON inválido' }, { status: 400 }); }
+  const usuario = await findUsuario(body.email);
+  if (!usuario) return NextResponse.json({ error: 'Email no autorizado' }, { status: 403 });
+  if (!usuario.activo) {
+    await registrarAccion(body.email, usuario.nombre, 'Intento de login rechazado', 'Usuario desactivado');
+    return NextResponse.json({ error: 'Tu usuario está desactivado. Pedile a Diego que lo reactive.' }, { status: 403 });
   }
-  if (!verifyPassword(password, u.Hash)) {
-    return NextResponse.json({ ok: false, error: 'Usuario o contraseña incorrectos' }, { status: 401 });
+  if (!usuario.passwordHash) {
+    return NextResponse.json({ error: 'Tu usuario todavía no tiene contraseña. Pedile a Diego que te la reenvíe desde Accesos.' }, { status: 403 });
   }
-  const token = signToken({ email: u.Email, nombre: u.Nombre, rol: u.Rol || 'Consulta' });
-  return NextResponse.json({ ok: true, token, usuario: { email: u.Email, nombre: u.Nombre, rol: u.Rol || 'Consulta' } });
+  if (!verifyPassword(body.password, usuario.passwordHash)) {
+    await registrarAccion(body.email, usuario.nombre, 'Intento de login fallido', 'Contraseña incorrecta');
+    return NextResponse.json({ error: 'Contraseña incorrecta' }, { status: 401 });
+  }
+  await registrarAccion(body.email, usuario.nombre, 'Inició sesión', '');
+  return NextResponse.json({ usuario: { email: usuario.email, nombre: usuario.nombre, roles: usuario.roles } });
 }

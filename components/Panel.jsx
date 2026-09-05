@@ -1,16 +1,18 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
-import { useSession, cerrarSesion, authFetch, leerSesion } from '../lib/useSession';
-import { can } from '../lib/permisos';
-import { ESTADOS } from '../lib/constants';
+import { useSession } from '../lib/useSession';
+import { tienePermisoInscripciones, tienePermisoCambiarEstado, tienePermisoExportar, tienePermisoDashboard, tienePermisoConstructor, tienePermisoAccesos } from '../lib/permisos';
+import { ESTADOS, nombreVisibleRoles } from '../lib/constants';
 import { Isologo, IsologoDefs } from './Isologo';
+import ThemeSelector from './ThemeSelector';
+import Accesos from './Accesos';
+import VersionBadge from './VersionBadge';
 
-const RESPS = ['Sin asignar', 'Vero', 'Macarena', 'Jennifer', 'Sofía', 'Alexander', 'Jesabel'];
 const ALL_COLS = [
   ['nom', 'Nombre'], ['ape', 'Apellido'], ['em', 'Email'], ['curso', 'Curso'], ['ed', 'Edición'],
   ['pais', 'País'], ['prov', 'Provincia'], ['loc', 'Localidad'], ['wa', 'WhatsApp'], ['doc', 'Documento'],
   ['ig', 'Instagram'], ['prof', 'Profesión'], ['origen', 'Origen'], ['mod', 'Modalidad'],
-  ['inscrito', 'Inscrito'], ['estado', 'Estado'], ['resp', 'Responsable'], ['fecha', 'Fecha ficha']
+  ['inscrito', 'Inscrito'], ['estado', 'Estado'], ['fecha', 'Fecha ficha']
 ];
 
 function normaliza(f) {
@@ -19,42 +21,42 @@ function normaliza(f) {
     pais: f['País'], prov: f['Provincia/Estado'], loc: f.Localidad, wa: f.WhatsApp, doc: f.Documento,
     ig: f.Instagram, prof: f['Profesión'], origen: f.Origen, mod: f.Modalidad, med: f['Medio contacto'],
     salud: f['Tema salud'], sobre: f['Sobre vos'], coment: f.Comentarios, cons: f.Consentimiento,
-    inscrito: f.Inscrito, estado: f.Estado || 'Completa', resp: f.Responsable || 'Sin asignar', fecha: (f['Fecha ficha'] || '').slice(0, 10)
+    inscrito: f.Inscrito, estado: f.Estado || 'Completa', fecha: (f['Fecha ficha'] || '').slice(0, 10)
   };
 }
 function norm(s) { return (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim(); }
 function digits(s) { return (s || '').toString().replace(/\D/g, ''); }
 
 export default function Panel() {
-  const sesion = useSession();
+  const { usuario, cargando: cargandoSesion, logout } = useSession();
   const [tab, setTab] = useState('inscripciones');
   const [rows, setRows] = useState(null);
   const [error, setError] = useState('');
   // filtros
   const [q, setQ] = useState('');
   const [fEstado, setFEstado] = useState(''); const [fCurso, setFCurso] = useState('');
-  const [fEd, setFEd] = useState(''); const [fResp, setFResp] = useState(''); const [fPais, setFPais] = useState('');
+  const [fEd, setFEd] = useState(''); const [fPais, setFPais] = useState('');
   const [fDesde, setFDesde] = useState(''); const [fHasta, setFHasta] = useState('');
-  const [visCols, setVisCols] = useState(new Set(['nom', 'ape', 'curso', 'ed', 'pais', 'wa', 'estado', 'resp', 'fecha']));
+  const [visCols, setVisCols] = useState(new Set(['nom', 'ape', 'curso', 'ed', 'pais', 'wa', 'estado', 'fecha']));
   const [colModal, setColModal] = useState(false);
   const [sel, setSel] = useState(null); // registro abierto en drawer
   const [historial, setHistorial] = useState([]);
 
   useEffect(() => {
-    if (sesion === null) { window.location.href = '/panel/login'; return; }
-    if (sesion) cargar();
-  }, [sesion]);
+    if (cargandoSesion) return;
+    if (!usuario) { window.location.href = '/panel/login'; return; }
+    cargar();
+  }, [usuario, cargandoSesion]);
 
   async function cargar() {
     try {
-      const res = await authFetch('/api/inscripciones');
+      const res = await fetch('/api/inscripciones?solicitanteEmail=' + encodeURIComponent(usuario.email));
       const data = await res.json();
       if (!data.ok) { setError(data.error || 'Error al cargar'); return; }
       setRows(data.filas.map(normaliza).filter((r) => r.id));
     } catch { setError('Error de conexión'); }
   }
 
-  const rol = sesion?.usuario?.rol || 'Consulta';
 
   const ediciones = useMemo(() => [...new Set((rows || []).map((r) => r.ed).filter(Boolean))].sort(), [rows]);
   const cursos = useMemo(() => [...new Set((rows || []).map((r) => r.curso).filter(Boolean))].sort(), [rows]);
@@ -66,7 +68,6 @@ export default function Panel() {
       if (fEstado && r.estado !== fEstado) return false;
       if (fCurso && r.curso !== fCurso) return false;
       if (fEd && r.ed !== fEd) return false;
-      if (fResp && r.resp !== fResp) return false;
       if (fPais && r.pais !== fPais) return false;
       if (fDesde && (r.fecha || '') < fDesde) return false;
       if (fHasta && (r.fecha || '') > fHasta) return false;
@@ -78,33 +79,24 @@ export default function Panel() {
     });
   }, [rows, q, fEstado, fCurso, fEd, fResp, fPais, fDesde, fHasta]);
 
-  function limpiar() { setQ(''); setFEstado(''); setFCurso(''); setFEd(''); setFResp(''); setFPais(''); setFDesde(''); setFHasta(''); }
+  function limpiar() { setQ(''); setFEstado(''); setFCurso(''); setFEd(''); setFPais(''); setFDesde(''); setFHasta(''); }
 
   async function abrir(r) {
     setSel(r); setHistorial([]);
     try {
-      const res = await authFetch('/api/historial?id=' + encodeURIComponent(r.id));
+      const res = await fetch('/api/historial?id=' + encodeURIComponent(r.id) + '&solicitanteEmail=' + encodeURIComponent(usuario.email));
       const data = await res.json();
       if (data.ok) setHistorial(data.eventos);
     } catch {}
   }
   async function cambiarEstado(nuevo) {
     if (!sel) return;
-    const res = await authFetch('/api/inscripcion/estado', { method: 'POST', body: JSON.stringify({ id: sel.id, estado: nuevo }) });
+    const res = await fetch('/api/inscripcion/estado', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ solicitanteEmail: usuario.email, id: sel.id, estado: nuevo }) });
     const data = await res.json();
     if (data.ok) {
       setRows((prev) => prev.map((x) => x.id === sel.id ? { ...x, estado: nuevo } : x));
       setSel((s) => ({ ...s, estado: nuevo })); abrir({ ...sel, estado: nuevo });
     } else alert(data.error || 'No se pudo cambiar');
-  }
-  async function cambiarResp(nuevo) {
-    if (!sel) return;
-    const res = await authFetch('/api/inscripcion/estado', { method: 'POST', body: JSON.stringify({ id: sel.id, responsable: nuevo }) });
-    const data = await res.json();
-    if (data.ok) {
-      setRows((prev) => prev.map((x) => x.id === sel.id ? { ...x, resp: nuevo } : x));
-      setSel((s) => ({ ...s, resp: nuevo }));
-    }
   }
 
   // ---- export ----
@@ -132,8 +124,10 @@ export default function Panel() {
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nombre; a.click();
   }
 
-  if (sesion === undefined) return <div className="spin" />;
-  if (sesion === null) return null;
+  if (cargandoSesion) return <div className="spin" />;
+  if (!usuario) return null;
+  const puedeExportar = tienePermisoExportar(usuario);
+  const puedeCambiar = tienePermisoCambiarEstado(usuario);
 
   return (
     <div className="appwrap">
@@ -148,22 +142,20 @@ export default function Panel() {
         </div>
         <div className="plat">FICHAS DE INSCRIPCIÓN</div>
         <button className={'nav' + (tab === 'inscripciones' ? ' on' : '')} onClick={() => setTab('inscripciones')}><span className="ic">📋</span>Inscripciones</button>
-        {can(rol, 'verDashboard') && <button className={'nav' + (tab === 'dashboard' ? ' on' : '')} onClick={() => setTab('dashboard')}><span className="ic">📊</span>Dashboard</button>}
-        {can(rol, 'constructor') && <button className={'nav' + (tab === 'constructor' ? ' on' : '')} onClick={() => setTab('constructor')}><span className="ic">🧩</span>Constructor</button>}
-        <div className="div" />
-        <div className="plat">PRÓXIMOS MÓDULOS</div>
-        <button className="nav soon"><span className="ic">✅</span>Presentismo <span className="pill">PRONTO</span></button>
-        <button className="nav soon"><span className="ic">📈</span>Balance <span className="pill">PRONTO</span></button>
+        {tienePermisoDashboard(usuario) && <button className={'nav' + (tab === 'dashboard' ? ' on' : '')} onClick={() => setTab('dashboard')}><span className="ic">📊</span>Dashboard</button>}
+        {tienePermisoConstructor(usuario) && <button className={'nav' + (tab === 'constructor' ? ' on' : '')} onClick={() => setTab('constructor')}><span className="ic">🧩</span>Constructor</button>}
+        {tienePermisoAccesos(usuario) && <button className={'nav' + (tab === 'accesos' ? ' on' : '')} onClick={() => setTab('accesos')}><span className="ic">🔐</span>Accesos</button>}
         <div className="user">
-          <b>{sesion.usuario?.nombre}</b>{sesion.usuario?.rol}
-          <button className="btn-sm" style={{ width: '100%', justifyContent: 'center', marginTop: 8 }} onClick={cerrarSesion}>Cerrar sesión</button>
+          <b>{usuario.nombre}</b>{nombreVisibleRoles(usuario.roles)}
+          <button className="btn-sm" style={{ width: '100%', justifyContent: 'center', marginTop: 8 }} onClick={() => { logout(); window.location.href = '/panel/login'; }}>Cerrar sesión</button>
         </div>
       </aside>
 
       <div className="main">
         <div className="topbar">
-          <div><div className="crumb">PLATAFORMA ILCE / FICHAS</div><h1>{{ inscripciones: 'Inscripciones', dashboard: 'Dashboard', constructor: 'Constructor de fichas' }[tab]}</h1></div>
+          <div><div className="crumb">PLATAFORMA ILCE / FICHAS</div><h1>{{ inscripciones: 'Inscripciones', dashboard: 'Dashboard', constructor: 'Constructor de fichas', accesos: 'Accesos' }[tab]}</h1></div>
           {tab === 'inscripciones' && <div className="search">🔎 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, apellido, email, DNI, WhatsApp, edición…" /></div>}
+          <div style={{ marginLeft: tab === 'inscripciones' ? 12 : 'auto' }}><ThemeSelector /></div>
         </div>
 
         {error && <div className="note" style={{ borderLeftColor: 'rgb(248 113 113)' }}>{error}</div>}
@@ -175,14 +167,13 @@ export default function Panel() {
               <select className="fsel" value={fEstado} onChange={(e) => setFEstado(e.target.value)}><option value="">Estado: todos</option>{ESTADOS.map((x) => <option key={x}>{x}</option>)}</select>
               <select className="fsel" value={fCurso} onChange={(e) => setFCurso(e.target.value)}><option value="">Curso: todos</option>{cursos.map((x) => <option key={x}>{x}</option>)}</select>
               <select className="fsel" value={fEd} onChange={(e) => setFEd(e.target.value)}><option value="">Edición: todas</option>{ediciones.map((x) => <option key={x}>{x}</option>)}</select>
-              <select className="fsel" value={fResp} onChange={(e) => setFResp(e.target.value)}><option value="">Responsable: todos</option>{RESPS.map((x) => <option key={x}>{x}</option>)}</select>
               <select className="fsel" value={fPais} onChange={(e) => setFPais(e.target.value)}><option value="">País: todos</option>{paises.map((x) => <option key={x}>{x}</option>)}</select>
               <input type="date" className="fsel" value={fDesde} onChange={(e) => setFDesde(e.target.value)} title="Desde" />
               <input type="date" className="fsel" value={fHasta} onChange={(e) => setFHasta(e.target.value)} title="Hasta" />
               <button className="btn-sm" onClick={limpiar}>Limpiar</button>
               <span className="spacer" />
               <button className="btn-sm" onClick={() => setColModal(true)}>▦ Columnas</button>
-              {can(rol, 'exportar') && <><button className="btn-sm" onClick={exportCSV}>⬇ CSV</button><button className="btn-sm solid" onClick={exportXLSX}>⬇ Excel</button></>}
+              {puedeExportar && <><button className="btn-sm" onClick={exportCSV}>⬇ CSV</button><button className="btn-sm solid" onClick={exportXLSX}>⬇ Excel</button></>}
             </div>
             <p className="count">Mostrando <b>{Math.min(300, filtradas.length)}</b> de <b>{filtradas.length}</b> inscripciones{filtradas.length > 300 ? ' (afiná la búsqueda para ver el resto)' : ''}</p>
             <div className="tablewrap">
@@ -200,10 +191,11 @@ export default function Panel() {
           </>
         )}
 
-        {rows && tab === 'dashboard' && can(rol, 'verDashboard') && <Dashboard rows={filtradas} allRows={rows}
+        {rows && tab === 'dashboard' && tienePermisoDashboard(usuario) && <Dashboard rows={filtradas} allRows={rows}
           filtros={{ fEstado, setFEstado, fCurso, setFCurso, fEd, setFEd, fPais, setFPais, fDesde, setFDesde, fHasta, setFHasta, limpiar, cursos, ediciones, paises }} />}
 
-        {tab === 'constructor' && can(rol, 'constructor') && <Constructor />}
+        {tab === 'constructor' && tienePermisoConstructor(usuario) && <Constructor usuario={usuario} />}
+        {tab === 'accesos' && tienePermisoAccesos(usuario) && <Accesos usuario={usuario} />}
       </div>
 
       {/* drawer */}
@@ -218,11 +210,8 @@ export default function Panel() {
               </div>
               <div style={{ marginTop: 10, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                 <span>Estado:</span>
-                <select className="sel-select" value={sel.estado} disabled={!can(rol, 'cambiarEstado')} onChange={(e) => cambiarEstado(e.target.value)}>
+                <select className="sel-select" value={sel.estado} disabled={!puedeCambiar} onChange={(e) => cambiarEstado(e.target.value)}>
                   {ESTADOS.map((x) => <option key={x}>{x}</option>)}
-                </select>
-                <select className="sel-select" value={sel.resp} disabled={!can(rol, 'cambiarEstado')} onChange={(e) => cambiarResp(e.target.value)}>
-                  {RESPS.map((x) => <option key={x}>{x}</option>)}
                 </select>
               </div>
             </div>
@@ -259,13 +248,13 @@ export default function Panel() {
           <button className="btn-sm solid" style={{ width: '100%', justifyContent: 'center', marginTop: 14 }} onClick={() => setColModal(false)}>Listo</button>
         </div>
       </div>
+      <VersionBadge />
     </div>
   );
 }
 
 function celda(r, k) {
   if (k === 'estado') return <span className={'badge b-' + (r.estado || '').replace(/\s/g, '')}>{r.estado}</span>;
-  if (k === 'resp') return r.resp === 'Sin asignar' ? <span className="muted">Sin asignar</span> : <span className="who"><span className="av">{(r.resp || '?')[0]}</span>{r.resp}</span>;
   if (k === 'wa') return <span className="sec">{r.wa}</span>;
   if (k === 'fecha') return <span className="sec">{r.fecha}</span>;
   return r[k] || '';
@@ -342,14 +331,14 @@ function Dashboard({ rows, filtros }) {
 }
 
 /* ===================== CONSTRUCTOR (v1) ===================== */
-function Constructor() {
+function Constructor({ usuario }) {
   const [defs, setDefs] = useState(null);
   const [sel, setSel] = useState(0);
   const [guardando, setGuardando] = useState(false);
   const [msg, setMsg] = useState('');
 
   useEffect(() => { (async () => {
-    const res = await authFetch('/api/fichas'); const data = await res.json();
+    const res = await fetch('/api/fichas?solicitanteEmail=' + encodeURIComponent(usuario.email)); const data = await res.json();
     if (data.ok) setDefs(data.defs);
   })(); }, []);
 
@@ -359,7 +348,7 @@ function Constructor() {
 
   async function guardar() {
     setGuardando(true); setMsg('');
-    const res = await authFetch('/api/fichas', { method: 'POST', body: JSON.stringify({ slug: d.slug, def: d }) });
+    const res = await fetch('/api/fichas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ solicitanteEmail: usuario.email, slug: d.slug, def: d }) });
     const data = await res.json();
     setGuardando(false); setMsg(data.ok ? '✓ Guardado' : (data.error || 'Error'));
     setTimeout(() => setMsg(''), 2500);
