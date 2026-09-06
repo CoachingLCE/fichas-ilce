@@ -1,12 +1,15 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { useSession } from '../lib/useSession';
-import { tienePermisoInscripciones, tienePermisoCambiarEstado, tienePermisoExportar, tienePermisoDashboard, tienePermisoConstructor, tienePermisoAccesos } from '../lib/permisos';
+import { tienePermisoInscripciones, tienePermisoCambiarEstado, tienePermisoExportar, tienePermisoDashboard, tienePermisoConstructor, tienePermisoAccesos, tienePermisoActividades, tienePermisoGestionActividades, tienePermisoAsignarDocentes } from '../lib/permisos';
 import { ESTADOS, nombreVisibleRoles } from '../lib/constants';
 import { Isologo, IsologoDefs } from './Isologo';
 import ThemeSelector from './ThemeSelector';
 import Accesos from './Accesos';
 import VersionBadge from './VersionBadge';
+import FichasSection from './FichasSection';
+import Constructor from './Constructor';
+import Actividades from './Actividades';
 
 const ALL_COLS = [
   ['nom', 'Nombre'], ['ape', 'Apellido'], ['em', 'Email'], ['curso', 'Curso'], ['ed', 'Edición'],
@@ -29,7 +32,10 @@ function digits(s) { return (s || '').toString().replace(/\D/g, ''); }
 
 export default function Panel() {
   const { usuario, cargando: cargandoSesion, logout } = useSession();
-  const [tab, setTab] = useState('inscripciones');
+  const [tab, setTab] = useState('fichas');
+  const [toast, setToast] = useState('');
+  const [constructorSlug, setConstructorSlug] = useState(null);
+  const [masFiltros, setMasFiltros] = useState(false);
   const [rows, setRows] = useState(null);
   const [error, setError] = useState('');
   // filtros
@@ -47,6 +53,9 @@ export default function Panel() {
     if (!usuario) { window.location.href = '/panel/login'; return; }
     cargar();
   }, [usuario, cargandoSesion]);
+
+  function showToast(m) { setToast(m); clearTimeout(showToast._t); showToast._t = setTimeout(() => setToast(''), 2400); }
+  function editarFicha(slug) { setConstructorSlug(slug); setTab('constructor'); }
 
   async function cargar() {
     try {
@@ -79,6 +88,24 @@ export default function Panel() {
     });
   }, [rows, q, fEstado, fCurso, fEd, fPais, fDesde, fHasta]);
 
+  // Base para los smart chips: aplica todos los filtros MENOS el estado, así los contadores
+  // reflejan el resto de los filtros activos.
+  const baseParaChips = useMemo(() => {
+    const qq = norm(q);
+    return (rows || []).filter((r) => {
+      if (fCurso && r.curso !== fCurso) return false;
+      if (fEd && r.ed !== fEd) return false;
+      if (fPais && r.pais !== fPais) return false;
+      if (fDesde && (r.fecha || '') < fDesde) return false;
+      if (fHasta && (r.fecha || '') > fHasta) return false;
+      if (qq) {
+        const hay = [r.nom, r.ape, r.em, r.doc, digits(r.wa), r.curso, r.ed].map(norm).join(' ');
+        if (!hay.includes(qq) && !digits(r.wa).includes(digits(qq))) return false;
+      }
+      return true;
+    });
+  }, [rows, q, fCurso, fEd, fPais, fDesde, fHasta]);
+
   function limpiar() { setQ(''); setFEstado(''); setFCurso(''); setFEd(''); setFPais(''); setFDesde(''); setFHasta(''); }
 
   async function abrir(r) {
@@ -96,7 +123,8 @@ export default function Panel() {
     if (data.ok) {
       setRows((prev) => prev.map((x) => x.id === sel.id ? { ...x, estado: nuevo } : x));
       setSel((s) => ({ ...s, estado: nuevo })); abrir({ ...sel, estado: nuevo });
-    } else alert(data.error || 'No se pudo cambiar');
+      showToast('✓ Estado actualizado');
+    } else showToast(data.error || 'No se pudo cambiar');
   }
 
   // ---- export ----
@@ -140,10 +168,12 @@ export default function Panel() {
             <div className="font-display" style={{ fontSize: 19, fontWeight: 700 }}>ILCE</div>
           </div>
         </div>
-        <div className="plat">FICHAS DE INSCRIPCIÓN</div>
-        <button className={'nav' + (tab === 'inscripciones' ? ' on' : '')} onClick={() => setTab('inscripciones')}><span className="ic">📋</span>Inscripciones</button>
-        {tienePermisoDashboard(usuario) && <button className={'nav' + (tab === 'dashboard' ? ' on' : '')} onClick={() => setTab('dashboard')}><span className="ic">📊</span>Dashboard</button>}
-        {tienePermisoConstructor(usuario) && <button className={'nav' + (tab === 'constructor' ? ' on' : '')} onClick={() => setTab('constructor')}><span className="ic">🧩</span>Constructor</button>}
+        <div className="plat">GESTIÓN</div>
+        <button className={'nav' + (tab === 'fichas' ? ' on' : '')} onClick={() => setTab('fichas')}><span className="ic">▣</span>Fichas</button>
+        <button className={'nav' + (tab === 'inscripciones' ? ' on' : '')} onClick={() => setTab('inscripciones')}><span className="ic">▤</span>Inscripciones</button>
+        {tienePermisoDashboard(usuario) && <button className={'nav' + (tab === 'dashboard' ? ' on' : '')} onClick={() => setTab('dashboard')}><span className="ic">◉</span>Dashboard</button>}
+        {tienePermisoActividades(usuario) && (<><div className="div" /><div className="plat">ÁREA ACADÉMICA</div><button className={'nav' + (tab === 'actividades' ? ' on' : '')} onClick={() => setTab('actividades')}><span className="ic">🎓</span>Actividades</button></>)}
+        {tienePermisoConstructor(usuario) && (<><div className="div" /><div className="plat">CONSTRUCTOR</div><button className={'nav' + (tab === 'constructor' ? ' on' : '')} onClick={() => setTab('constructor')}><span className="ic">🧩</span>Constructor</button></>)}
         {tienePermisoAccesos(usuario) && <button className={'nav' + (tab === 'accesos' ? ' on' : '')} onClick={() => setTab('accesos')}><span className="ic">🔐</span>Accesos</button>}
         <div className="user">
           <b>{usuario.nombre}</b>{nombreVisibleRoles(usuario.roles)}
@@ -153,28 +183,46 @@ export default function Panel() {
 
       <div className="main">
         <div className="topbar">
-          <div><div className="crumb">PLATAFORMA ILCE / FICHAS</div><h1>{{ inscripciones: 'Inscripciones', dashboard: 'Dashboard', constructor: 'Constructor de fichas', accesos: 'Accesos' }[tab]}</h1></div>
+          <div><div className="crumb">PLATAFORMA ILCE / FICHAS</div><h1>{{ fichas: 'Fichas', inscripciones: 'Inscripciones', dashboard: 'Dashboard', actividades: 'Actividades', constructor: 'Constructor de fichas', accesos: 'Accesos' }[tab]}</h1></div>
           {tab === 'inscripciones' && <div className="search">🔎 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, apellido, email, DNI, WhatsApp, edición…" /></div>}
           <div style={{ marginLeft: tab === 'inscripciones' ? 12 : 'auto' }}><ThemeSelector /></div>
         </div>
 
+        {tab === 'fichas' && <FichasSection usuario={usuario} rows={rows} onEditar={editarFicha} showToast={showToast} puedeEditar={tienePermisoConstructor(usuario)} />}
         {error && <div className="note" style={{ borderLeftColor: 'rgb(248 113 113)' }}>{error}</div>}
         {rows === null && !error && <div className="spin" />}
 
         {rows && tab === 'inscripciones' && (
           <>
+            <div className="fchips">
+              <button className={'fchip' + (fEstado === '' ? ' on' : '')} onClick={() => setFEstado('')}>Todas <span className="cnt">{baseParaChips.length}</span></button>
+              {ESTADOS.filter((e) => baseParaChips.some((r) => r.estado === e)).map((e) => (
+                <button key={e} className={'fchip' + (fEstado === e ? ' on' : '')} onClick={() => setFEstado(fEstado === e ? '' : e)}>{e} <span className="cnt">{baseParaChips.filter((r) => r.estado === e).length}</span></button>
+              ))}
+            </div>
             <div className="filters">
-              <select className="fsel" value={fEstado} onChange={(e) => setFEstado(e.target.value)}><option value="">Estado: todos</option>{ESTADOS.map((x) => <option key={x}>{x}</option>)}</select>
               <select className="fsel" value={fCurso} onChange={(e) => setFCurso(e.target.value)}><option value="">Curso: todos</option>{cursos.map((x) => <option key={x}>{x}</option>)}</select>
               <select className="fsel" value={fEd} onChange={(e) => setFEd(e.target.value)}><option value="">Edición: todas</option>{ediciones.map((x) => <option key={x}>{x}</option>)}</select>
-              <select className="fsel" value={fPais} onChange={(e) => setFPais(e.target.value)}><option value="">País: todos</option>{paises.map((x) => <option key={x}>{x}</option>)}</select>
-              <input type="date" className="fsel" value={fDesde} onChange={(e) => setFDesde(e.target.value)} title="Desde" />
-              <input type="date" className="fsel" value={fHasta} onChange={(e) => setFHasta(e.target.value)} title="Hasta" />
-              <button className="btn-sm" onClick={limpiar}>Limpiar</button>
+              <button className="btn-sm" onClick={() => setMasFiltros(!masFiltros)}>{masFiltros ? '– Menos filtros' : '+ Más filtros'}</button>
+              {masFiltros && (<>
+                <select className="fsel" value={fPais} onChange={(e) => setFPais(e.target.value)}><option value="">País: todos</option>{paises.map((x) => <option key={x}>{x}</option>)}</select>
+                <input type="date" className="fsel" value={fDesde} onChange={(e) => setFDesde(e.target.value)} title="Desde" />
+                <input type="date" className="fsel" value={fHasta} onChange={(e) => setFHasta(e.target.value)} title="Hasta" />
+              </>)}
               <span className="spacer" />
               <button className="btn-sm" onClick={() => setColModal(true)}>▦ Columnas</button>
               {puedeExportar && <><button className="btn-sm" onClick={exportCSV}>⬇ CSV</button><button className="btn-sm solid" onClick={exportXLSX}>⬇ Excel</button></>}
             </div>
+            {(fCurso || fEd || fPais || fEstado || fDesde || fHasta) && (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
+                {fEstado && <FiltroChip label={`Estado: ${fEstado}`} onClear={() => setFEstado('')} />}
+                {fCurso && <FiltroChip label={`Curso: ${fCurso}`} onClear={() => setFCurso('')} />}
+                {fEd && <FiltroChip label={`Edición: ${fEd}`} onClear={() => setFEd('')} />}
+                {fPais && <FiltroChip label={`País: ${fPais}`} onClear={() => setFPais('')} />}
+                {(fDesde || fHasta) && <FiltroChip label={`Fecha: ${fDesde || '…'} → ${fHasta || '…'}`} onClear={() => { setFDesde(''); setFHasta(''); }} />}
+                <button className="btn-sm" onClick={limpiar}>Limpiar filtros</button>
+              </div>
+            )}
             <p className="count">Mostrando <b>{Math.min(300, filtradas.length)}</b> de <b>{filtradas.length}</b> inscripciones{filtradas.length > 300 ? ' (afiná la búsqueda para ver el resto)' : ''}</p>
             <div className="tablewrap">
               <table>
@@ -192,9 +240,10 @@ export default function Panel() {
         )}
 
         {rows && tab === 'dashboard' && tienePermisoDashboard(usuario) && <Dashboard rows={filtradas} allRows={rows}
-          filtros={{ fEstado, setFEstado, fCurso, setFCurso, fEd, setFEd, fPais, setFPais, fDesde, setFDesde, fHasta, setFHasta, limpiar, cursos, ediciones, paises }} />}
+          filtros={{ fEstado, setFEstado, fCurso, setFCurso, fEd, setFEd, fPais, setFPais, fDesde, setFDesde, fHasta, setFHasta, limpiar, cursos, ediciones, paises, irA: (estado) => { setFEstado(estado || ''); setTab('inscripciones'); } }} />}
 
-        {tab === 'constructor' && tienePermisoConstructor(usuario) && <Constructor usuario={usuario} />}
+        {tab === 'constructor' && tienePermisoConstructor(usuario) && <Constructor usuario={usuario} initialSlug={constructorSlug} showToast={showToast} />}
+        {tab === 'actividades' && tienePermisoActividades(usuario) && <Actividades usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} puedeDocentes={tienePermisoAsignarDocentes(usuario)} />}
         {tab === 'accesos' && tienePermisoAccesos(usuario) && <Accesos usuario={usuario} />}
       </div>
 
@@ -204,25 +253,31 @@ export default function Panel() {
         {sel && (
           <>
             <div className="dr-head">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div className="dr-name">{(sel.nom + ' ' + sel.ape).trim() || '—'}</div>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+                <div>
+                  <div className="dr-name">{(sel.nom + ' ' + sel.ape).trim() || '—'}</div>
+                  <div style={{ fontSize: 12, color: 'rgb(var(--textMuted))', marginTop: 2 }}>{sel.curso}{sel.ed ? ` · ${sel.ed}` : ''} · ID {sel.id}</div>
+                </div>
                 <button className="btn-sm" onClick={() => setSel(null)}>✕</button>
               </div>
-              <div style={{ marginTop: 10, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                <span>Estado:</span>
-                <select className="sel-select" value={sel.estado} disabled={!puedeCambiar} onChange={(e) => cambiarEstado(e.target.value)}>
+              <div style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                <span className={'badge b-' + (sel.estado || '').replace(/\s/g, '')}>{sel.estado}</span>
+                <select className="sel-select" value={sel.estado} disabled={!puedeCambiar} onChange={(e) => cambiarEstado(e.target.value)} aria-label="Cambiar estado">
                   {ESTADOS.map((x) => <option key={x}>{x}</option>)}
                 </select>
               </div>
+              <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {sel.em && <button className="btn-sm" onClick={() => { navigator.clipboard?.writeText(sel.em); showToast('✓ Email copiado'); }}>✉ Copiar email</button>}
+                {sel.wa && <button className="btn-sm" onClick={() => { navigator.clipboard?.writeText(sel.wa); showToast('✓ WhatsApp copiado'); }}>💬 Copiar WhatsApp</button>}
+                {sel.wa && <a className="btn-sm" href={`https://wa.me/${digits(sel.wa)}`} target="_blank" rel="noreferrer">↗ Abrir WhatsApp</a>}
+              </div>
             </div>
             <div className="dr-body">
-              <div className="kv">
-                {[['Curso', sel.curso], ['Edición', sel.ed], ['Email', sel.em], ['País', sel.pais], ['Provincia', sel.prov],
-                ['Localidad', sel.loc], ['WhatsApp', sel.wa], ['Documento', sel.doc], ['Instagram', sel.ig], ['Profesión', sel.prof],
-                ['Modalidad', sel.mod], ['Origen', sel.origen], ['Medio', sel.med], ['Inscrito', sel.inscrito || '—'], ['Fecha', sel.fecha]]
-                  .map(([k, v]) => <div key={k} style={{ display: 'contents' }}><div className="k">{k}</div><div>{v || '—'}</div></div>)}
-              </div>
-              {sel.sobre && <><div style={{ fontSize: 12, color: 'rgb(var(--textMuted))', marginTop: 8 }}>Sobre vos</div><p style={{ fontSize: 13.5, marginTop: 4 }}>{sel.sobre}</p></>}
+              <DrawerSeccion titulo="Datos personales" campos={[['Nombre', `${sel.nom} ${sel.ape}`.trim()], ['Documento', sel.doc], ['País', sel.pais], ['Provincia', sel.prov], ['Localidad', sel.loc]]} />
+              <DrawerSeccion titulo="Contacto" campos={[['Email', sel.em], ['WhatsApp', sel.wa], ['Instagram', sel.ig], ['Medio preferido', sel.med]]} />
+              <DrawerSeccion titulo="Cursada" campos={[['Curso', sel.curso], ['Edición', sel.ed], ['Modalidad', sel.mod], ['Inscrito', sel.inscrito || '—']]} />
+              <DrawerSeccion titulo="Sobre vos" campos={[['Profesión', sel.prof], ['Origen', sel.origen], ['Fecha ficha', sel.fecha]]} />
+              {sel.sobre && <p style={{ fontSize: 13.5, marginTop: 4, color: 'rgb(var(--textSec))' }}>{sel.sobre}</p>}
               <h3 style={{ fontSize: 14, margin: '18px 0 10px' }}>Historial</h3>
               <div className="tl">
                 {historial.length ? historial.slice().reverse().map((ev, i) => (
@@ -249,7 +304,30 @@ export default function Panel() {
         </div>
       </div>
       <VersionBadge />
+      <div className={'toast' + (toast ? ' on' : '')}>{toast}</div>
     </div>
+  );
+}
+
+function DrawerSeccion({ titulo, campos }) {
+  const visibles = campos.filter(([, v]) => v);
+  if (!visibles.length) return null;
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ fontFamily: 'Jost', fontSize: 11, letterSpacing: 1.5, color: 'rgb(var(--textMuted))', textTransform: 'uppercase', marginBottom: 6 }}>{titulo}</div>
+      <div className="kv" style={{ margin: 0 }}>
+        {visibles.map(([k, v]) => <div key={k} style={{ display: 'contents' }}><div className="k">{k}</div><div>{v}</div></div>)}
+      </div>
+    </div>
+  );
+}
+
+function FiltroChip({ label, onClear }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(5,149,173,.12)', border: '1px solid rgba(5,149,173,.35)', color: 'rgb(var(--accentTeal))', borderRadius: 999, padding: '5px 10px', fontSize: 12.5, fontWeight: 700 }}>
+      {label}
+      <button onClick={onClear} aria-label="Quitar filtro" style={{ background: 'none', border: 0, color: 'inherit', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>×</button>
+    </span>
   );
 }
 
@@ -285,9 +363,26 @@ function Dashboard({ rows, filtros }) {
   ['Completada', completadas, '#4a128b,#70168d'], ['En revisión', enRev, '#70168d,#96198f'], ['Aprobada', aprob, '#96198f,#c026d3']];
   const mx = Math.max(1, rows.length);
   const F = filtros;
+  const fichasActivas = new Set(rows.map((r) => r.curso).filter(Boolean)).size;
+  const nuevas = est('Completa');
+  const pendientes = est('Pendiente') + est('Iniciada');
+  function periodo(tipo) {
+    const hoy = new Date();
+    const iso = (d) => d.toISOString().slice(0, 10);
+    if (tipo === 'todo') { F.setFDesde(''); F.setFHasta(''); return; }
+    if (tipo === 'mes') { F.setFDesde(iso(new Date(hoy.getFullYear(), hoy.getMonth(), 1))); F.setFHasta(iso(hoy)); return; }
+    if (tipo === '30') { const d = new Date(hoy); d.setDate(d.getDate() - 30); F.setFDesde(iso(d)); F.setFHasta(iso(hoy)); return; }
+    if (tipo === 'anio') { F.setFDesde(iso(new Date(hoy.getFullYear(), 0, 1))); F.setFHasta(iso(hoy)); return; }
+  }
 
   return (
     <>
+      <div className="fchips">
+        <button className="fchip" onClick={() => periodo('mes')}>Este mes</button>
+        <button className="fchip" onClick={() => periodo('30')}>Últimos 30 días</button>
+        <button className="fchip" onClick={() => periodo('anio')}>Este año</button>
+        <button className={'fchip' + (!F.fDesde && !F.fHasta ? ' on' : '')} onClick={() => periodo('todo')}>Todo</button>
+      </div>
       <div className="filters">
         <select className="fsel" value={F.fCurso} onChange={(e) => F.setFCurso(e.target.value)}><option value="">Curso: todos</option>{F.cursos.map((x) => <option key={x}>{x}</option>)}</select>
         <select className="fsel" value={F.fEd} onChange={(e) => F.setFEd(e.target.value)}><option value="">Edición: todas</option>{F.ediciones.map((x) => <option key={x}>{x}</option>)}</select>
@@ -298,12 +393,12 @@ function Dashboard({ rows, filtros }) {
         <button className="btn-sm" onClick={F.limpiar}>Limpiar</button>
       </div>
       <div className="kpis">
-        <div className="kpi"><div className="n">{rows.length}</div><div className="l">Inscripciones (filtradas)</div></div>
-        <div className="kpi"><div className="n teal">{delMes}</div><div className="l">Del período (este mes)</div></div>
-        <div className="kpi"><div className="n mag">{est('En revisión')}</div><div className="l">En revisión</div></div>
-        <div className="kpi"><div className="n">{est('Aprobada')}</div><div className="l">Aprobadas</div></div>
-        <div className="kpi"><div className="n">{est('Completa')}</div><div className="l">Completadas</div></div>
-        <div className="kpi"><div className="n warn">{est('Observada') + est('Rechazada')}</div><div className="l">Observadas / Rechazadas</div></div>
+        <div className="kpi"><div className="n">{fichasActivas}</div><div className="l">Cursos con inscripciones</div></div>
+        <div className="kpi" role="button" tabIndex={0} style={{ cursor: 'pointer' }} onClick={() => F.irA('')} onKeyDown={(e) => e.key === 'Enter' && F.irA('')}><div className="n teal">{rows.length}</div><div className="l">Inscripciones · ver</div></div>
+        <div className="kpi" role="button" tabIndex={0} style={{ cursor: 'pointer' }} onClick={() => F.irA('Completa')}><div className="n mag">{nuevas}</div><div className="l">Nuevas (completas) · ver</div></div>
+        <div className="kpi" role="button" tabIndex={0} style={{ cursor: 'pointer' }} onClick={() => F.irA('En revisión')}><div className="n warn">{est('En revisión')}</div><div className="l">En revisión · ver</div></div>
+        <div className="kpi" role="button" tabIndex={0} style={{ cursor: 'pointer' }} onClick={() => F.irA('Aprobada')}><div className="n">{est('Aprobada')}</div><div className="l">Aprobadas · ver</div></div>
+        <div className="kpi" role="button" tabIndex={0} style={{ cursor: 'pointer' }} onClick={() => F.irA('Pendiente')}><div className="n dim">{pendientes}</div><div className="l">Pendientes · ver</div></div>
       </div>
       <div className="grid2">
         <div>
@@ -331,73 +426,3 @@ function Dashboard({ rows, filtros }) {
 }
 
 /* ===================== CONSTRUCTOR (v1) ===================== */
-function Constructor({ usuario }) {
-  const [defs, setDefs] = useState(null);
-  const [sel, setSel] = useState(0);
-  const [guardando, setGuardando] = useState(false);
-  const [msg, setMsg] = useState('');
-
-  useEffect(() => { (async () => {
-    const res = await fetch('/api/fichas?solicitanteEmail=' + encodeURIComponent(usuario.email)); const data = await res.json();
-    if (data.ok) setDefs(data.defs);
-  })(); }, []);
-
-  if (!defs) return <div className="spin" />;
-  const d = defs[sel];
-  const upd = (k, v) => setDefs((prev) => prev.map((x, i) => i === sel ? { ...x, [k]: v } : x));
-
-  async function guardar() {
-    setGuardando(true); setMsg('');
-    const res = await fetch('/api/fichas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ solicitanteEmail: usuario.email, slug: d.slug, def: d }) });
-    const data = await res.json();
-    setGuardando(false); setMsg(data.ok ? '✓ Guardado' : (data.error || 'Error'));
-    setTimeout(() => setMsg(''), 2500);
-  }
-
-  const CAMPOS_STD = [
-    ['Correo', 'Email', true], ['Elegí día de cursada', 'Selección única', true], ['Nombre', 'Texto', true],
-    ['Apellido', 'Texto', true], ['País de residencia', 'País · lógica condicional', true],
-    ['DNI / Pasaporte', 'Documento · condicional', true], ['Provincia / Estado', 'Condicional', true],
-    ['Localidad', 'Texto', true], ['WhatsApp', 'WhatsApp', true], ['Fecha de nacimiento', 'Fecha', false],
-    ['Modalidad de cursada', 'Selección única', true], ['Instagram', 'Texto', false], ['Profesión', 'Texto', false],
-    ['¿Cómo llegaste?', 'Selección única', true], ['Medio de contacto', 'Selección única', true],
-    ['Tema de salud', 'Texto', false], ['Sobre vos', 'Texto largo', true], ['Consentimiento', 'Consentimiento', true]
-  ];
-
-  return (
-    <div className="builder" style={{ display: 'grid', gridTemplateColumns: '210px 1fr', gap: 14, alignItems: 'start' }}>
-      <div className="panel" style={{ margin: 0 }}>
-        <h3>Cursos</h3>
-        {defs.map((x, i) => (
-          <button key={x.slug} className={'nav' + (i === sel ? ' on' : '')} style={{ width: '100%', marginBottom: 4 }} onClick={() => setSel(i)}>{x.curso}</button>
-        ))}
-      </div>
-      <div>
-        <div className="panel">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-            <span className={'badge b-' + (d.estado === 'Publicada' ? 'Aprobada' : 'Pendiente')}>{(d.estado || 'Publicada').toUpperCase()}</span>
-            <span className="muted" style={{ fontSize: 13 }}>/inscripcion/{d.slug}</span>
-            <span className="spacer" style={{ marginLeft: 'auto' }} />
-            {msg && <span className="teal" style={{ fontSize: 13, marginRight: 8 }}>{msg}</span>}
-            <button className="btn-sm solid" onClick={guardar} disabled={guardando}>{guardando ? 'Guardando…' : 'Guardar'}</button>
-          </div>
-          <label style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 5 }}>Título</label>
-          <input className="ctrl" value={d.titulo || ''} onChange={(e) => upd('titulo', e.target.value)} />
-          <label style={{ fontSize: 12, fontWeight: 700, display: 'block', margin: '12px 0 5px' }}>Bienvenida</label>
-          <textarea className="ctrl" value={d.bienvenida || ''} onChange={(e) => upd('bienvenida', e.target.value)} />
-          <label style={{ fontSize: 12, fontWeight: 700, display: 'block', margin: '12px 0 5px' }}>Estado de la ficha</label>
-          <select className="fsel" value={d.estado || 'Publicada'} onChange={(e) => upd('estado', e.target.value)}>
-            <option>Borrador</option><option>Publicada</option><option>Cerrada</option>
-          </select>
-        </div>
-        <div className="panel">
-          <h3>Campos de la ficha</h3>
-          {CAMPOS_STD.map(([nm, tp, req]) => (
-            <div className="cv-field" key={nm}><div><div className="nm">{nm}</div><div className="tp">{tp}</div></div>{req && <span className="req">Obligatorio</span>}</div>
-          ))}
-          <div className="note">Constructor v1: ya podés editar título, bienvenida, estado y (próximamente) las ediciones por curso, y se guardan en la pestaña <b>Fichas</b>. El armado visual de campos con drag &amp; drop es el siguiente incremento; hoy el formulario público usa la ficha estándar ILCE.</div>
-        </div>
-      </div>
-    </div>
-  );
-}

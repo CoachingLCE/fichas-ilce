@@ -70,11 +70,11 @@ export default function Accesos({ usuario }) {
           <tbody>
             {[
               ['Admin', 'Todo el sistema, incluido Constructor y Accesos (exclusivos de Admin).'],
-              ['Coordinador', 'Inscripciones (ver y cambiar estado), Dashboard y Exportar. No ve Constructor ni Accesos.'],
+              ['Coordinador de inscripciones', 'Inscripciones (ver y cambiar estado), Dashboard y Exportar. No ve Constructor ni Accesos.'],
               ['Inscripciones', 'Ver inscripciones y cambiar estado. No exporta ni ve Dashboard/Constructor.'],
               ['Estudiantes', 'Solo lectura de inscripciones.'],
-              ['CoordinadorEstudiantes', 'Solo lectura de inscripciones.'],
-              ['Academico', 'Lectura de inscripciones + Dashboard.']
+              ['Coordinación académica', 'Solo lectura de inscripciones.'],
+              ['Académico', 'Lectura de inscripciones + Dashboard.']
             ].map(([r, d]) => (
               <tr key={r} style={{ borderBottom: '1px solid rgb(var(--border))' }}>
                 <td style={{ padding: '7px 10px 7px 0', fontWeight: 700, whiteSpace: 'nowrap', verticalAlign: 'top' }}>{r}</td>
@@ -102,7 +102,7 @@ export default function Accesos({ usuario }) {
                     {ROLES.map((rol) => (
                       <label key={rol} style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: 12 }}>
                         <input type="checkbox" checked={rolesEnEdicion.includes(rol)}
-                          onChange={(e) => setRolesEnEdicion((prev) => e.target.checked ? [...prev, rol] : prev.filter((r) => r !== rol))} />{rol}
+                          onChange={(e) => setRolesEnEdicion((prev) => e.target.checked ? [...prev, rol] : prev.filter((r) => r !== rol))} />{nombreVisibleRoles([rol])}
                       </label>
                     ))}
                     <button className="btn-sm solid" onClick={() => guardarRoles(u.Email)}>Guardar</button>
@@ -140,7 +140,7 @@ export default function Accesos({ usuario }) {
               {ROLES.map((rol) => (
                 <label key={rol} style={{ display: 'flex', gap: 5, alignItems: 'center', fontSize: 13 }}>
                   <input type="checkbox" checked={nuevoRoles.includes(rol)}
-                    onChange={(e) => setNuevoRoles((prev) => e.target.checked ? [...prev, rol] : prev.filter((r) => r !== rol))} />{rol}
+                    onChange={(e) => setNuevoRoles((prev) => e.target.checked ? [...prev, rol] : prev.filter((r) => r !== rol))} />{nombreVisibleRoles([rol])}
                 </label>
               ))}
             </div>

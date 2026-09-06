@@ -1,1 +1,5 @@
-{}
+{
+  "crons": [
+    { "path": "/api/cron/resumen-actividades", "schedule": "0 15 * * 5" }
+  ]
+}

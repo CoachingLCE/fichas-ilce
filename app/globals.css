@@ -175,3 +175,48 @@ tbody tr{cursor:pointer}tbody tr:hover{background:rgb(var(--surface2))}
 .cv-field .req{margin-left:auto;font-size:10px;color:rgb(var(--accentMagenta));font-weight:700}
 .spin{width:34px;height:34px;border:3px solid rgb(var(--border));border-top-color:rgb(var(--accentTeal));border-radius:50%;animation:sp 1s linear infinite;margin:60px auto}
 @keyframes sp{to{transform:rotate(360deg)}}
+
+/* ===== Sección Fichas (Lote B) ===== */
+.fchips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.fchip{background:rgb(var(--surface2));border:1px solid rgb(var(--border));color:rgb(var(--textSec));padding:7px 14px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:7px}
+.fchip:hover{color:rgb(var(--text));border-color:rgb(var(--accentTeal))}
+.fchip.on{color:#fff;border-color:transparent;background:linear-gradient(90deg,rgb(var(--accentPurple)),rgb(var(--accentMagenta)))}
+.fchip .cnt{font-size:12px;opacity:.85;background:rgba(255,255,255,.14);border-radius:999px;padding:0 7px}
+.fchip:not(.on) .cnt{background:rgb(var(--bg))}
+.fbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.fsearch{display:flex;align-items:center;gap:8px;background:rgb(var(--surface2));border:1px solid rgb(var(--border));border-radius:10px;padding:8px 12px;min-width:240px;flex:1;max-width:360px}
+.fsearch input{background:none;border:0;outline:none;color:rgb(var(--text));width:100%;font-size:14px}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px}
+.fcard{background:rgb(var(--surface));border:1px solid rgb(var(--border));border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px;transition:.18s;position:relative}
+.fcard:hover{border-color:rgb(var(--accentTeal));box-shadow:0 12px 30px -18px rgba(0,0,0,.6);transform:translateY(-2px)}
+.fstate{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase}
+.fstate .d{width:9px;height:9px;border-radius:50%}
+.fstate.pub{color:rgb(74 222 128)} .fstate.pub .d{background:rgb(74 222 128)}
+.fstate.bor{color:rgb(251 191 36)} .fstate.bor .d{background:rgb(251 191 36)}
+.fstate.cer{color:rgb(248 113 113)} .fstate.cer .d{background:rgb(248 113 113)}
+.fcard .ftitle{font-family:'Jost';font-weight:700;font-size:19px;line-height:1.1}
+.fcard .fsub{font-size:13px;color:rgb(var(--textSec));margin-top:-6px}
+.fmeta{display:flex;gap:16px;font-size:13px;color:rgb(var(--textSec));flex-wrap:wrap}
+.fmeta b{color:rgb(var(--text));font-family:'Jost'}
+.fmeta .ins{font-family:'Jost';font-weight:700;font-size:17px;color:rgb(var(--accentTeal))}
+.flink{display:flex;align-items:center;gap:8px;background:rgb(var(--surface2));border:1px solid rgb(var(--border));border-radius:9px;padding:7px 10px;font-size:12.5px;color:rgb(var(--textMuted));font-family:monospace;overflow:hidden}
+.flink .u{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.flink button{background:none;border:0;color:rgb(var(--accentTeal));cursor:pointer;font-weight:700;font-size:12.5px;white-space:nowrap}
+.factions{display:flex;gap:8px;align-items:center;margin-top:2px}
+.factions .grow{flex:1}
+.fmenu{position:relative}
+.fmenu-pop{position:absolute;right:0;bottom:calc(100% + 6px);background:rgb(var(--surface2));border:1px solid rgb(var(--border));border-radius:12px;padding:6px;min-width:180px;z-index:20;box-shadow:0 16px 40px -16px rgba(0,0,0,.7)}
+.fmenu-pop button{display:flex;width:100%;text-align:left;gap:8px;align-items:center;background:none;border:0;color:rgb(var(--text));font-size:13.5px;padding:8px 10px;border-radius:8px;cursor:pointer}
+.fmenu-pop button:hover{background:rgb(var(--surface))}
+.fmenu-pop button.danger{color:rgb(248 113 113)}
+.fmenu-pop .sep{height:1px;background:rgb(var(--border));margin:4px 0}
+.empty{text-align:center;padding:56px 20px;color:rgb(var(--textSec))}
+.empty .ico{font-size:40px;margin-bottom:10px}
+.empty h3{font-size:18px;margin:0 0 6px}
+.empty p{font-size:14px;color:rgb(var(--textMuted));margin:0 0 16px}
+.toast{position:fixed;bottom:56px;left:50%;transform:translateX(-50%) translateY(20px);background:rgb(var(--surface2));border:1px solid rgb(var(--border));color:rgb(var(--text));padding:11px 18px;border-radius:12px;font-size:14px;font-weight:600;z-index:100;opacity:0;transition:.25s;pointer-events:none;box-shadow:0 16px 40px -16px rgba(0,0,0,.7)}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ===== Constructor 3 zonas (Lote D) ===== */
+.cons3{display:grid;grid-template-columns:210px 1fr 330px;gap:14px;align-items:start}
+@media(max-width:1100px){.cons3{grid-template-columns:1fr}}
