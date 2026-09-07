@@ -220,3 +220,36 @@ tbody tr{cursor:pointer}tbody tr:hover{background:rgb(var(--surface2))}
 /* ===== Constructor 3 zonas (Lote D) ===== */
 .cons3{display:grid;grid-template-columns:210px 1fr 330px;gap:14px;align-items:start}
 @media(max-width:1100px){.cons3{grid-template-columns:1fr}}
+
+/* ===== Pulido UI/UX (Lote F) ===== */
+.subtabs{display:flex;gap:12px;flex-wrap:wrap;border-bottom:1px solid rgb(var(--border));margin-bottom:18px}
+.subtabs button{background:none;border:0;border-bottom:2px solid transparent;color:rgb(var(--textSec));font-weight:700;font-size:14px;padding:10px 4px;margin-bottom:-1px;cursor:pointer;transition:.15s}
+.subtabs button:hover{color:rgb(var(--text))}
+.subtabs button.on{color:rgb(var(--text));border-bottom-color:rgb(var(--accentMagenta))}
+.sechead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.sechead .htitle{font-family:'Jost';font-weight:700;font-size:16px}
+.sechead .hcount{font-size:13px;color:rgb(var(--textMuted))}
+.sechead .grow{flex:1}
+.minikpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px}
+.minikpi{background:rgb(var(--surface));border:1px solid rgb(var(--border));border-radius:12px;padding:12px 14px}
+.minikpi .n{font-family:'Jost';font-weight:700;font-size:22px}
+.minikpi .l{font-size:11.5px;color:rgb(var(--textMuted));margin-top:3px}
+.tagchip{display:inline-block;background:rgb(var(--surface2));border:1px solid rgb(var(--border));border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;color:rgb(var(--textSec));white-space:nowrap}
+.factions{flex-wrap:wrap}
+.factions .btn-sm,.factions a.btn-sm{flex:1;justify-content:center;min-width:96px}
+.acard-link-label{font-size:11px;color:rgb(var(--textMuted));font-weight:700;letter-spacing:.3px;text-transform:uppercase;margin-bottom:4px}
+/* Constructor: lista de cursos centrada y con wrap */
+.cons-cursos{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.cons-cursos .nav{width:auto}
+.cons-note{text-align:center;font-size:11px;color:rgb(var(--textMuted));margin-top:12px;padding-top:10px;border-top:1px solid rgb(var(--border))}
+/* Responsive: barra lateral pasa a nav horizontal en mobile */
+@media(max-width:820px){
+  .rail{flex-direction:row;overflow-x:auto;align-items:center;gap:6px;border-right:0;border-bottom:1px solid rgb(var(--border));padding:10px 12px}
+  .rail .plat,.rail .div{display:none}
+  .rail button.nav{width:auto;white-space:nowrap}
+  .rail .logo{flex:0 0 auto}
+  .rail .user{margin:0 0 0 auto;border:0;padding:0;white-space:nowrap;display:flex;align-items:center;gap:8px}
+  .rail .user b{display:inline}
+  .rail .user .btn-sm{width:auto;margin:0}
+  .main{padding:16px 14px 60px}
+}

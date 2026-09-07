@@ -1,17 +1,19 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CURSOS, APP_URL } from '../lib/constants';
 
 const slugify = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const lbl = { fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 5, color: 'rgb(var(--textSec))' };
 
 export default function Actividades({ usuario, showToast, puedeGestionar, puedeDocentes }) {
   const [sub, setSub] = useState('lista');
   return (
     <div>
-      <div className="tabs">
-        <button className={sub === 'lista' ? 'on' : ''} data-t="lista" onClick={() => setSub('lista')}>Actividades</button>
-        <button className={sub === 'respuestas' ? 'on' : ''} data-t="respuestas" onClick={() => setSub('respuestas')}>Respuestas</button>
-        {puedeDocentes && <button className={sub === 'docentes' ? 'on' : ''} data-t="docentes" onClick={() => setSub('docentes')}>Docentes</button>}
+      <div className="subtabs">
+        <button className={sub === 'lista' ? 'on' : ''} onClick={() => setSub('lista')}>Actividades</button>
+        <button className={sub === 'respuestas' ? 'on' : ''} onClick={() => setSub('respuestas')}>Respuestas</button>
+        {puedeDocentes && <button className={sub === 'docentes' ? 'on' : ''} onClick={() => setSub('docentes')}>Docentes</button>}
       </div>
       {sub === 'lista' && <Lista usuario={usuario} showToast={showToast} puedeGestionar={puedeGestionar} />}
       {sub === 'respuestas' && <Respuestas usuario={usuario} />}
@@ -20,22 +22,17 @@ export default function Actividades({ usuario, showToast, puedeGestionar, puedeD
   );
 }
 
-/* ---------- Lista + editor de quiz ---------- */
 function Lista({ usuario, showToast, puedeGestionar }) {
   const [acts, setActs] = useState(null);
-  const [edit, setEdit] = useState(null); // actividad en edición
-
+  const [edit, setEdit] = useState(null);
   useEffect(() => { cargar(); /* eslint-disable-next-line */ }, []);
   async function cargar() {
     const res = await fetch('/api/actividades?solicitanteEmail=' + encodeURIComponent(usuario.email));
     const data = await res.json();
     setActs(data.ok ? data.actividades : []);
   }
-  function nueva() {
-    setEdit({ slug: '', curso: CURSOS[0].nombre, titulo: '', estado: 'Publicada', preguntas: [nuevaPreg()], _nuevo: true });
-  }
-  function nuevaPreg() { return { pregunta: '', opciones: ['', '', ''], correcta: 0 }; }
-
+  const nuevaPreg = () => ({ pregunta: '', opciones: ['', '', ''], correcta: 0 });
+  function nueva() { setEdit({ slug: '', curso: CURSOS[0].nombre, titulo: '', estado: 'Publicada', preguntas: [nuevaPreg()], _nuevo: true }); }
   async function guardar() {
     const e = edit;
     const slug = e.slug || slugify(e.titulo);
@@ -56,9 +53,9 @@ function Lista({ usuario, showToast, puedeGestionar }) {
     return (
       <div style={{ maxWidth: 760 }}>
         <div className="panel">
-          <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
+          <div className="sechead">
             <button className="btn-sm" onClick={() => setEdit(null)}>← Volver</button>
-            <span style={{ marginLeft: 'auto' }} />
+            <span className="grow" />
             <button className="btn-sm solid" onClick={guardar}>Guardar</button>
           </div>
           <label style={lbl}>Título de la actividad</label>
@@ -71,12 +68,12 @@ function Lista({ usuario, showToast, puedeGestionar }) {
           </div>
           {!e._nuevo && <p className="muted" style={{ fontSize: 12, marginTop: 8, fontFamily: 'monospace' }}>{APP_URL}/actividad/{e.slug}</p>}
         </div>
-
         {e.preguntas.map((p, i) => (
           <div className="panel" key={i}>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-              <span style={{ fontWeight: 700 }}>Pregunta {i + 1}</span>
-              <button className="btn-sm" style={{ marginLeft: 'auto', color: 'rgb(248 113 113)' }} onClick={() => set({ preguntas: e.preguntas.filter((_, j) => j !== i) })}>🗑</button>
+            <div className="sechead" style={{ marginBottom: 8 }}>
+              <span className="htitle">Pregunta {i + 1}</span>
+              <span className="grow" />
+              <button className="btn-sm" style={{ color: 'rgb(248 113 113)' }} onClick={() => set({ preguntas: e.preguntas.filter((_, j) => j !== i) })}>🗑</button>
             </div>
             <input className="ctrl" value={p.pregunta} onChange={(ev) => setPreg(i, { pregunta: ev.target.value })} placeholder="Texto de la pregunta" />
             <p className="muted" style={{ fontSize: 12, margin: '10px 0 6px' }}>Marcá la opción correcta ✓</p>
@@ -98,8 +95,10 @@ function Lista({ usuario, showToast, puedeGestionar }) {
   if (!acts) return <div className="spin" />;
   return (
     <div>
-      <div style={{ display: 'flex', marginBottom: 14 }}>
-        {puedeGestionar && <button className="btn-sm solid" style={{ marginLeft: 'auto' }} onClick={nueva}>+ Nueva actividad</button>}
+      <div className="sechead">
+        <span className="hcount">{acts.length} actividad{acts.length === 1 ? '' : 'es'}</span>
+        <span className="grow" />
+        {puedeGestionar && <button className="btn btn-primary" style={{ flex: 'none', padding: '10px 18px' }} onClick={nueva}>+ Nueva actividad</button>}
       </div>
       {acts.length === 0 ? (
         <div className="empty"><div className="ico">📝</div><h3>No hay actividades todavía</h3><p>{puedeGestionar ? 'Creá tu primera actividad (Postwork).' : 'Todavía no se cargaron actividades.'}</p></div>
@@ -107,11 +106,19 @@ function Lista({ usuario, showToast, puedeGestionar }) {
         <div className="fgrid">
           {acts.map((a) => (
             <div className="fcard" key={a.slug}>
-              <span className={'fstate ' + (a.estado === 'Publicada' ? 'pub' : 'bor')}><span className="d" />{a.estado}</span>
-              <div className="ftitle" style={{ fontSize: 17 }}>{a.titulo}</div>
-              <div className="fsub">{a.curso} · {a.preguntas.length} preguntas</div>
-              <div className="flink"><span className="u">/actividad/{a.slug}</span>
-                <button onClick={() => { navigator.clipboard?.writeText(`${APP_URL}/actividad/${a.slug}`); showToast('✓ Enlace copiado'); }}>Copiar</button></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span className={'fstate ' + (a.estado === 'Publicada' ? 'pub' : 'bor')}><span className="d" />{a.estado}</span>
+                <span className="tagchip">{a.preguntas.length} preguntas</span>
+              </div>
+              <div>
+                <div className="ftitle" style={{ fontSize: 18 }}>{a.titulo}</div>
+                <div className="fsub">{a.curso}</div>
+              </div>
+              <div>
+                <div className="acard-link-label">Enlace de actividad</div>
+                <div className="flink"><span className="u">/actividad/{a.slug}</span>
+                  <button onClick={() => { navigator.clipboard?.writeText(`${APP_URL}/actividad/${a.slug}`); showToast('✓ Enlace copiado'); }}>Copiar</button></div>
+              </div>
               <div className="factions">
                 <a className="btn-sm" href={`${APP_URL}/actividad/${a.slug}`} target="_blank" rel="noreferrer">👁 Ver</a>
                 {puedeGestionar && <button className="btn-sm solid" onClick={() => setEdit({ ...a, _nuevo: false })}>✎ Editar</button>}
@@ -124,25 +131,68 @@ function Lista({ usuario, showToast, puedeGestionar }) {
   );
 }
 
-/* ---------- Respuestas ---------- */
 function Respuestas({ usuario }) {
   const [data, setData] = useState(null);
+  const [q, setQ] = useState('');
+  const [fCurso, setFCurso] = useState(''); const [fEd, setFEd] = useState(''); const [fAct, setFAct] = useState('');
   useEffect(() => { (async () => {
     const res = await fetch('/api/actividades/respuestas?solicitanteEmail=' + encodeURIComponent(usuario.email));
     const d = await res.json(); setData(d.ok ? d : { respuestas: [] });
   })(); /* eslint-disable-next-line */ }, []);
+
+  const r = data?.respuestas || [];
+  const cursos = useMemo(() => [...new Set(r.map((x) => x.curso).filter(Boolean))].sort(), [r]);
+  const ediciones = useMemo(() => [...new Set(r.map((x) => x.edicion).filter(Boolean))].sort(), [r]);
+  const actividades = useMemo(() => [...new Set(r.map((x) => x.actividad).filter(Boolean))].sort(), [r]);
+  const filtradas = useMemo(() => {
+    const qq = norm(q);
+    return r.filter((x) => {
+      if (fCurso && x.curso !== fCurso) return false;
+      if (fEd && x.edicion !== fEd) return false;
+      if (fAct && x.actividad !== fAct) return false;
+      if (qq && !norm(`${x.nombre} ${x.email}`).includes(qq)) return false;
+      return true;
+    });
+  }, [r, q, fCurso, fEd, fAct]);
+  const estudiantes = new Set(filtradas.map((x) => (x.email || '').toLowerCase())).size;
+  const actsCount = new Set(filtradas.map((x) => x.actividad)).size;
+  const promedio = filtradas.length
+    ? Math.round(filtradas.reduce((s, x) => s + (Number(x.total) ? Number(x.puntaje) / Number(x.total) : 0), 0) / filtradas.length * 100)
+    : 0;
   if (!data) return <div className="spin" />;
-  const r = data.respuestas || [];
+
   return (
     <>
-      <p className="count">{r.length} respuesta(s){data.alcance === 'docente' ? ' · según tus cursos/ediciones asignados' : ''}</p>
-      {r.length === 0 ? <div className="empty"><div className="ico">📭</div><h3>Sin respuestas</h3><p>Todavía no hay actividades respondidas.</p></div> : (
+      <div className="minikpis">
+        <div className="minikpi"><div className="n">{filtradas.length}</div><div className="l">Respuestas</div></div>
+        <div className="minikpi"><div className="n" style={{ color: 'rgb(var(--accentTeal))' }}>{estudiantes}</div><div className="l">Estudiantes</div></div>
+        <div className="minikpi"><div className="n">{actsCount}</div><div className="l">Actividades</div></div>
+        <div className="minikpi"><div className="n" style={{ color: '#d879d1' }}>{promedio}%</div><div className="l">Promedio</div></div>
+      </div>
+      <div className="filters">
+        <div className="fsearch" style={{ maxWidth: 260 }}>🔎 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar estudiante…" /></div>
+        <select className="fsel" value={fCurso} onChange={(e) => setFCurso(e.target.value)}><option value="">Curso: todos</option>{cursos.map((x) => <option key={x}>{x}</option>)}</select>
+        <select className="fsel" value={fEd} onChange={(e) => setFEd(e.target.value)}><option value="">Edición: todas</option>{ediciones.map((x) => <option key={x}>{x}</option>)}</select>
+        <select className="fsel" value={fAct} onChange={(e) => setFAct(e.target.value)}><option value="">Actividad: todas</option>{actividades.map((x) => <option key={x}>{x}</option>)}</select>
+        {(q || fCurso || fEd || fAct) && <button className="btn-sm" onClick={() => { setQ(''); setFCurso(''); setFEd(''); setFAct(''); }}>Limpiar</button>}
+      </div>
+      {data.alcance === 'docente' && <p className="muted" style={{ fontSize: 12, marginTop: -4, marginBottom: 10 }}>Mostrando solo tus cursos/ediciones asignados.</p>}
+      {filtradas.length === 0 ? <div className="empty"><div className="ico">📭</div><h3>Sin respuestas</h3><p>No hay respuestas para estos filtros.</p></div> : (
         <div className="tablewrap"><table>
-          <thead><tr><th>Fecha</th><th>Estudiante</th><th>Email</th><th>Curso</th><th>Edición</th><th>Actividad</th><th>Puntaje</th></tr></thead>
-          <tbody>{r.map((x) => (
-            <tr key={x.id}><td className="sec">{(x.fecha || '').slice(0, 10)}</td><td><b>{x.nombre || '—'}</b></td>
-              <td className="sec">{x.email}</td><td>{x.curso}</td><td>{x.edicion || '—'}</td><td>{x.actividad}</td>
-              <td><b>{x.puntaje}/{x.total}</b></td></tr>
+          <thead><tr>
+            <th style={{ minWidth: 92 }}>Fecha</th><th style={{ minWidth: 150 }}>Estudiante</th><th style={{ minWidth: 180 }}>Email</th>
+            <th style={{ minWidth: 130 }}>Curso</th><th style={{ minWidth: 78 }}>Edición</th><th style={{ minWidth: 160 }}>Actividad</th><th style={{ minWidth: 80, textAlign: 'right' }}>Puntaje</th>
+          </tr></thead>
+          <tbody>{filtradas.map((x) => (
+            <tr key={x.id}>
+              <td className="sec">{(x.fecha || '').slice(0, 10)}</td>
+              <td><b>{x.nombre || '—'}</b></td>
+              <td className="sec">{x.email}</td>
+              <td>{x.curso}</td>
+              <td>{x.edicion || '—'}</td>
+              <td>{x.actividad}</td>
+              <td style={{ textAlign: 'right' }}><b>{x.puntaje}/{x.total}</b></td>
+            </tr>
           ))}</tbody>
         </table></div>
       )}
@@ -150,11 +200,11 @@ function Respuestas({ usuario }) {
   );
 }
 
-/* ---------- Docentes ---------- */
 function Docentes({ usuario, showToast }) {
   const [docs, setDocs] = useState(null);
   const [email, setEmail] = useState(''); const [nombre, setNombre] = useState('');
   const [curso, setCurso] = useState(CURSOS[0].nombre); const [edicion, setEdicion] = useState('');
+  const [confirmar, setConfirmar] = useState(null);
   useEffect(() => { cargar(); /* eslint-disable-next-line */ }, []);
   async function cargar() {
     const res = await fetch('/api/docentes?solicitanteEmail=' + encodeURIComponent(usuario.email));
@@ -166,28 +216,41 @@ function Docentes({ usuario, showToast }) {
     const res = await fetch('/api/docentes', { method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ solicitanteEmail: usuario.email, email, nombre, curso, edicion }) });
     const d = await res.json();
-    if (d.ok) { showToast('✓ Docente asignado'); setEmail(''); setNombre(''); setEdicion(''); cargar(); }
-    else showToast(d.error || 'No se pudo asignar');
+    if (d.ok) {
+      showToast(d.accesoCreado
+        ? (d.emailEnviado ? '✓ Docente asignado y acceso enviado por mail' : '✓ Docente asignado (no se pudo enviar el mail)')
+        : '✓ Docente asignado');
+      setEmail(''); setNombre(''); setEdicion(''); cargar();
+    } else showToast(d.error || 'No se pudo asignar');
   }
-  async function quitar(rowIndex) {
+  async function quitar() {
     const res = await fetch('/api/docentes', { method: 'DELETE', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ solicitanteEmail: usuario.email, rowIndex }) });
+      body: JSON.stringify({ solicitanteEmail: usuario.email, rowIndex: confirmar._rowIndex }) });
     const d = await res.json();
-    if (d.ok) { showToast('✓ Acceso quitado'); cargar(); }
+    if (d.ok) { showToast('✓ Acceso quitado'); setConfirmar(null); cargar(); }
+    else { showToast(d.error || 'No se pudo quitar'); setConfirmar(null); }
   }
   if (!docs) return <div className="spin" />;
   return (
-    <div style={{ maxWidth: 760 }}>
+    <div style={{ maxWidth: 780 }}>
       <div className="panel">
         <h3>Docentes con acceso a respuestas</h3>
-        <p className="muted" style={{ fontSize: 12.5, marginTop: -8 }}>Cada docente ve solo las respuestas de los cursos/ediciones que le asignes. Sin edición = todas las ediciones de ese curso.</p>
-        {docs.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Todavía no asignaste docentes.</p> : docs.map((d) => (
-          <div key={d._rowIndex} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: '1px solid rgb(var(--border))', fontSize: 14 }}>
-            <div style={{ flex: 1 }}><b>{d.nombre || d.email}</b><div className="muted" style={{ fontSize: 12 }}>{d.email}</div></div>
-            <div>{d.curso}{d.edicion ? ` · Ed. ${d.edicion}` : ' · todas'}</div>
-            <button className="btn-sm" style={{ color: 'rgb(248 113 113)' }} onClick={() => quitar(d._rowIndex)}>🗑</button>
+        <p className="muted" style={{ fontSize: 12.5, marginTop: -8 }}>Al asignar un docente se le crea el acceso (rol Docente) y se le envía la contraseña por mail automáticamente. Cada docente ve solo las respuestas de los cursos/ediciones que le asignes. Sin edición = todas las ediciones de ese curso.</p>
+        {docs.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Todavía no asignaste docentes.</p> : (
+          <div style={{ marginTop: 6 }}>
+            {docs.map((d) => (
+              <div key={d._rowIndex} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 0', borderBottom: '1px solid rgb(var(--border))', flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: 160 }}>
+                  <div style={{ fontWeight: 700 }}>{d.nombre || d.email}</div>
+                  {d.nombre && <div className="muted" style={{ fontSize: 12 }}>{d.email}</div>}
+                </div>
+                <span className="tagchip">{d.curso}</span>
+                <span className="tagchip">{d.edicion ? `Ed. ${d.edicion}` : 'Todas las ediciones'}</span>
+                <button className="btn-sm" style={{ color: 'rgb(248 113 113)', borderColor: 'rgba(248,113,113,.3)' }} onClick={() => setConfirmar(d)}>🗑 Quitar</button>
+              </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
       <div className="panel">
         <h3>Asignar docente</h3>
@@ -199,8 +262,18 @@ function Docentes({ usuario, showToast }) {
           <div style={{ gridColumn: 'span 2' }}><button className="btn btn-primary" style={{ flex: 'none', padding: '10px 20px' }}>+ Asignar acceso</button></div>
         </form>
       </div>
+      {confirmar && (
+        <div className="mwrap on">
+          <div className="modal">
+            <p style={{ fontWeight: 700, marginTop: 0 }}>¿Quitar el acceso de este docente?</p>
+            <p style={{ color: 'rgb(var(--textSec))', fontSize: 14 }}>{confirmar.nombre || confirmar.email} · {confirmar.curso}{confirmar.edicion ? ` · Ed. ${confirmar.edicion}` : ''}. Dejará de ver esas respuestas.</p>
+            <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+              <button className="btn-sm" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setConfirmar(null)}>Cancelar</button>
+              <button className="btn-sm" style={{ flex: 1, justifyContent: 'center', background: 'rgb(248 113 113)', color: '#fff', borderColor: 'transparent' }} onClick={quitar}>Quitar acceso</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
-const lbl = { fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 5, color: 'rgb(var(--textSec))' };

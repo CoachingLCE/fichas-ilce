@@ -105,12 +105,14 @@ export default function Constructor({ usuario, initialSlug, showToast }) {
       {/* IZQUIERDA — cursos */}
       <div className="panel" style={{ margin: 0 }}>
         <h3>Fichas</h3>
-        {defs.map((x, i) => (
-          <button key={x.slug} className={'nav' + (i === sel ? ' on' : '')} style={{ width: '100%', marginBottom: 4 }} onClick={() => seleccionar(i)}>
-            {x.curso}
-          </button>
-        ))}
-        <p className="muted" style={{ fontSize: 11, marginTop: 10 }}>Agregar cursos nuevos llega en el próximo lote.</p>
+        <div className="cons-cursos">
+          {defs.map((x, i) => (
+            <button key={x.slug} className={'nav' + (i === sel ? ' on' : '')} onClick={() => seleccionar(i)}>
+              {x.curso}
+            </button>
+          ))}
+        </div>
+        <p className="cons-note">Agregar cursos nuevos llega en el próximo lote.</p>
       </div>
 
       {/* CENTRO — editor */}
