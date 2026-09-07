@@ -4,6 +4,63 @@ import { CURSOS, APP_URL } from '../lib/constants';
 
 const slugify = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+function Reportes({ usuario }) {
+  const [acts, setActs] = useState(null);
+  const [abierto, setAbierto] = useState(null);
+  useEffect(() => { (async () => {
+    const res = await fetch('/api/actividades/reporte?solicitanteEmail=' + encodeURIComponent(usuario.email));
+    const d = await res.json(); setActs(d.ok ? d.actividades : []);
+  })(); /* eslint-disable-next-line */ }, []);
+  if (!acts) return <div className="spin" />;
+  const conResp = acts.filter((a) => a.totalResp > 0);
+  if (conResp.length === 0) return <div className="empty"><div className="ico">📊</div><h3>Todavía no hay datos para reportar</h3><p>Cuando los estudiantes respondan las actividades, vas a ver acá promedios y las preguntas que más se erran.</p></div>;
+
+  const colorPct = (p) => p >= 70 ? 'rgb(74 222 128)' : p >= 40 ? 'rgb(251 191 36)' : 'rgb(248 113 113)';
+  return (
+    <div>
+      {conResp.map((a) => {
+        const peor = [...a.preguntas].filter((p) => p.respondidas > 0).sort((x, y) => x.pct - y.pct).slice(0, 3);
+        const open = abierto === a.slug;
+        return (
+          <div className="panel" key={a.slug}>
+            <div className="sechead" style={{ marginBottom: 6 }}>
+              <div>
+                <div className="htitle">{a.titulo}</div>
+                <div className="muted" style={{ fontSize: 12 }}>{a.curso}</div>
+              </div>
+              <span className="grow" />
+              <div style={{ textAlign: 'center' }}><div style={{ fontFamily: 'Jost', fontWeight: 700, fontSize: 22, color: 'rgb(var(--accentTeal))' }}>{a.totalResp}</div><div className="muted" style={{ fontSize: 11 }}>respuestas</div></div>
+              <div style={{ textAlign: 'center', marginLeft: 18 }}><div style={{ fontFamily: 'Jost', fontWeight: 700, fontSize: 22, color: colorPct(a.promedio) }}>{a.promedio}%</div><div className="muted" style={{ fontSize: 11 }}>promedio</div></div>
+              <button className="btn-sm" style={{ marginLeft: 16 }} onClick={() => setAbierto(open ? null : a.slug)}>{open ? 'Ocultar detalle' : 'Ver por pregunta'}</button>
+            </div>
+
+            {peor.length > 0 && (
+              <div style={{ background: 'rgba(248,113,113,.08)', border: '1px solid rgba(248,113,113,.25)', borderRadius: 10, padding: '10px 12px', fontSize: 13 }}>
+                <b style={{ color: 'rgb(248 113 113)' }}>Preguntas que más se erran:</b>
+                <ol style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+                  {peor.map((p, i) => <li key={i} style={{ marginBottom: 2 }}>{p.pregunta} <span className="muted">({p.pct}% acierto)</span></li>)}
+                </ol>
+              </div>
+            )}
+
+            {open && (
+              <div style={{ marginTop: 12 }}>
+                {a.preguntas.map((p, i) => (
+                  <div className="bar" key={i} style={{ alignItems: 'flex-start' }}>
+                    <span className="lb" style={{ width: 'auto', flex: 1, whiteSpace: 'normal', color: 'rgb(var(--text))' }}>{i + 1}. {p.pregunta}</span>
+                    <span className="track" style={{ maxWidth: 160 }}><span className="fill" style={{ width: p.pct + '%', background: colorPct(p.pct) }} /></span>
+                    <span className="vv" style={{ width: 90 }}>{p.pct}% · {p.aciertos}/{p.respondidas}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 const lbl = { fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 5, color: 'rgb(var(--textSec))' };
 
 export default function Actividades({ usuario, showToast, puedeGestionar, puedeDocentes }) {
@@ -13,10 +70,12 @@ export default function Actividades({ usuario, showToast, puedeGestionar, puedeD
       <div className="subtabs">
         <button className={sub === 'lista' ? 'on' : ''} onClick={() => setSub('lista')}>Actividades</button>
         <button className={sub === 'respuestas' ? 'on' : ''} onClick={() => setSub('respuestas')}>Respuestas</button>
+        <button className={sub === 'reportes' ? 'on' : ''} onClick={() => setSub('reportes')}>Reportes</button>
         {puedeDocentes && <button className={sub === 'docentes' ? 'on' : ''} onClick={() => setSub('docentes')}>Docentes</button>}
       </div>
       {sub === 'lista' && <Lista usuario={usuario} showToast={showToast} puedeGestionar={puedeGestionar} />}
       {sub === 'respuestas' && <Respuestas usuario={usuario} />}
+      {sub === 'reportes' && <Reportes usuario={usuario} />}
       {sub === 'docentes' && puedeDocentes && <Docentes usuario={usuario} showToast={showToast} />}
     </div>
   );

@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { useSession } from '../lib/useSession';
-import { tienePermisoInscripciones, tienePermisoCambiarEstado, tienePermisoExportar, tienePermisoDashboard, tienePermisoConstructor, tienePermisoAccesos, tienePermisoActividades, tienePermisoGestionActividades, tienePermisoAsignarDocentes } from '../lib/permisos';
+import { tienePermisoInscripciones, tienePermisoCambiarEstado, tienePermisoExportar, tienePermisoDashboard, tienePermisoConstructor, tienePermisoAccesos, tienePermisoActividades, tienePermisoGestionActividades, tienePermisoAsignarDocentes, tienePermisoEmails } from '../lib/permisos';
 import { ESTADOS, nombreVisibleRoles } from '../lib/constants';
 import { Isologo, IsologoDefs } from './Isologo';
 import ThemeSelector from './ThemeSelector';
@@ -10,6 +10,7 @@ import VersionBadge from './VersionBadge';
 import FichasSection from './FichasSection';
 import Constructor from './Constructor';
 import Actividades from './Actividades';
+import EmailsPanel from './EmailsPanel';
 
 const ALL_COLS = [
   ['nom', 'Nombre'], ['ape', 'Apellido'], ['em', 'Email'], ['curso', 'Curso'], ['ed', 'Edición'],
@@ -172,6 +173,7 @@ export default function Panel() {
         <button className={'nav' + (tab === 'fichas' ? ' on' : '')} onClick={() => setTab('fichas')}><span className="ic">▣</span>Fichas</button>
         <button className={'nav' + (tab === 'inscripciones' ? ' on' : '')} onClick={() => setTab('inscripciones')}><span className="ic">▤</span>Inscripciones</button>
         {tienePermisoDashboard(usuario) && <button className={'nav' + (tab === 'dashboard' ? ' on' : '')} onClick={() => setTab('dashboard')}><span className="ic">◉</span>Dashboard</button>}
+        {tienePermisoEmails(usuario) && <button className={'nav' + (tab === 'emails' ? ' on' : '')} onClick={() => setTab('emails')}><span className="ic">✉️</span>Emails</button>}
         {tienePermisoActividades(usuario) && (<><div className="div" /><div className="plat">ÁREA ACADÉMICA</div><button className={'nav' + (tab === 'actividades' ? ' on' : '')} onClick={() => setTab('actividades')}><span className="ic">🎓</span>Actividades</button></>)}
         {tienePermisoConstructor(usuario) && (<><div className="div" /><div className="plat">CONSTRUCTOR</div><button className={'nav' + (tab === 'constructor' ? ' on' : '')} onClick={() => setTab('constructor')}><span className="ic">🧩</span>Constructor</button></>)}
         {tienePermisoAccesos(usuario) && <button className={'nav' + (tab === 'accesos' ? ' on' : '')} onClick={() => setTab('accesos')}><span className="ic">🔐</span>Accesos</button>}
@@ -183,7 +185,7 @@ export default function Panel() {
 
       <div className="main">
         <div className="topbar">
-          <div><div className="crumb">PLATAFORMA ILCE / FICHAS</div><h1>{{ fichas: 'Fichas', inscripciones: 'Inscripciones', dashboard: 'Dashboard', actividades: 'Actividades', constructor: 'Constructor de fichas', accesos: 'Accesos' }[tab]}</h1></div>
+          <div><div className="crumb">PLATAFORMA ILCE / FICHAS</div><h1>{{ fichas: 'Fichas', inscripciones: 'Inscripciones', dashboard: 'Dashboard', emails: 'Emails', actividades: 'Actividades', constructor: 'Constructor de fichas', accesos: 'Accesos' }[tab]}</h1></div>
           {tab === 'inscripciones' && <div className="search">🔎 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, apellido, email, DNI, WhatsApp, edición…" /></div>}
           <div style={{ marginLeft: tab === 'inscripciones' ? 12 : 'auto' }}><ThemeSelector /></div>
         </div>
@@ -243,6 +245,7 @@ export default function Panel() {
           filtros={{ fEstado, setFEstado, fCurso, setFCurso, fEd, setFEd, fPais, setFPais, fDesde, setFDesde, fHasta, setFHasta, limpiar, cursos, ediciones, paises, irA: (estado) => { setFEstado(estado || ''); setTab('inscripciones'); } }} />}
 
         {tab === 'constructor' && tienePermisoConstructor(usuario) && <Constructor usuario={usuario} initialSlug={constructorSlug} showToast={showToast} />}
+        {tab === 'emails' && tienePermisoEmails(usuario) && <EmailsPanel usuario={usuario} />}
         {tab === 'actividades' && tienePermisoActividades(usuario) && <Actividades usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} puedeDocentes={tienePermisoAsignarDocentes(usuario)} />}
         {tab === 'accesos' && tienePermisoAccesos(usuario) && <Accesos usuario={usuario} />}
       </div>
