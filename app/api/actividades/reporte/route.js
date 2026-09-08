@@ -22,7 +22,7 @@ export async function GET(req) {
   // Respuestas
   let resp = (await readSheet(TABS.RESPUESTAS_ACT)).filter((f) => f.ID).map((f) => {
     let r = {}; try { r = JSON.parse(f['Respuestas JSON'] || '{}'); } catch {}
-    return { actividad: f.Actividad, curso: f.Curso, edicion: f['Edición'], puntaje: Number(f['Puntuación']) || 0, total: Number(f.Total) || 0, r };
+    return { actividad: f.Actividad, curso: f.Curso, edicion: f['Edición'], puntaje: Number(f['Puntuación']) || 0, total: Number(f.Total) || 0, dur: Number(f['Duración seg']) || 0, r };
   });
 
   // Alcance docente
@@ -38,6 +38,8 @@ export async function GET(req) {
     const rs = resp.filter((x) => x.actividad === d.titulo);
     const totalResp = rs.length;
     const promedio = totalResp ? Math.round(rs.reduce((s, x) => s + (x.total ? x.puntaje / x.total : 0), 0) / totalResp * 100) : 0;
+    const conTiempo = rs.filter((x) => x.dur > 0);
+    const tiempoProm = conTiempo.length ? Math.round(conTiempo.reduce((s, x) => s + x.dur, 0) / conTiempo.length) : 0;
     const preguntas = d.preguntas.map((p, i) => {
       let respondidas = 0, aciertos = 0;
       rs.forEach((x) => {
@@ -46,7 +48,7 @@ export async function GET(req) {
       });
       return { pregunta: p.pregunta, respondidas, aciertos, pct: respondidas ? Math.round(aciertos / respondidas * 100) : 0 };
     });
-    return { slug: d.slug, titulo: d.titulo, curso: d.curso, totalResp, promedio, preguntas };
+    return { slug: d.slug, titulo: d.titulo, curso: d.curso, totalResp, promedio, tiempoProm, preguntas };
   }).filter((a) => a.totalResp > 0 || true); // incluimos todas, aunque tengan 0 respuestas
 
   return NextResponse.json({ ok: true, actividades: salida });

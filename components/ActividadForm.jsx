@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { validarEmail } from '../lib/validacion';
 
 export default function ActividadForm({ act }) {
@@ -10,6 +10,7 @@ export default function ActividadForm({ act }) {
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState(null);
   const [error, setError] = useState('');
+  const inicioRef = useRef(Date.now()); // se registra al abrir; el estudiante no lo ve
 
   function elegir(i, opt) { setResp((r) => ({ ...r, [i]: opt })); setError(''); }
 
@@ -20,7 +21,7 @@ export default function ActividadForm({ act }) {
     try {
       const res = await fetch('/api/actividad', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug: act.slug, email, nombre, edicion, respuestas: resp })
+        body: JSON.stringify({ slug: act.slug, email, nombre, edicion, respuestas: resp, duracion: Math.round((Date.now() - inicioRef.current) / 1000) })
       });
       const data = await res.json();
       if (!data.ok) { setError(data.error || 'No se pudo enviar'); setEnviando(false); return; }

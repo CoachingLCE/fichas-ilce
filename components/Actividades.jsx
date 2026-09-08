@@ -31,6 +31,7 @@ function Reportes({ usuario }) {
               <span className="grow" />
               <div style={{ textAlign: 'center' }}><div style={{ fontFamily: 'Jost', fontWeight: 700, fontSize: 22, color: 'rgb(var(--accentTeal))' }}>{a.totalResp}</div><div className="muted" style={{ fontSize: 11 }}>respuestas</div></div>
               <div style={{ textAlign: 'center', marginLeft: 18 }}><div style={{ fontFamily: 'Jost', fontWeight: 700, fontSize: 22, color: colorPct(a.promedio) }}>{a.promedio}%</div><div className="muted" style={{ fontSize: 11 }}>promedio</div></div>
+              {a.tiempoProm > 0 && <div style={{ textAlign: 'center', marginLeft: 18 }}><div style={{ fontFamily: 'Jost', fontWeight: 700, fontSize: 22 }}>{fmtTiempo(a.tiempoProm)}</div><div className="muted" style={{ fontSize: 11 }}>tiempo prom.</div></div>}
               <button className="btn-sm" style={{ marginLeft: 16 }} onClick={() => setAbierto(open ? null : a.slug)}>{open ? 'Ocultar detalle' : 'Ver por pregunta'}</button>
             </div>
 
@@ -61,6 +62,12 @@ function Reportes({ usuario }) {
   );
 }
 
+function fmtTiempo(seg) {
+  seg = Number(seg) || 0;
+  if (!seg) return '—';
+  const m = Math.floor(seg / 60), s = seg % 60;
+  return m ? `${m}m ${String(s).padStart(2, '0')}s` : `${s}s`;
+}
 const lbl = { fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 5, color: 'rgb(var(--textSec))' };
 
 export default function Actividades({ usuario, showToast, puedeGestionar, puedeDocentes }) {
@@ -240,7 +247,7 @@ function Respuestas({ usuario }) {
         <div className="tablewrap"><table>
           <thead><tr>
             <th style={{ minWidth: 92 }}>Fecha</th><th style={{ minWidth: 150 }}>Estudiante</th><th style={{ minWidth: 180 }}>Email</th>
-            <th style={{ minWidth: 130 }}>Curso</th><th style={{ minWidth: 78 }}>Edición</th><th style={{ minWidth: 160 }}>Actividad</th><th style={{ minWidth: 80, textAlign: 'right' }}>Puntaje</th>
+            <th style={{ minWidth: 130 }}>Curso</th><th style={{ minWidth: 78 }}>Edición</th><th style={{ minWidth: 160 }}>Actividad</th><th style={{ minWidth: 90 }}>Tiempo</th><th style={{ minWidth: 80, textAlign: 'right' }}>Puntaje</th>
           </tr></thead>
           <tbody>{filtradas.map((x) => (
             <tr key={x.id}>
@@ -250,6 +257,7 @@ function Respuestas({ usuario }) {
               <td>{x.curso}</td>
               <td>{x.edicion || '—'}</td>
               <td>{x.actividad}</td>
+              <td className="sec">{fmtTiempo(x.duracion)}</td>
               <td style={{ textAlign: 'right' }}><b>{x.puntaje}/{x.total}</b></td>
             </tr>
           ))}</tbody>

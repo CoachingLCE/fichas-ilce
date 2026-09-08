@@ -7,20 +7,21 @@ const ESTADO_META = {
   Borrador: { cls: 'bor', label: 'Borrador' },
   Cerrada: { cls: 'cer', label: 'Cerrada' }
 };
+const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
 export default function FichasSection({ usuario, rows, onEditar, showToast, puedeEditar }) {
   const [defs, setDefs] = useState(null);
   const [q, setQ] = useState('');
   const [chip, setChip] = useState('Todas');
   const [menuAbierto, setMenuAbierto] = useState(null);
+  const [copiado, setCopiado] = useState(null);
 
   useEffect(() => { cargar(); /* eslint-disable-next-line */ }, []);
   async function cargar() {
     try {
       const res = await fetch('/api/fichas?solicitanteEmail=' + encodeURIComponent(usuario.email));
       const data = await res.json();
-      if (data.ok) setDefs(data.defs.map((d) => ({ ...d, estado: d.estado || 'Publicada' })));
-      else setDefs([]);
+      setDefs(data.ok ? data.defs.map((d) => ({ ...d, estado: d.estado || 'Publicada' })) : []);
     } catch { setDefs([]); }
   }
 
@@ -30,7 +31,6 @@ export default function FichasSection({ usuario, rows, onEditar, showToast, pued
     return m;
   }, [rows]);
 
-  const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const filtradas = useMemo(() => {
     if (!defs) return [];
     const qq = norm(q);
@@ -66,9 +66,8 @@ export default function FichasSection({ usuario, rows, onEditar, showToast, pued
     }
   }
   function copiarLink(d) {
-    const url = `${APP_URL}/inscripcion/${d.slug}`;
-    navigator.clipboard?.writeText(url);
-    showToast('✓ Enlace copiado');
+    navigator.clipboard?.writeText(`${APP_URL}/inscripcion/${d.slug}`);
+    setCopiado(d.slug); clearTimeout(copiarLink._t); copiarLink._t = setTimeout(() => setCopiado(null), 1600);
     setMenuAbierto(null);
   }
   function abrirPublica(d) { window.open(`${APP_URL}/inscripcion/${d.slug}`, '_blank'); setMenuAbierto(null); }
@@ -83,7 +82,7 @@ export default function FichasSection({ usuario, rows, onEditar, showToast, pued
         ))}
       </div>
       <div className="fbar">
-        <div className="fsearch">🔎 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar fichas…" /></div>
+        <div className="fsearch">🔎 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar fichas por nombre…" /></div>
         {q && <button className="btn-sm" onClick={() => setQ('')}>Limpiar</button>}
       </div>
 
@@ -99,32 +98,45 @@ export default function FichasSection({ usuario, rows, onEditar, showToast, pued
           {filtradas.map((d) => {
             const meta = ESTADO_META[d.estado] || ESTADO_META.Publicada;
             const insc = conteos[d.curso] || 0;
-            const eds = d.ediciones || [];
-            const actualizado = d.actualizado ? fmt(d.actualizado) : '—';
+            const nEd = (d.ediciones || []).length;
+            const fecha = fmtFecha(d.actualizado);
             return (
               <div className="fcard" key={d.slug}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className="fcard-top">
                   <span className={'fstate ' + meta.cls}><span className="d" />{meta.label}</span>
-                  <span style={{ fontSize: 12, color: 'rgb(var(--textMuted))' }}>Actualizada {actualizado}</span>
+                  {fecha && <span className="fcard-upd">Actualizada {fecha}</span>}
                 </div>
+
+                <div className="ftitle">{d.curso}</div>
+
+                <div className="fmetrics">
+                  <div className="fmetric"><span className="v">{nEd}</span><span className="k">edición{nEd === 1 ? '' : 'es'}</span></div>
+                  <div className="fmetric"><span className="v teal">{insc}</span><span className="k">inscripcion{insc === 1 ? '' : 'es'}</span></div>
+                </div>
+
+                {nEd === 0 && (
+                  <div className="fnoed">
+                    Sin ediciones cargadas
+                    {puedeEditar && <button onClick={() => onEditar(d.slug)}>+ Agregar edición</button>}
+                  </div>
+                )}
+
+                <div className="fspacer" />
+
                 <div>
-                  <div className="ftitle">{d.curso}</div>
-                  <div className="fsub">{eds.length ? (eds.length === 1 ? eds[0].label : `${eds.length} ediciones`) : 'Sin edición cargada'}</div>
+                  <div className="acard-link-label">URL de inscripción</div>
+                  <div className="flink">
+                    <span className="u" title={`${APP_URL}/inscripcion/${d.slug}`}>/inscripcion/{d.slug}</span>
+                    <button onClick={() => copiarLink(d)}>{copiado === d.slug ? '✓ Copiado' : 'Copiar'}</button>
+                  </div>
                 </div>
-                <div className="fmeta">
-                  <span><span className="ins">{insc}</span> inscripciones</span>
-                </div>
-                <div className="flink">
-                  <span className="u">/inscripcion/{d.slug}</span>
-                  <button onClick={() => copiarLink(d)}>Copiar</button>
-                </div>
+
                 <div className="factions">
-                  <button className="btn-sm" onClick={() => abrirPublica(d)}>👁 Ver</button>
+                  <a className="btn-sm" href={`${APP_URL}/inscripcion/${d.slug}`} target="_blank" rel="noreferrer">👁 Ver</a>
                   {puedeEditar && <button className="btn-sm solid" onClick={() => onEditar(d.slug)}>✎ Editar</button>}
-                  <span className="grow" />
                   {puedeEditar && (
                     <div className="fmenu">
-                      <button className="btn-sm" onClick={(e) => { e.stopPropagation(); setMenuAbierto(menuAbierto === d.slug ? null : d.slug); }}>•••</button>
+                      <button className="btn-sm fmenu-btn" aria-label="Más acciones" onClick={(e) => { e.stopPropagation(); setMenuAbierto(menuAbierto === d.slug ? null : d.slug); }}>•••</button>
                       {menuAbierto === d.slug && (
                         <div className="fmenu-pop" onClick={(e) => e.stopPropagation()}>
                           <button onClick={() => copiarLink(d)}>🔗 Copiar enlace</button>
@@ -135,7 +147,6 @@ export default function FichasSection({ usuario, rows, onEditar, showToast, pued
                           {d.estado !== 'Cerrada'
                             ? <button className="danger" onClick={() => guardarEstado(d, 'Cerrada')}>🔴 Cerrar ficha</button>
                             : <button onClick={() => guardarEstado(d, 'Publicada')}>♻ Reabrir ficha</button>}
-                          <button onClick={() => { setMenuAbierto(null); showToast('Duplicar y agregar cursos llegan en el próximo lote'); }}>⧉ Duplicar</button>
                         </div>
                       )}
                     </div>
@@ -150,9 +161,10 @@ export default function FichasSection({ usuario, rows, onEditar, showToast, pued
   );
 }
 
-function fmt(iso) {
+function fmtFecha(iso) {
+  if (!iso) return null;
   const d = new Date(iso);
-  if (isNaN(d)) return '—';
+  if (isNaN(d)) return null;
   const hoy = new Date();
   if (d.toDateString() === hoy.toDateString()) return 'hoy';
   return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });

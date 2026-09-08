@@ -12,7 +12,7 @@ export async function GET(req) {
 
   const filas = (await readSheet(TABS.RESPUESTAS_ACT)).filter((f) => f.ID).map((f) => ({
     id: f.ID, fecha: f.Fecha, actividad: f.Actividad, curso: f.Curso, edicion: f['Edición'],
-    email: f.Email, nombre: f.Nombre, puntaje: f['Puntuación'], total: f.Total
+    email: f.Email, nombre: f.Nombre, puntaje: f['Puntuación'], total: f.Total, duracion: f['Duración seg']
   }));
 
   // Los que ven todo, ven todo. Un Docente ve solo curso+edición donde está asignado.

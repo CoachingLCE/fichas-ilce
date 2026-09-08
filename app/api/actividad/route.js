@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req) {
   let body;
   try { body = await req.json(); } catch { return NextResponse.json({ ok: false, error: 'JSON inválido' }, { status: 400 }); }
-  const { slug, email, nombre, edicion, respuestas } = body || {};
+  const { slug, email, nombre, edicion, respuestas, duracion } = body || {};
   if (!validarEmail(email)) return NextResponse.json({ ok: false, error: 'Email inválido' }, { status: 400 });
 
   const act = await getActividad(slug);
@@ -22,7 +22,7 @@ export async function POST(req) {
   try {
     await appendRow(TABS.RESPUESTAS_ACT, [
       id, new Date().toISOString(), act.titulo, act.curso, edicion || '',
-      email, nombre || '', puntaje, total, JSON.stringify(respuestas || {})
+      email, nombre || '', puntaje, total, JSON.stringify(respuestas || {}), (Number(duracion) > 0 ? Number(duracion) : '')
     ]);
   } catch (e) {
     return NextResponse.json({ ok: false, error: 'No se pudo guardar' }, { status: 500 });
