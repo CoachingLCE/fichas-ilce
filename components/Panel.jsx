@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { useSession } from '../lib/useSession';
-import { tienePermisoInscripciones, tienePermisoCambiarEstado, tienePermisoExportar, tienePermisoDashboard, tienePermisoConstructor, tienePermisoAccesos, tienePermisoActividades, tienePermisoGestionActividades, tienePermisoAsignarDocentes, tienePermisoEmails, tienePermisoAuditoria } from '../lib/permisos';
+import { tienePermisoInscripciones, tienePermisoCambiarEstado, tienePermisoExportar, tienePermisoDashboard, tienePermisoConstructor, tienePermisoAccesos, tienePermisoActividades, tienePermisoGestionActividades, tienePermisoAsignarDocentes, tienePermisoEmails, tienePermisoAuditoria, tienePermisoFormularios } from '../lib/permisos';
 import { ESTADOS, nombreVisibleRoles } from '../lib/constants';
 import { Isologo, IsologoDefs } from './Isologo';
 import ThemeSelector from './ThemeSelector';
@@ -13,6 +13,7 @@ import Actividades from './Actividades';
 import EmailsPanel from './EmailsPanel';
 import Herramientas from './Herramientas';
 import Auditoria from './Auditoria';
+import Formularios from './Formularios';
 
 const ALL_COLS = [
   ['nom', 'Nombre'], ['ape', 'Apellido'], ['em', 'Email'], ['curso', 'Curso'], ['ed', 'Edición'],
@@ -54,7 +55,7 @@ export default function Panel() {
 
   useEffect(() => {
     if (cargandoSesion) return;
-    if (!usuario) { window.location.href = '/panel/login'; return; }
+    if (!usuario) { window.location.href = '/'; return; }
     cargar();
   }, [usuario, cargandoSesion]);
 
@@ -176,11 +177,12 @@ export default function Panel() {
           </div>
         </div>
         <nav className="topnav-tabs">
-          <button className={'tnav' + (tab === 'fichas' ? ' on' : '')} onClick={() => setTab('fichas')}>Fichas</button>
-          <button className={'tnav' + (tab === 'inscripciones' ? ' on' : '')} onClick={() => setTab('inscripciones')}>Inscripciones</button>
+          <button className={'tnav' + (tab === 'fichas' ? ' on' : '')} onClick={() => setTab('fichas')}>Fichas de inscripción</button>
+          <button className={'tnav' + (tab === 'inscripciones' ? ' on' : '')} onClick={() => setTab('inscripciones')}>Estudiantes inscriptos</button>
           {tienePermisoDashboard(usuario) && <button className={'tnav' + (tab === 'dashboard' ? ' on' : '')} onClick={() => setTab('dashboard')}>Dashboard</button>}
           {tienePermisoEmails(usuario) && <button className={'tnav' + (tab === 'emails' ? ' on' : '')} onClick={() => setTab('emails')}>Emails</button>}
           {tienePermisoActividades(usuario) && <button className={'tnav' + (tab === 'actividades' ? ' on' : '')} onClick={() => setTab('actividades')}>Actividades</button>}
+          {tienePermisoFormularios(usuario) && <button className={'tnav' + (tab === 'formularios' ? ' on' : '')} onClick={() => setTab('formularios')}>Formularios</button>}
           {tienePermisoConstructor(usuario) && <button className={'tnav' + (tab === 'constructor' ? ' on' : '')} onClick={() => setTab('constructor')}>Constructor</button>}
           <button className={'tnav' + (tab === 'herramientas' ? ' on' : '')} onClick={() => setTab('herramientas')}>Herramientas</button>
           {tienePermisoAccesos(usuario) && <button className={'tnav' + (tab === 'accesos' ? ' on' : '')} onClick={() => setTab('accesos')}>Accesos</button>}
@@ -194,13 +196,13 @@ export default function Panel() {
             <b>{usuario.nombre}</b>
             <span>{nombreVisibleRoles(usuario.roles)}</span>
           </div>
-          <button className="btn-sm" onClick={() => { logout(); window.location.href = '/panel/login'; }}>Salir</button>
+          <button className="btn-sm" onClick={() => { logout(); window.location.href = '/'; }}>Salir</button>
         </div>
       </header>
 
       <div className="main">
         <div className="topbar">
-          <div><div className="crumb">ILCE / FICHAS</div><h1>{{ fichas: 'Fichas', inscripciones: 'Inscripciones', dashboard: 'Dashboard', emails: 'Emails', actividades: 'Actividades', constructor: 'Constructor de fichas', herramientas: 'Herramientas', accesos: 'Accesos', auditoria: 'Historial de acciones' }[tab]}</h1></div>
+          <div><div className="crumb">ILCE / FICHAS</div><h1>{{ fichas: 'Fichas de inscripción', inscripciones: 'Estudiantes inscriptos', dashboard: 'Dashboard', emails: 'Emails', actividades: 'Actividades', formularios: 'Formularios', constructor: 'Constructor de fichas', herramientas: 'Herramientas', accesos: 'Accesos', auditoria: 'Historial de acciones' }[tab]}</h1></div>
           {tab === 'inscripciones' && <div className="search">🔎 <input id="ins-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, apellido, email, DNI, WhatsApp, edición…" /></div>}
         </div>
 
@@ -294,6 +296,7 @@ export default function Panel() {
         {tab === 'constructor' && tienePermisoConstructor(usuario) && <Constructor usuario={usuario} initialSlug={constructorSlug} showToast={showToast} />}
         {tab === 'emails' && tienePermisoEmails(usuario) && <EmailsPanel usuario={usuario} />}
         {tab === 'actividades' && tienePermisoActividades(usuario) && <Actividades usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} puedeDocentes={tienePermisoAsignarDocentes(usuario)} />}
+        {tab === 'formularios' && tienePermisoFormularios(usuario) && <Formularios usuario={usuario} showToast={showToast} />}
         {tab === 'accesos' && tienePermisoAccesos(usuario) && <Accesos usuario={usuario} />}
         {tab === 'auditoria' && tienePermisoAuditoria(usuario) && <Auditoria usuario={usuario} />}
       </div>

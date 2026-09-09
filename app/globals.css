@@ -470,3 +470,11 @@ tbody tr{cursor:pointer}tbody tr:hover{background:rgb(var(--surface2))}
 .factions{gap:8px;align-items:stretch}
 .factions > a.btn-sm{flex:0 0 auto}
 .factions > .btn-sm.solid{flex:1;justify-content:center}
+
+/* ===== Formularios (Lote R) ===== */
+.quiz-help{font-size:12px;color:rgb(var(--textMuted));margin:-2px 0 6px}
+.escala{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.escala-b{width:40px;height:40px;border-radius:10px;border:1px solid rgb(var(--border));background:rgb(var(--surface2));color:rgb(var(--text));font-weight:700;cursor:pointer;font-size:15px;transition:.15s}
+.escala-b:hover{border-color:rgb(var(--accentTeal))}
+.escala-b.on{background:linear-gradient(135deg,rgb(var(--accentPurple)),rgb(var(--accentMagenta)));color:#fff;border-color:transparent}
+.escala-hint{font-size:11.5px;color:rgb(var(--textMuted));margin-left:4px}

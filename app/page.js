@@ -1,114 +1,73 @@
-import { readSheet, readHeaders } from '../lib/sheets';
-import { TABS, CURSOS } from '../lib/constants';
+'use client';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSession } from '../lib/useSession';
+import ThemeSelector from '../components/ThemeSelector';
 import { Isologo, IsologoDefs } from '../components/Isologo';
 
-export const dynamic = 'force-dynamic';
+export default function LoginRoot() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [verPassword, setVerPassword] = useState(false);
+  const [mantenerSesion, setMantenerSesion] = useState(true);
+  const [error, setError] = useState('');
+  const [cargando, setCargando] = useState(false);
+  const { login } = useSession();
+  const router = useRouter();
 
-async function estadoSheet() {
-  const tabs = Object.values(TABS);
-  const resultados = [];
-  let okGlobal = true;
-  for (const t of tabs) {
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError(''); setCargando(true);
     try {
-      const headers = await readHeaders(t);
-      const filas = await readSheet(t);
-      resultados.push({ tab: t, ok: true, headers: headers.length, filas: filas.length });
-    } catch (e) {
-      okGlobal = false;
-      resultados.push({ tab: t, ok: false, error: e.message });
-    }
-  }
-  return { okGlobal, resultados };
-}
-
-export default async function Home() {
-  let estado = null, errorFatal = null;
-  try {
-    estado = await estadoSheet();
-  } catch (e) {
-    errorFatal = e.message;
+      const res = await fetch('/api/auth/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || 'No se pudo iniciar sesión'); return; }
+      login(data.usuario, mantenerSesion);
+      router.push('/panel');
+    } catch (err) {
+      setError('Error de conexión. Probá de nuevo.');
+    } finally { setCargando(false); }
   }
 
   return (
-    <main style={{ minHeight: '100vh', padding: '40px 20px', maxWidth: 820, margin: '0 auto' }}>
+    <div className="flex justify-center pt-24 px-6">
       <IsologoDefs />
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
-        <Isologo size={40} />
-        <div style={{ lineHeight: 1 }}>
-          <div className="font-display" style={{ fontSize: 11, letterSpacing: 3, color: 'rgb(var(--textSec))' }}>INSTITUTO</div>
-          <div className="font-display" style={{ fontSize: 22, fontWeight: 700, letterSpacing: 1 }}>ILCE</div>
-        </div>
-      </div>
-      <h1 style={{ fontSize: 26, margin: '10px 0 4px' }}>Fichas de Inscripción</h1>
-      <p style={{ color: 'rgb(var(--textSec))', marginTop: 0 }}>
-        Esqueleto desplegado correctamente. Esta pantalla verifica la conexión con la Google Sheet.
-      </p>
-
-      <section style={card}>
-        <h2 style={{ fontSize: 16, marginTop: 0 }}>Estado de la Sheet</h2>
-        {errorFatal ? (
-          <p style={{ color: 'rgb(var(--accentMagenta))' }}>❌ No se pudo conectar: {errorFatal}</p>
-        ) : (
-          <>
-            <p style={{ margin: '0 0 12px', color: estado.okGlobal ? 'rgb(74 222 128)' : 'rgb(251 191 36)' }}>
-              {estado.okGlobal ? '✓ Conexión OK — el service account tiene acceso.' : '⚠ Conexión parcial — revisá las pestañas marcadas.'}
-            </p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '8px 16px', fontSize: 14 }}>
-              <b style={{ color: 'rgb(var(--textMuted))' }}>Pestaña</b>
-              <b style={{ color: 'rgb(var(--textMuted))' }}>Encabezados</b>
-              <b style={{ color: 'rgb(var(--textMuted))' }}>Filas</b>
-              {estado.resultados.map((r) => (
-                <FilaEstado key={r.tab} r={r} />
-              ))}
-            </div>
-          </>
-        )}
-      </section>
-
-      <section style={card}>
-        <h2 style={{ fontSize: 16, marginTop: 0 }}>Inicializar esquema</h2>
-        <p style={{ color: 'rgb(var(--textSec))', marginTop: 0 }}>
-          Si las pestañas están sin encabezados, escribí el esquema una sola vez llamando a{' '}
-          <code style={code}>/api/setup?token=TU_SETUP_TOKEN</code> (usá el valor de la env var <code style={code}>SETUP_TOKEN</code>).
-          Esto prueba también el permiso de <b>escritura</b>.
+      <div className="fixed top-4 right-4"><ThemeSelector /></div>
+      <div className="w-80 bg-surface2 border border-border rounded-2xl p-7">
+        <div className="flex justify-center mb-3"><Isologo size={40} /></div>
+        <h2 className="text-center text-lg font-semibold mb-1">Instituto ILCE</h2>
+        <p className="text-center text-textSec text-sm mb-5">Ingresá con tu usuario y contraseña</p>
+        <form onSubmit={handleSubmit}>
+          <label className="text-xs text-textSec block mb-1">Email</label>
+          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+            placeholder="nombre@institutoilce.com"
+            className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm mb-3" />
+          <label className="text-xs text-textSec block mb-1">Contraseña</label>
+          <div className="relative mb-3">
+            <input type={verPassword ? 'text' : 'password'} required value={password}
+              onChange={(e) => setPassword(e.target.value)} placeholder="••••••••"
+              className="w-full bg-bg border border-border rounded-lg px-3 py-2 pr-9 text-sm" />
+            <button type="button" onClick={() => setVerPassword(!verPassword)}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-textMuted hover:text-text text-sm"
+              title={verPassword ? 'Ocultar' : 'Mostrar'}>{verPassword ? '🙈' : '👁️'}</button>
+          </div>
+          {error && <p className="text-warningText text-xs mb-3">{error}</p>}
+          <label className="flex items-center gap-2 text-xs text-textSec mb-4 cursor-pointer">
+            <input type="checkbox" checked={mantenerSesion} onChange={(e) => setMantenerSesion(e.target.checked)} />
+            Mantener sesión abierta
+          </label>
+          <button type="submit" disabled={cargando}
+            className="w-full bg-gradient-to-r from-accentPurple to-accentMagenta text-white rounded-lg py-2.5 font-semibold text-sm disabled:opacity-60">
+            {cargando ? 'Ingresando…' : 'Ingresar'}
+          </button>
+        </form>
+        <p className="text-textMuted text-xs text-center mt-3">
+          ¿No tenés contraseña todavía? Pedile a Diego que te la asigne desde “Accesos”.
         </p>
-      </section>
-
-      <section style={card}>
-        <h2 style={{ fontSize: 16, marginTop: 0 }}>Fichas públicas (demo)</h2>
-        <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.9 }}>
-          {CURSOS.map((c) => (
-            <li key={c.slug}>
-              <a href={`/inscripcion/${c.slug}`} style={{ color: 'rgb(var(--accentTeal))' }}>/inscripcion/{c.slug}</a>
-              <span style={{ color: 'rgb(var(--textMuted))' }}> — {c.nombre}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <p style={{ color: 'rgb(var(--textMuted))', fontSize: 12, marginTop: 30 }}>
-        fichas-ilce · v0.2 · ficha pública funcional activa
-      </p>
-    </main>
+      </div>
+    </div>
   );
 }
-
-function FilaEstado({ r }) {
-  return (
-    <>
-      <span>{r.ok ? '✓' : '❌'} {r.tab}</span>
-      <span style={{ color: 'rgb(var(--textSec))' }}>{r.ok ? r.headers : '—'}</span>
-      <span style={{ color: 'rgb(var(--textSec))' }}>{r.ok ? r.filas : (r.error || '—')}</span>
-    </>
-  );
-}
-
-const card = {
-  background: 'rgb(var(--surface))',
-  border: '1px solid rgb(var(--border))',
-  borderRadius: 16,
-  padding: '18px 20px',
-  marginTop: 18
-};
-const code = { background: 'rgb(var(--surface2))', border: '1px solid rgb(var(--border))', borderRadius: 6, padding: '2px 6px', fontSize: 13 };
