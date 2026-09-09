@@ -319,3 +319,32 @@ tbody tr{cursor:pointer}tbody tr:hover{background:rgb(var(--surface2))}
 .fed-more{align-self:flex-start;background:none;border:0;color:rgb(var(--accentTeal));font-weight:700;font-size:12.5px;cursor:pointer;padding:2px 0}
 .fwarn{color:rgb(var(--warningText));font-weight:700}
 .fstate.arch{color:rgb(var(--textMuted))} .fstate.arch .d{background:rgb(var(--textMuted))}
+
+/* ===== Dashboard ejecutivo + chips (Lote N) ===== */
+.pill{height:30px;display:inline-flex;align-items:center;padding:0 14px;border-radius:999px;font-size:12.5px;font-weight:600;cursor:pointer;border:1px solid rgb(var(--border));background:transparent;color:rgb(var(--textMuted));transition:.15s}
+.pill:hover{color:rgb(var(--text));border-color:rgb(var(--accentTeal))}
+.pill.on{background:linear-gradient(90deg,rgb(var(--accentPurple)),rgb(var(--accentMagenta)));color:#fff;border-color:transparent}
+.dash-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(108px,1fr));gap:10px;margin:6px 0 14px}
+.dash-kpi{background:rgb(var(--surface));border:1px solid rgb(var(--border));border-radius:12px;padding:11px 13px}
+.dash-kpi.click{cursor:pointer;transition:.15s}
+.dash-kpi.click:hover{border-color:rgb(var(--accentTeal))}
+.dash-kpi .n{font-family:'Jost';font-weight:700;font-size:24px;line-height:1}
+.dash-kpi .l{font-size:11px;color:rgb(var(--textMuted));margin-top:4px}
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:14px}
+.dash-panel{background:rgb(var(--surface));border:1px solid rgb(var(--border));border-radius:14px;padding:14px 16px}
+.dash-panel h3{font-size:12.5px;margin:0 0 10px;color:rgb(var(--textSec));font-family:'Jost';letter-spacing:.5px;text-transform:uppercase}
+.tagcloud{display:flex;flex-wrap:wrap;gap:7px}
+.tagcloud .tc{display:inline-flex;align-items:center;gap:7px;background:rgb(var(--surface2));border:1px solid rgb(var(--border));border-radius:999px;padding:4px 11px;font-size:12.5px;color:rgb(var(--textSec))}
+.tagcloud .tc b{color:rgb(var(--accentTeal));font-family:'Jost'}
+.minibar{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12.5px}
+.minibar .lb{width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:rgb(var(--textSec))}
+.minibar .tr{flex:1;height:7px;background:rgb(var(--surface2));border-radius:99px;overflow:hidden}
+.minibar .fl{height:100%;border-radius:99px;background:linear-gradient(90deg,rgb(var(--accentPurple)),rgb(var(--accentMagenta)))}
+.minibar .vv{width:32px;text-align:right;color:rgb(var(--textMuted))}
+.chipfilt{display:inline-flex;align-items:center;gap:6px;background:rgba(150,25,143,.14);border:1px solid rgba(150,25,143,.4);color:#d879d1;border-radius:999px;padding:4px 11px;font-size:12px;font-weight:700}
+.chipfilt button{background:none;border:0;color:inherit;cursor:pointer;font-size:15px;line-height:1}
+/* KPIs arriba de Inscripciones */
+.ins-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:10px;margin-bottom:14px}
+.ins-kpi{background:rgb(var(--surface));border:1px solid rgb(var(--border));border-radius:12px;padding:10px 12px}
+.ins-kpi .n{font-family:'Jost';font-weight:700;font-size:22px;line-height:1}
+.ins-kpi .l{font-size:11px;color:rgb(var(--textMuted));margin-top:4px}
