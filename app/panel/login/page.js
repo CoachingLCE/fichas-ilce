@@ -17,17 +17,19 @@ export default function LoginPage() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setError(''); setCargando(true);
+    setError('');
+    setCargando(true);
     try {
       const res = await fetch('/api/auth/login', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'No se pudo iniciar sesión'); return; }
       login(data.usuario, mantenerSesion);
       router.push('/panel');
-    } catch {
+    } catch (err) {
       setError('Error de conexión. Probá de nuevo.');
     } finally {
       setCargando(false);
@@ -35,40 +37,47 @@ export default function LoginPage() {
   }
 
   return (
-    <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
-      background: 'radial-gradient(60% 50% at 80% -5%,rgba(150,25,143,.14),transparent 60%),radial-gradient(55% 45% at 5% 8%,rgba(5,149,173,.13),transparent 60%)' }}>
+    <div className="flex justify-center pt-24 px-6">
       <IsologoDefs />
-      <div style={{ position: 'fixed', top: 16, right: 16 }}><ThemeSelector /></div>
-      <form onSubmit={handleSubmit} style={{ width: 360, maxWidth: '100%', background: 'rgb(var(--surface))', border: '1px solid rgb(var(--border))', borderRadius: 20, padding: 28 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-          <Isologo size={36} />
-          <div style={{ lineHeight: 1 }}>
-            <div className="font-display" style={{ fontSize: 11, letterSpacing: 3, color: 'rgb(var(--textSec))' }}>PLATAFORMA ILCE</div>
-            <div className="font-display" style={{ fontSize: 18, fontWeight: 700 }}>Panel del equipo</div>
+      <div className="fixed top-4 right-4"><ThemeSelector /></div>
+      <div className="w-80 bg-surface2 border border-border rounded-2xl p-7">
+        <div className="flex justify-center mb-3"><Isologo size={40} /></div>
+        <h2 className="text-center text-lg font-semibold mb-1">Instituto ILCE</h2>
+        <p className="text-center text-textSec text-sm mb-5">Ingresá con tu usuario y contraseña</p>
+        <form onSubmit={handleSubmit}>
+          <label className="text-xs text-textSec block mb-1">Email</label>
+          <input
+            type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+            placeholder="nombre@institutoilce.com"
+            className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm mb-3"
+          />
+          <label className="text-xs text-textSec block mb-1">Contraseña</label>
+          <div className="relative mb-3">
+            <input
+              type={verPassword ? 'text' : 'password'} required value={password}
+              onChange={(e) => setPassword(e.target.value)} placeholder="••••••••"
+              className="w-full bg-bg border border-border rounded-lg px-3 py-2 pr-9 text-sm"
+            />
+            <button type="button" onClick={() => setVerPassword(!verPassword)}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-textMuted hover:text-text text-sm"
+              title={verPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
+              {verPassword ? '🙈' : '👁️'}
+            </button>
           </div>
-        </div>
-        <label style={lbl}>Email</label>
-        <input className="ctrl" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@institutoilce.com" autoComplete="username" />
-        <label style={{ ...lbl, marginTop: 12 }}>Contraseña</label>
-        <div style={{ position: 'relative' }}>
-          <input className="ctrl" type={verPassword ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" style={{ paddingRight: 40 }} />
-          <button type="button" onClick={() => setVerPassword(!verPassword)} title={verPassword ? 'Ocultar' : 'Mostrar'}
-            style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 0, cursor: 'pointer', fontSize: 15 }}>
-            {verPassword ? '🙈' : '👁️'}
+          {error && <p className="text-warningText text-xs mb-3">{error}</p>}
+          <label className="flex items-center gap-2 text-xs text-textSec mb-4 cursor-pointer">
+            <input type="checkbox" checked={mantenerSesion} onChange={(e) => setMantenerSesion(e.target.checked)} />
+            Mantener sesión abierta
+          </label>
+          <button type="submit" disabled={cargando}
+            className="w-full bg-gradient-to-r from-accentPurple to-accentMagenta text-white rounded-lg py-2.5 font-semibold text-sm disabled:opacity-60">
+            {cargando ? 'Ingresando…' : 'Ingresar'}
           </button>
-        </div>
-        {error && <p style={{ color: 'rgb(248 113 113)', fontSize: 13, margin: '12px 0 0' }}>{error}</p>}
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'rgb(var(--textSec))', margin: '14px 0 4px', cursor: 'pointer' }}>
-          <input type="checkbox" checked={mantenerSesion} onChange={(e) => setMantenerSesion(e.target.checked)} /> Mantener sesión abierta
-        </label>
-        <button className="btn btn-primary" style={{ width: '100%', marginTop: 12 }} disabled={cargando}>
-          {cargando ? 'Ingresando…' : 'Ingresar'}
-        </button>
-        <p style={{ color: 'rgb(var(--textMuted))', fontSize: 12, textAlign: 'center', marginTop: 12 }}>
-          ¿No tenés contraseña? Pedile a Diego que te la asigne desde “Accesos”.
+        </form>
+        <p className="text-textMuted text-xs text-center mt-3">
+          ¿No tenés contraseña todavía? Pedile a Diego que te la asigne desde “Accesos”.
         </p>
-      </form>
-    </main>
+      </div>
+    </div>
   );
 }
-const lbl = { display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 6 };

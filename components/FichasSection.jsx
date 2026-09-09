@@ -119,7 +119,11 @@ export default function FichasSection({ usuario, rows, onEditar, onVerInscripcio
       {/* Alerta administrativa */}
       {sinEd > 0 && (
         <div className="fbanner">
-          <span>🟠 <b>{sinEd} ficha{sinEd === 1 ? '' : 's'} sin ediciones cargadas.</b> Cargá al menos una edición para poder inscribir.</span>
+          <span className="fbanner-ico">⚠️</span>
+          <div className="fbanner-txt">
+            <b>{sinEd} ficha{sinEd === 1 ? '' : 's'} sin ediciones cargadas</b>
+            <span>Cargá al menos una edición para poder inscribir.</span>
+          </div>
           <button className="btn-sm" onClick={() => { setChip('Todas'); setOrden('nombre'); setQ(''); }}>Revisar</button>
         </div>
       )}
@@ -155,7 +159,7 @@ export default function FichasSection({ usuario, rows, onEditar, onVerInscripcio
             return (
               <div className="fcard" key={d.slug}>
                 <div className="fcard-top">
-                  <span className={'fstate ' + meta.cls}><span className="d" />{meta.label}{alerta && <span className="fwarn"> · sin ediciones</span>}</span>
+                  <span className={'fstate ' + meta.cls}><span className="d" />{meta.label}</span>
                   {fecha && <span className="fcard-upd">Act. {fecha}</span>}
                 </div>
 
@@ -168,12 +172,23 @@ export default function FichasSection({ usuario, rows, onEditar, onVerInscripcio
 
                 <div className="feds">
                   {eds.length === 0 ? (
-                    <div className="fnoed">Sin ediciones cargadas{puedeEditar && <button onClick={() => onEditar(d.slug)}>+ Agregar edición</button>}</div>
+                    <div className="fnoed-neutral">
+                      <span>Sin ediciones cargadas</span>
+                      {puedeEditar && <button onClick={() => onEditar(d.slug)}>+ Agregar edición</button>}
+                    </div>
                   ) : (<>
                     <div className="feds-title">Ediciones</div>
-                    {eds.slice(0, 3).map((e, i) => (
-                      <div className="fed-row" key={i}><span className="nm">{e.label}</span><span className="c">{contarEd(d.curso, e.label)}</span></div>
-                    ))}
+                    {eds.slice(0, 3).map((e, i) => {
+                      const parts = (e.label || '').split('—');
+                      const num = parts[0].trim();
+                      const fe = parts[1] ? parts[1].trim() : '';
+                      return (
+                        <div className="fed-row" key={i}>
+                          <div className="fed-info"><span className="nm">{num}</span>{fe && <span className="fe">{fe}</span>}</div>
+                          <span className="c">{contarEd(d.curso, e.label)}</span>
+                        </div>
+                      );
+                    })}
                     {eds.length > 3 && <button className="fed-more" onClick={() => onEditar(d.slug)}>Ver todas ({eds.length})</button>}
                     {puedeEditar && eds.length <= 3 && <button className="fed-more" onClick={() => onEditar(d.slug)}>+ Agregar edición</button>}
                   </>)}

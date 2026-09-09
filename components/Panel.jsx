@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { useSession } from '../lib/useSession';
-import { tienePermisoInscripciones, tienePermisoCambiarEstado, tienePermisoExportar, tienePermisoDashboard, tienePermisoConstructor, tienePermisoAccesos, tienePermisoActividades, tienePermisoGestionActividades, tienePermisoAsignarDocentes, tienePermisoEmails } from '../lib/permisos';
+import { tienePermisoInscripciones, tienePermisoCambiarEstado, tienePermisoExportar, tienePermisoDashboard, tienePermisoConstructor, tienePermisoAccesos, tienePermisoActividades, tienePermisoGestionActividades, tienePermisoAsignarDocentes, tienePermisoEmails, tienePermisoAuditoria } from '../lib/permisos';
 import { ESTADOS, nombreVisibleRoles } from '../lib/constants';
 import { Isologo, IsologoDefs } from './Isologo';
 import ThemeSelector from './ThemeSelector';
@@ -12,6 +12,7 @@ import Constructor from './Constructor';
 import Actividades from './Actividades';
 import EmailsPanel from './EmailsPanel';
 import Herramientas from './Herramientas';
+import Auditoria from './Auditoria';
 
 const ALL_COLS = [
   ['nom', 'Nombre'], ['ape', 'Apellido'], ['em', 'Email'], ['curso', 'Curso'], ['ed', 'Edición'],
@@ -170,7 +171,7 @@ export default function Panel() {
         <div className="topnav-brand">
           <Isologo size={28} />
           <div style={{ lineHeight: 1 }}>
-            <div className="font-display" style={{ fontSize: 10, letterSpacing: 3, color: 'rgb(var(--textMuted))' }}>PLATAFORMA</div>
+            <div className="font-display" style={{ fontSize: 10, letterSpacing: 3, color: 'rgb(var(--textMuted))' }}>INSTITUTO</div>
             <div className="font-display" style={{ fontSize: 17, fontWeight: 700 }}>ILCE</div>
           </div>
         </div>
@@ -183,8 +184,11 @@ export default function Panel() {
           {tienePermisoConstructor(usuario) && <button className={'tnav' + (tab === 'constructor' ? ' on' : '')} onClick={() => setTab('constructor')}>Constructor</button>}
           <button className={'tnav' + (tab === 'herramientas' ? ' on' : '')} onClick={() => setTab('herramientas')}>Herramientas</button>
           {tienePermisoAccesos(usuario) && <button className={'tnav' + (tab === 'accesos' ? ' on' : '')} onClick={() => setTab('accesos')}>Accesos</button>}
+          {tienePermisoAuditoria(usuario) && <button className={'tnav' + (tab === 'auditoria' ? ' on' : '')} onClick={() => setTab('auditoria')}>Auditoría</button>}
         </nav>
         <div className="topnav-right">
+          <button className="iconbtn" title="Buscar inscripciones" aria-label="Buscar" onClick={() => { setTab('inscripciones'); setTimeout(() => document.getElementById('ins-search')?.focus(), 60); }}>🔎</button>
+          <button className="iconbtn" title="Herramientas" aria-label="Herramientas" onClick={() => setTab('herramientas')}>⚡</button>
           <ThemeSelector />
           <div className="topnav-user">
             <b>{usuario.nombre}</b>
@@ -196,8 +200,8 @@ export default function Panel() {
 
       <div className="main">
         <div className="topbar">
-          <div><div className="crumb">PLATAFORMA ILCE / FICHAS</div><h1>{{ fichas: 'Fichas', inscripciones: 'Inscripciones', dashboard: 'Dashboard', emails: 'Emails', actividades: 'Actividades', constructor: 'Constructor de fichas', herramientas: 'Herramientas', accesos: 'Accesos' }[tab]}</h1></div>
-          {tab === 'inscripciones' && <div className="search">🔎 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, apellido, email, DNI, WhatsApp, edición…" /></div>}
+          <div><div className="crumb">ILCE / FICHAS</div><h1>{{ fichas: 'Fichas', inscripciones: 'Inscripciones', dashboard: 'Dashboard', emails: 'Emails', actividades: 'Actividades', constructor: 'Constructor de fichas', herramientas: 'Herramientas', accesos: 'Accesos', auditoria: 'Historial de acciones' }[tab]}</h1></div>
+          {tab === 'inscripciones' && <div className="search">🔎 <input id="ins-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, apellido, email, DNI, WhatsApp, edición…" /></div>}
         </div>
 
         {tab === 'fichas' && <FichasSection usuario={usuario} rows={rows} onEditar={editarFicha} onVerInscripciones={verInscripcionesDe} showToast={showToast} puedeEditar={tienePermisoConstructor(usuario)} />}
@@ -291,6 +295,7 @@ export default function Panel() {
         {tab === 'emails' && tienePermisoEmails(usuario) && <EmailsPanel usuario={usuario} />}
         {tab === 'actividades' && tienePermisoActividades(usuario) && <Actividades usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} puedeDocentes={tienePermisoAsignarDocentes(usuario)} />}
         {tab === 'accesos' && tienePermisoAccesos(usuario) && <Accesos usuario={usuario} />}
+        {tab === 'auditoria' && tienePermisoAuditoria(usuario) && <Auditoria usuario={usuario} />}
       </div>
 
       {/* drawer */}

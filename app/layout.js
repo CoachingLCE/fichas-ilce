@@ -4,7 +4,7 @@ import ErrorBoundary from '../components/ErrorBoundary';
 import RecuperadorDeChunks from '../components/RecuperadorDeChunks';
 
 export const metadata = {
-  title: 'Plataforma ILCE · Fichas de Inscripción',
+  title: 'ILCE · Fichas de Inscripción',
   description: 'Gestión de fichas e inscripciones — Instituto ILCE'
 };
 

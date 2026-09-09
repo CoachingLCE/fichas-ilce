@@ -348,3 +348,125 @@ tbody tr{cursor:pointer}tbody tr:hover{background:rgb(var(--surface2))}
 .ins-kpi{background:rgb(var(--surface));border:1px solid rgb(var(--border));border-radius:12px;padding:10px 12px}
 .ins-kpi .n{font-family:'Jost';font-weight:700;font-size:22px;line-height:1}
 .ins-kpi .l{font-size:11px;color:rgb(var(--textMuted));margin-top:4px}
+
+/* ===== Icon buttons de la barra superior (Lote O) ===== */
+.iconbtn{width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;
+  border:1px solid rgb(var(--border));background:rgb(var(--surface2));color:rgb(var(--text));cursor:pointer;font-size:15px;transition:.15s}
+.iconbtn:hover{border-color:rgb(var(--accentTeal))}
+
+/* ============================================================
+   REFRESH VISUAL — sistema consistente (Lote P)
+   Overrides finales (ganan por orden). SaaS educativo, limpio.
+   ============================================================ */
+
+/* ---- Badges de estado: suaves, compactos, semánticos ---- */
+.fstate{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;
+  display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:7px;border:0}
+.fstate .d{width:6px;height:6px;box-shadow:none}
+.fstate.pub{background:rgba(74,222,128,.14);color:rgb(74 222 128)}
+.fstate.pub .d{background:rgb(74 222 128)}
+.fstate.bor{background:rgba(251,191,36,.15);color:rgb(251 191 36)}
+.fstate.bor .d{background:rgb(251 191 36)}
+.fstate.cer{background:rgba(248,113,113,.14);color:rgb(248 113 113)}
+.fstate.cer .d{background:rgb(248 113 113)}
+.fstate.arch{background:rgb(var(--surface2));color:rgb(var(--textMuted))}
+.fstate.arch .d{background:rgb(var(--textMuted))}
+.fwarn{color:rgb(251 191 36);font-weight:800}
+
+/* ---- Chips neutros (preguntas, etiquetas) ---- */
+.tagchip{background:rgb(var(--surface2));border:1px solid transparent;color:rgb(var(--textSec));
+  border-radius:7px;padding:3px 9px;font-size:11.5px;font-weight:700}
+
+/* ---- Tarjetas: más aire, borde sutil, elevación leve, hover con respuesta ---- */
+.fcard{border:1px solid rgba(255,255,255,.05);border-radius:18px;padding:18px 18px 16px;gap:13px;
+  box-shadow:0 1px 2px rgba(0,0,0,.18);transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
+[data-theme="light"] .fcard{border-color:rgb(var(--border));box-shadow:0 1px 3px rgba(15,23,42,.06)}
+.fcard:hover{transform:translateY(-3px);box-shadow:0 16px 34px -18px rgba(0,0,0,.6);border-color:rgba(5,149,173,.4)}
+.fcard .ftitle{font-size:20px;letter-spacing:.2px}
+.fcard-upd{font-size:11px}
+.fbig{align-items:baseline;gap:9px}
+.fbig-n{font-size:34px}
+.fed-row{background:transparent;border:0;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+[data-theme="light"] .fed-row{border-bottom-color:rgb(var(--border))}
+.feds-title{font-size:10.5px;letter-spacing:1.2px}
+
+/* ---- Tabs/chips de filtro: sin borde, activo claro, contador integrado ---- */
+.fchips{gap:6px}
+.fchip{height:32px;padding:0 12px;border:1px solid transparent;background:rgb(var(--surface2));
+  color:rgb(var(--textSec));border-radius:9px;font-size:13px;font-weight:700}
+.fchip:hover{color:rgb(var(--text))}
+.fchip.on{background:linear-gradient(90deg,rgb(var(--accentPurple)),rgb(var(--accentMagenta)));color:#fff}
+.fchip .cnt{background:rgba(255,255,255,.16)}
+.fchip:not(.on) .cnt{background:rgb(var(--bg));color:rgb(var(--textMuted))}
+
+/* ---- Barra de herramientas: buscador + orden, mismo bloque/altura ---- */
+.fbar{gap:10px;align-items:center}
+.fsearch{height:38px;border-radius:10px}
+.fsel{height:38px;border-radius:10px}
+.ctrl{border-radius:10px}
+
+/* ---- Botones: Editar CTA, Vista previa secundario, ••• discreto ---- */
+.btn-sm{height:36px;border-radius:9px;transition:.15s}
+.btn-sm:hover{border-color:rgb(var(--accentTeal))}
+.btn-sm.solid{background:linear-gradient(90deg,rgb(var(--accentPurple)),rgb(var(--accentMagenta)));border-color:transparent;box-shadow:0 6px 16px -10px rgba(150,25,143,.7)}
+.btn-sm.solid:hover{filter:brightness(1.08);border-color:transparent}
+.btn-sm:disabled{opacity:.5;cursor:default}
+.factions{gap:8px;padding-top:2px}
+.factions .fmenu-btn{background:transparent;border:1px solid transparent;color:rgb(var(--textMuted))}
+.factions .fmenu-btn:hover{background:rgb(var(--surface2));color:rgb(var(--text))}
+
+/* ---- Enlace/URL más integrado ---- */
+.flink{border-radius:10px;background:rgb(var(--surface2));border:1px solid transparent;padding:7px 8px 7px 11px}
+.flink button{border-radius:8px;background:rgb(var(--bg));border:1px solid rgb(var(--border))}
+.flink button:hover{border-color:rgb(var(--accentTeal))}
+.acard-link-label{font-size:10.5px;letter-spacing:.6px}
+
+/* ---- Alerta / warning contextual compacto ---- */
+.fbanner{align-items:center;gap:12px;background:rgba(251,191,36,.10);border:1px solid rgba(251,191,36,.28);
+  color:rgb(var(--text));border-radius:12px;padding:11px 14px}
+.fbanner-ico{font-size:18px;flex:0 0 auto;line-height:1}
+.fbanner-txt{display:flex;flex-direction:column;line-height:1.25}
+.fbanner-txt b{color:rgb(251 191 36);font-size:13.5px}
+.fbanner-txt span{color:rgb(var(--textSec));font-size:12.5px}
+.fbanner .btn-sm{margin-left:auto;flex:0 0 auto}
+
+/* ---- Sub-tabs (Actividades/Accesos) coherentes ---- */
+.subtabs{gap:14px}
+.subtabs button{font-size:14px}
+
+/* ===== Postwork en tarjetas (Lote Q) ===== */
+.quizstage{min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:30px 16px 60px;
+  background:radial-gradient(60% 50% at 80% -5%,rgba(150,25,143,.14),transparent 60%),radial-gradient(55% 45% at 5% 8%,rgba(5,149,173,.13),transparent 60%)}
+.quizcard{width:560px;max-width:100%;background:rgb(var(--surface));border:1px solid rgb(var(--border));border-radius:22px;overflow:hidden;box-shadow:0 30px 70px -30px rgba(0,0,0,.7)}
+.quiz-band{padding:22px 26px;color:#fff;background:linear-gradient(120deg,#01233f 0%,#065f74 52%,#0595ad 100%)}
+.quiz-band .kd{font-family:'Jost';font-weight:500;letter-spacing:4px;font-size:11px;opacity:.85}
+.quiz-band .ti{font-family:'Jost';font-weight:700;font-size:22px;line-height:1.1;margin-top:6px}
+.quiz-prog{height:4px;background:rgb(var(--surface2))}
+.quiz-prog-fill{height:100%;background:linear-gradient(90deg,rgb(var(--accentPurple)),rgb(var(--accentMagenta)));transition:width .3s ease}
+.quiz-body{padding:24px 26px 8px;min-height:230px}
+.quiz-count{font-size:11.5px;letter-spacing:1px;text-transform:uppercase;color:rgb(var(--accentTeal));font-weight:800;font-family:'Jost'}
+.quiz-field{margin-bottom:14px}
+.quiz-field>label{display:block;font-size:13.5px;font-weight:700;margin-bottom:5px}
+.quiz-field .req{color:rgb(var(--accentMagenta))}
+.quiz-opt{display:flex;align-items:center;gap:12px;border:1px solid rgb(var(--border));background:rgb(var(--surface2));border-radius:12px;padding:13px 15px;margin-bottom:9px;font-size:15px;cursor:pointer;transition:.15s;line-height:1.35}
+.quiz-opt:hover{border-color:rgb(var(--accentTeal))}
+.quiz-opt.sel{border-color:rgb(var(--accentMagenta));background:rgba(150,25,143,.10)}
+.quiz-opt .dot{width:20px;height:20px;border-radius:50%;border:2px solid rgb(var(--textMuted));flex:0 0 auto;position:relative}
+.quiz-opt.sel .dot{border-color:rgb(var(--accentMagenta))}
+.quiz-opt.sel .dot::after{content:"";position:absolute;inset:3px;border-radius:50%;background:rgb(var(--accentMagenta))}
+.quiz-foot{position:sticky;bottom:0;display:flex;gap:10px;padding:14px 26px 18px;background:linear-gradient(180deg,transparent,rgb(var(--surface)) 30%)}
+.quiz-ring{width:78px;height:78px;margin:0 auto 14px;border-radius:50%;background:rgb(15 46 34);display:flex;align-items:center;justify-content:center;font-size:36px}
+
+/* ===== Fichas cards pulido premium (Lote Q) ===== */
+.fed-row{display:flex;align-items:center;gap:10px;background:transparent;border:0;border-bottom:1px solid rgba(255,255,255,.05);padding:7px 0}
+[data-theme="light"] .fed-row{border-bottom-color:rgb(var(--border))}
+.fed-info{display:flex;flex-direction:column;min-width:0;flex:1}
+.fed-info .nm{font-weight:700;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fed-info .fe{font-size:11.5px;color:rgb(var(--textMuted));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fed-row .c{flex:0 0 auto;font-family:'Jost';font-weight:700;font-size:14px;color:rgb(var(--accentTeal));background:rgb(var(--surface2));border-radius:8px;padding:2px 9px;min-width:34px;text-align:center}
+.fnoed-neutral{display:flex;align-items:center;gap:10px;font-size:12.5px;color:rgb(var(--textMuted));background:rgb(var(--surface2));border:1px dashed rgb(var(--border));border-radius:10px;padding:9px 12px}
+.fnoed-neutral button{margin-left:auto;background:none;border:0;color:rgb(var(--accentTeal));font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap}
+/* jerarquía de botones: Editar principal (crece), Vista previa secundaria, ••• terciaria */
+.factions{gap:8px;align-items:stretch}
+.factions > a.btn-sm{flex:0 0 auto}
+.factions > .btn-sm.solid{flex:1;justify-content:center}

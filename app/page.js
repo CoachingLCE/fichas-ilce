@@ -36,7 +36,7 @@ export default async function Home() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
         <Isologo size={40} />
         <div style={{ lineHeight: 1 }}>
-          <div className="font-display" style={{ fontSize: 11, letterSpacing: 3, color: 'rgb(var(--textSec))' }}>PLATAFORMA</div>
+          <div className="font-display" style={{ fontSize: 11, letterSpacing: 3, color: 'rgb(var(--textSec))' }}>INSTITUTO</div>
           <div className="font-display" style={{ fontSize: 22, fontWeight: 700, letterSpacing: 1 }}>ILCE</div>
         </div>
       </div>
