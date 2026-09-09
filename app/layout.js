@@ -1,5 +1,7 @@
 import './globals.css';
 import { ThemeProvider } from '../lib/ThemeContext';
+import ErrorBoundary from '../components/ErrorBoundary';
+import RecuperadorDeChunks from '../components/RecuperadorDeChunks';
 
 export const metadata = {
   title: 'Plataforma ILCE · Fichas de Inscripción',
@@ -15,7 +17,10 @@ export default function RootLayout({ children }) {
         <link href="https://fonts.googleapis.com/css2?family=Dosis:wght@400;500;600;700;800&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <RecuperadorDeChunks />
+          <ErrorBoundary>{children}</ErrorBoundary>
+        </ThemeProvider>
       </body>
     </html>
   );

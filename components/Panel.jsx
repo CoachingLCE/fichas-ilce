@@ -11,6 +11,7 @@ import FichasSection from './FichasSection';
 import Constructor from './Constructor';
 import Actividades from './Actividades';
 import EmailsPanel from './EmailsPanel';
+import Herramientas from './Herramientas';
 
 const ALL_COLS = [
   ['nom', 'Nombre'], ['ape', 'Apellido'], ['em', 'Email'], ['curso', 'Curso'], ['ed', 'Edición'],
@@ -57,6 +58,7 @@ export default function Panel() {
 
   function showToast(m) { setToast(m); clearTimeout(showToast._t); showToast._t = setTimeout(() => setToast(''), 2400); }
   function editarFicha(slug) { setConstructorSlug(slug); setTab('constructor'); }
+  function verInscripcionesDe(curso) { setFCurso(curso); setTab('inscripciones'); }
 
   async function cargar() {
     try {
@@ -161,38 +163,44 @@ export default function Panel() {
   return (
     <div className="appwrap">
       <IsologoDefs />
-      <aside className="rail">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 8px 14px' }}>
-          <Isologo size={30} />
+      <header className="topnav">
+        <div className="topnav-brand">
+          <Isologo size={28} />
           <div style={{ lineHeight: 1 }}>
-            <div className="font-display" style={{ fontSize: 11, letterSpacing: 3, color: 'rgb(var(--textMuted))' }}>PLATAFORMA</div>
-            <div className="font-display" style={{ fontSize: 19, fontWeight: 700 }}>ILCE</div>
+            <div className="font-display" style={{ fontSize: 10, letterSpacing: 3, color: 'rgb(var(--textMuted))' }}>PLATAFORMA</div>
+            <div className="font-display" style={{ fontSize: 17, fontWeight: 700 }}>ILCE</div>
           </div>
         </div>
-        <div className="plat">GESTIÓN</div>
-        <button className={'nav' + (tab === 'fichas' ? ' on' : '')} onClick={() => setTab('fichas')}><span className="ic">▣</span>Fichas</button>
-        <button className={'nav' + (tab === 'inscripciones' ? ' on' : '')} onClick={() => setTab('inscripciones')}><span className="ic">▤</span>Inscripciones</button>
-        {tienePermisoDashboard(usuario) && <button className={'nav' + (tab === 'dashboard' ? ' on' : '')} onClick={() => setTab('dashboard')}><span className="ic">◉</span>Dashboard</button>}
-        {tienePermisoEmails(usuario) && <button className={'nav' + (tab === 'emails' ? ' on' : '')} onClick={() => setTab('emails')}><span className="ic">✉️</span>Emails</button>}
-        {tienePermisoActividades(usuario) && (<><div className="div" /><div className="plat">ÁREA ACADÉMICA</div><button className={'nav' + (tab === 'actividades' ? ' on' : '')} onClick={() => setTab('actividades')}><span className="ic">🎓</span>Actividades</button></>)}
-        {tienePermisoConstructor(usuario) && (<><div className="div" /><div className="plat">CONSTRUCTOR</div><button className={'nav' + (tab === 'constructor' ? ' on' : '')} onClick={() => setTab('constructor')}><span className="ic">🧩</span>Constructor</button></>)}
-        {tienePermisoAccesos(usuario) && <button className={'nav' + (tab === 'accesos' ? ' on' : '')} onClick={() => setTab('accesos')}><span className="ic">🔐</span>Accesos</button>}
-        <div className="user">
-          <b>{usuario.nombre}</b>{nombreVisibleRoles(usuario.roles)}
-          <button className="btn-sm" style={{ width: '100%', justifyContent: 'center', marginTop: 8 }} onClick={() => { logout(); window.location.href = '/panel/login'; }}>Cerrar sesión</button>
+        <nav className="topnav-tabs">
+          <button className={'tnav' + (tab === 'fichas' ? ' on' : '')} onClick={() => setTab('fichas')}>Fichas</button>
+          <button className={'tnav' + (tab === 'inscripciones' ? ' on' : '')} onClick={() => setTab('inscripciones')}>Inscripciones</button>
+          {tienePermisoDashboard(usuario) && <button className={'tnav' + (tab === 'dashboard' ? ' on' : '')} onClick={() => setTab('dashboard')}>Dashboard</button>}
+          {tienePermisoEmails(usuario) && <button className={'tnav' + (tab === 'emails' ? ' on' : '')} onClick={() => setTab('emails')}>Emails</button>}
+          {tienePermisoActividades(usuario) && <button className={'tnav' + (tab === 'actividades' ? ' on' : '')} onClick={() => setTab('actividades')}>Actividades</button>}
+          {tienePermisoConstructor(usuario) && <button className={'tnav' + (tab === 'constructor' ? ' on' : '')} onClick={() => setTab('constructor')}>Constructor</button>}
+          <button className={'tnav' + (tab === 'herramientas' ? ' on' : '')} onClick={() => setTab('herramientas')}>Herramientas</button>
+          {tienePermisoAccesos(usuario) && <button className={'tnav' + (tab === 'accesos' ? ' on' : '')} onClick={() => setTab('accesos')}>Accesos</button>}
+        </nav>
+        <div className="topnav-right">
+          <ThemeSelector />
+          <div className="topnav-user">
+            <b>{usuario.nombre}</b>
+            <span>{nombreVisibleRoles(usuario.roles)}</span>
+          </div>
+          <button className="btn-sm" onClick={() => { logout(); window.location.href = '/panel/login'; }}>Salir</button>
         </div>
-      </aside>
+      </header>
 
       <div className="main">
         <div className="topbar">
-          <div><div className="crumb">PLATAFORMA ILCE / FICHAS</div><h1>{{ fichas: 'Fichas', inscripciones: 'Inscripciones', dashboard: 'Dashboard', emails: 'Emails', actividades: 'Actividades', constructor: 'Constructor de fichas', accesos: 'Accesos' }[tab]}</h1></div>
+          <div><div className="crumb">PLATAFORMA ILCE / FICHAS</div><h1>{{ fichas: 'Fichas', inscripciones: 'Inscripciones', dashboard: 'Dashboard', emails: 'Emails', actividades: 'Actividades', constructor: 'Constructor de fichas', herramientas: 'Herramientas', accesos: 'Accesos' }[tab]}</h1></div>
           {tab === 'inscripciones' && <div className="search">🔎 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, apellido, email, DNI, WhatsApp, edición…" /></div>}
-          <div style={{ marginLeft: tab === 'inscripciones' ? 12 : 'auto' }}><ThemeSelector /></div>
         </div>
 
-        {tab === 'fichas' && <FichasSection usuario={usuario} rows={rows} onEditar={editarFicha} showToast={showToast} puedeEditar={tienePermisoConstructor(usuario)} />}
+        {tab === 'fichas' && <FichasSection usuario={usuario} rows={rows} onEditar={editarFicha} onVerInscripciones={verInscripcionesDe} showToast={showToast} puedeEditar={tienePermisoConstructor(usuario)} />}
+        {tab === 'herramientas' && <Herramientas />}
         {error && <div className="note" style={{ borderLeftColor: 'rgb(248 113 113)' }}>{error}</div>}
-        {rows === null && !error && <div className="spin" />}
+        {rows === null && !error && tab !== 'herramientas' && <div className="spin" />}
 
         {rows && tab === 'inscripciones' && (
           <>

@@ -3,16 +3,18 @@ import { useEffect, useMemo, useState } from 'react';
 import { APP_URL } from '../lib/constants';
 
 const ESTADO_META = {
-  Publicada: { cls: 'pub', label: 'Publicada' },
-  Borrador: { cls: 'bor', label: 'Borrador' },
-  Cerrada: { cls: 'cer', label: 'Cerrada' }
+  Publicada: { cls: 'pub', label: 'Publicada', dot: '🟢' },
+  Borrador: { cls: 'bor', label: 'Borrador', dot: '🟡' },
+  Cerrada: { cls: 'cer', label: 'Cerrada', dot: '🔴' },
+  Archivada: { cls: 'arch', label: 'Archivada', dot: '⚪' }
 };
 const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-export default function FichasSection({ usuario, rows, onEditar, showToast, puedeEditar }) {
+export default function FichasSection({ usuario, rows, onEditar, onVerInscripciones, showToast, puedeEditar }) {
   const [defs, setDefs] = useState(null);
   const [q, setQ] = useState('');
   const [chip, setChip] = useState('Todas');
+  const [orden, setOrden] = useState('nombre');
   const [menuAbierto, setMenuAbierto] = useState(null);
   const [copiado, setCopiado] = useState(null);
 
@@ -25,28 +27,56 @@ export default function FichasSection({ usuario, rows, onEditar, showToast, pued
     } catch { setDefs([]); }
   }
 
-  const conteos = useMemo(() => {
-    const m = {};
-    (rows || []).forEach((r) => { if (r.curso) m[r.curso] = (m[r.curso] || 0) + 1; });
-    return m;
+  // Conteos de inscripciones por curso y por (curso+edición)
+  const { porCurso, porEd } = useMemo(() => {
+    const pc = {}, pe = {};
+    (rows || []).forEach((r) => {
+      if (!r.curso) return;
+      pc[r.curso] = (pc[r.curso] || 0) + 1;
+      const k = r.curso + '||' + norm(r.ed);
+      pe[k] = (pe[k] || 0) + 1;
+    });
+    return { porCurso: pc, porEd: pe };
   }, [rows]);
+
+  function contarEd(curso, label) {
+    // best-effort: suma las filas cuya edición coincide con el label configurado
+    const ln = norm(label);
+    let total = 0;
+    Object.keys(porEd).forEach((k) => {
+      const [c, kn] = k.split('||');
+      if (c !== curso) return;
+      if (kn === ln || ln.startsWith(kn) || kn.startsWith(ln.split(' ').slice(0, 2).join(' '))) total += porEd[k];
+    });
+    return total;
+  }
+
+  const cuenta = (estado) => (defs || []).filter((d) => !estado || d.estado === estado).length;
+  const sinEd = useMemo(() => (defs || []).filter((d) => (d.ediciones || []).length === 0).length, [defs]);
+  const conEd = (defs || []).length - sinEd;
 
   const filtradas = useMemo(() => {
     if (!defs) return [];
     const qq = norm(q);
-    return defs.filter((d) => {
+    let list = defs.filter((d) => {
       if (chip === 'Publicadas' && d.estado !== 'Publicada') return false;
       if (chip === 'Borradores' && d.estado !== 'Borrador') return false;
       if (chip === 'Cerradas' && d.estado !== 'Cerrada') return false;
+      if (chip === 'Archivadas' && d.estado !== 'Archivada') return false;
+      if (chip === 'Todas' && d.estado === 'Archivada') return false; // archivadas fuera de "Todas"
       if (qq) {
-        const hay = norm([d.curso, d.titulo, d.slug, (d.ediciones || []).map((e) => e.label).join(' ')].join(' '));
+        const hay = norm([d.curso, d.titulo, d.slug, d.estado, (d.ediciones || []).map((e) => e.label).join(' ')].join(' '));
         if (!hay.includes(qq)) return false;
       }
       return true;
     });
-  }, [defs, q, chip]);
-
-  const cuenta = (estado) => (defs || []).filter((d) => !estado || d.estado === estado).length;
+    list = list.slice().sort((a, b) => {
+      if (orden === 'inscripciones') return (porCurso[b.curso] || 0) - (porCurso[a.curso] || 0);
+      if (orden === 'recientes') return new Date(b.actualizado || 0) - new Date(a.actualizado || 0);
+      return a.curso.localeCompare(b.curso);
+    });
+    return list;
+  }, [defs, q, chip, orden, porCurso]);
 
   async function guardarEstado(d, nuevo) {
     const prev = d.estado;
@@ -59,10 +89,10 @@ export default function FichasSection({ usuario, rows, onEditar, showToast, pued
       });
       const data = await res.json();
       if (!data.ok) throw new Error();
-      showToast(nuevo === 'Publicada' ? '✓ Ficha publicada' : nuevo === 'Cerrada' ? '✓ Ficha cerrada' : '✓ Ficha en borrador');
+      showToast('✓ Estado actualizado a ' + nuevo);
     } catch {
       setDefs((arr) => arr.map((x) => x.slug === d.slug ? { ...x, estado: prev } : x));
-      showToast('⚠ No se pudo actualizar la ficha');
+      showToast('⚠ No se pudo actualizar');
     }
   }
   function copiarLink(d) {
@@ -76,81 +106,105 @@ export default function FichasSection({ usuario, rows, onEditar, showToast, pued
 
   return (
     <div onClick={() => menuAbierto && setMenuAbierto(null)}>
+      {/* Cabecera de gestión */}
+      <div className="fhead">
+        <div>
+          <p className="fhead-sub">Administrá los cursos, ediciones y páginas de inscripción.</p>
+          <p className="fhead-stats">{defs.length} fichas · {conEd} con ediciones · {sinEd} sin ediciones</p>
+        </div>
+        <span style={{ flex: 1 }} />
+        {puedeEditar && <button className="btn btn-primary" style={{ flex: 'none', padding: '10px 18px' }} onClick={() => showToast('El alta de cursos nuevos llega en el próximo lote (cursos dinámicos).')}>+ Nueva ficha</button>}
+      </div>
+
+      {/* Alerta administrativa */}
+      {sinEd > 0 && (
+        <div className="fbanner">
+          <span>🟠 <b>{sinEd} ficha{sinEd === 1 ? '' : 's'} sin ediciones cargadas.</b> Cargá al menos una edición para poder inscribir.</span>
+          <button className="btn-sm" onClick={() => { setChip('Todas'); setOrden('nombre'); setQ(''); }}>Revisar</button>
+        </div>
+      )}
+
+      {/* Filtros */}
       <div className="fchips">
-        {[['Todas', cuenta()], ['Publicadas', cuenta('Publicada')], ['Borradores', cuenta('Borrador')], ['Cerradas', cuenta('Cerrada')]].map(([c, n]) => (
+        {[['Todas', defs.filter((d) => d.estado !== 'Archivada').length], ['Publicadas', cuenta('Publicada')], ['Borradores', cuenta('Borrador')], ['Cerradas', cuenta('Cerrada')], ['Archivadas', cuenta('Archivada')]].map(([c, n]) => (
           <button key={c} className={'fchip' + (chip === c ? ' on' : '')} onClick={() => setChip(c)}>{c} <span className="cnt">{n}</span></button>
         ))}
       </div>
       <div className="fbar">
-        <div className="fsearch">🔎 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar fichas por nombre…" /></div>
+        <div className="fsearch">🔎 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, edición, URL o estado…" /></div>
         {q && <button className="btn-sm" onClick={() => setQ('')}>Limpiar</button>}
+        <span style={{ flex: 1 }} />
+        <select className="fsel" value={orden} onChange={(e) => setOrden(e.target.value)}>
+          <option value="nombre">Ordenar: Nombre</option>
+          <option value="recientes">Ordenar: Más recientes</option>
+          <option value="inscripciones">Ordenar: Más inscripciones</option>
+        </select>
       </div>
+      <p className="count">{filtradas.length} ficha{filtradas.length === 1 ? '' : 's'} encontrada{filtradas.length === 1 ? '' : 's'}</p>
 
       {filtradas.length === 0 ? (
-        <div className="empty">
-          <div className="ico">🗂️</div>
-          {q || chip !== 'Todas'
-            ? <><h3>No encontramos fichas con estos filtros</h3><p>Probá con otro término o cambiá el filtro.</p><button className="btn-sm" onClick={() => { setQ(''); setChip('Todas'); }}>Limpiar filtros</button></>
-            : <><h3>No hay fichas todavía</h3><p>Creá tu primera ficha desde el Constructor.</p></>}
-        </div>
+        <div className="empty"><div className="ico">🗂️</div><h3>No encontramos fichas</h3><p>Probá con otro término o cambiá el filtro.</p><button className="btn-sm" onClick={() => { setQ(''); setChip('Todas'); }}>Limpiar filtros</button></div>
       ) : (
         <div className="fgrid">
           {filtradas.map((d) => {
             const meta = ESTADO_META[d.estado] || ESTADO_META.Publicada;
-            const insc = conteos[d.curso] || 0;
-            const nEd = (d.ediciones || []).length;
+            const insc = porCurso[d.curso] || 0;
+            const eds = d.ediciones || [];
             const fecha = fmtFecha(d.actualizado);
+            const alerta = d.estado === 'Publicada' && eds.length === 0;
             return (
               <div className="fcard" key={d.slug}>
                 <div className="fcard-top">
-                  <span className={'fstate ' + meta.cls}><span className="d" />{meta.label}</span>
-                  {fecha && <span className="fcard-upd">Actualizada {fecha}</span>}
+                  <span className={'fstate ' + meta.cls}><span className="d" />{meta.label}{alerta && <span className="fwarn"> · sin ediciones</span>}</span>
+                  {fecha && <span className="fcard-upd">Act. {fecha}</span>}
                 </div>
 
                 <div className="ftitle">{d.curso}</div>
 
-                <div className="fmetrics">
-                  <div className="fmetric"><span className="v">{nEd}</span><span className="k">edición{nEd === 1 ? '' : 'es'}</span></div>
-                  <div className="fmetric"><span className="v teal">{insc}</span><span className="k">inscripcion{insc === 1 ? '' : 'es'}</span></div>
+                <div className="fbig">
+                  <div className="fbig-n">{insc}</div>
+                  <div className="fbig-l">inscripcion{insc === 1 ? '' : 'es'}<br /><span>{eds.length} edición{eds.length === 1 ? '' : 'es'}</span></div>
                 </div>
 
-                {nEd === 0 && (
-                  <div className="fnoed">
-                    Sin ediciones cargadas
-                    {puedeEditar && <button onClick={() => onEditar(d.slug)}>+ Agregar edición</button>}
-                  </div>
-                )}
+                <div className="feds">
+                  {eds.length === 0 ? (
+                    <div className="fnoed">Sin ediciones cargadas{puedeEditar && <button onClick={() => onEditar(d.slug)}>+ Agregar edición</button>}</div>
+                  ) : (<>
+                    <div className="feds-title">Ediciones</div>
+                    {eds.slice(0, 3).map((e, i) => (
+                      <div className="fed-row" key={i}><span className="nm">{e.label}</span><span className="c">{contarEd(d.curso, e.label)}</span></div>
+                    ))}
+                    {eds.length > 3 && <button className="fed-more" onClick={() => onEditar(d.slug)}>Ver todas ({eds.length})</button>}
+                    {puedeEditar && eds.length <= 3 && <button className="fed-more" onClick={() => onEditar(d.slug)}>+ Agregar edición</button>}
+                  </>)}
+                </div>
 
                 <div className="fspacer" />
 
-                <div>
-                  <div className="acard-link-label">URL de inscripción</div>
-                  <div className="flink">
-                    <span className="u" title={`${APP_URL}/inscripcion/${d.slug}`}>/inscripcion/{d.slug}</span>
-                    <button onClick={() => copiarLink(d)}>{copiado === d.slug ? '✓ Copiado' : 'Copiar'}</button>
-                  </div>
-                </div>
-
                 <div className="factions">
-                  <a className="btn-sm" href={`${APP_URL}/inscripcion/${d.slug}`} target="_blank" rel="noreferrer">👁 Ver</a>
+                  <a className="btn-sm" href={`${APP_URL}/inscripcion/${d.slug}`} target="_blank" rel="noreferrer">👁 Vista previa</a>
                   {puedeEditar && <button className="btn-sm solid" onClick={() => onEditar(d.slug)}>✎ Editar</button>}
-                  {puedeEditar && (
-                    <div className="fmenu">
-                      <button className="btn-sm fmenu-btn" aria-label="Más acciones" onClick={(e) => { e.stopPropagation(); setMenuAbierto(menuAbierto === d.slug ? null : d.slug); }}>•••</button>
-                      {menuAbierto === d.slug && (
-                        <div className="fmenu-pop" onClick={(e) => e.stopPropagation()}>
-                          <button onClick={() => copiarLink(d)}>🔗 Copiar enlace</button>
-                          <button onClick={() => abrirPublica(d)}>↗ Abrir pública</button>
+                  <div className="fmenu">
+                    <button className="btn-sm fmenu-btn" aria-label="Más acciones" onClick={(e) => { e.stopPropagation(); setMenuAbierto(menuAbierto === d.slug ? null : d.slug); }}>•••</button>
+                    {menuAbierto === d.slug && (
+                      <div className="fmenu-pop" onClick={(e) => e.stopPropagation()}>
+                        <button onClick={() => abrirPublica(d)}>👁 Vista previa</button>
+                        <button onClick={() => copiarLink(d)}>{copiado === d.slug ? '✓ Copiado' : '🔗 Copiar URL'}</button>
+                        {onVerInscripciones && <button onClick={() => { setMenuAbierto(null); onVerInscripciones(d.curso); }}>📋 Ver inscripciones</button>}
+                        {puedeEditar && <button onClick={() => { setMenuAbierto(null); onEditar(d.slug); }}>➕ Crear edición</button>}
+                        {puedeEditar && <>
+                          <div className="sep" />
                           {d.estado !== 'Publicada' && <button onClick={() => guardarEstado(d, 'Publicada')}>🟢 Publicar</button>}
                           {d.estado !== 'Borrador' && <button onClick={() => guardarEstado(d, 'Borrador')}>🟡 Pasar a borrador</button>}
+                          {d.estado !== 'Cerrada' && <button onClick={() => guardarEstado(d, 'Cerrada')}>🔴 Cerrar</button>}
+                          {d.estado !== 'Archivada' && <button onClick={() => guardarEstado(d, 'Archivada')}>🗄 Archivar</button>}
                           <div className="sep" />
-                          {d.estado !== 'Cerrada'
-                            ? <button className="danger" onClick={() => guardarEstado(d, 'Cerrada')}>🔴 Cerrar ficha</button>
-                            : <button onClick={() => guardarEstado(d, 'Publicada')}>♻ Reabrir ficha</button>}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                          <button onClick={() => { setMenuAbierto(null); showToast('Duplicar y eliminar cursos llegan con los cursos dinámicos (próximo lote).'); }}>⧉ Duplicar</button>
+                          <button className="danger" onClick={() => { setMenuAbierto(null); showToast('Eliminar un curso base no está permitido; se puede Archivar.'); }}>🗑 Eliminar</button>
+                        </>}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             );
