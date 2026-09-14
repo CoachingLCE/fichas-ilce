@@ -142,7 +142,7 @@ export default function FichaWizard({ def }) {
   );
 
   return (
-    <div className="stage">
+    <div className={'stage' + (step === 5 ? ' stage-done' : '')}>
       <div className="phone">
         <div className="f-band">
           <div className="kd">FORMACIÓN EN</div>
@@ -264,13 +264,16 @@ export default function FichaWizard({ def }) {
           {step === 5 && (
             <div className="success">
               <div className="ring">✓</div>
-              <h3 style={{ fontSize: 20 }}>¡Inscripción enviada!</h3>
-              <p className="f-lead">
-                Guardamos tu ficha.{resultado?.emailOk
-                  ? ` Te enviamos un correo de confirmación a ${form.email}.`
-                  : ' (El correo de confirmación puede demorar unos minutos.)'}
-              </p>
-              <button className="btn btn-ghost" style={{ marginTop: 8 }} onClick={nuevaFicha}>Cargar otra ficha</button>
+              <h3 className="success-title">¡Inscripción enviada con éxito!</h3>
+              <p className="success-sub">Guardamos tu ficha correctamente.</p>
+              {resultado?.emailOk
+                ? <p className="success-email">Te enviamos un correo de confirmación a <b>{form.email}</b>.</p>
+                : <p className="success-email">El correo de confirmación a <b>{form.email}</b> puede demorar unos minutos.</p>}
+              <div className="success-actions">
+                <a className="btn btn-wa" href={`https://api.whatsapp.com/send?phone=5491163245246&text=${encodeURIComponent(`Hola, ya cargué la ficha de inscripción de la edición de ${def.curso}.`)}`} target="_blank" rel="noreferrer">💬 Consultar por WhatsApp</a>
+                <button className="btn btn-ghost btn-block" onClick={nuevaFicha}>Cargar otra ficha</button>
+              </div>
+              <a className="success-home" href="/">Volver al inicio</a>
             </div>
           )}
         </div>

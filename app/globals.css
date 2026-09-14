@@ -507,3 +507,23 @@ tbody tr{cursor:pointer}tbody tr:hover{background:rgb(var(--surface2))}
 .ilce-logo-blanco{display:block}
 [data-theme="light"] .ilce-logo-color{display:block}
 [data-theme="light"] .ilce-logo-blanco{display:none}
+
+/* ── Pantalla final de inscripción ── */
+.stage.stage-done{align-items:center}
+.success{padding:38px 26px 30px;text-align:center}
+.success .ring{width:82px;height:82px;margin:0 auto 18px;border-radius:50%;
+  background:radial-gradient(circle at 50% 40%,rgba(74,222,128,.28),rgba(15,46,34,.92));
+  border:1px solid rgba(74,222,128,.5);display:flex;align-items:center;justify-content:center;
+  font-size:40px;color:#4ade80;animation:successPop .45s cubic-bezier(.2,.9,.3,1.2) both}
+@keyframes successPop{0%{transform:scale(.5);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+.success-title{font-family:'Jost';font-weight:700;font-size:22px;margin:0 0 8px;line-height:1.15}
+.success-sub{font-size:14.5px;color:rgb(var(--textSec));margin:0 0 4px}
+.success-email{font-size:14px;color:rgb(var(--textMuted));margin:0 0 22px}
+.success-email b{color:rgb(var(--text));font-weight:700}
+.success-actions{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+.btn-block{width:100%}
+.btn-wa{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;text-decoration:none;color:#fff;
+  background:linear-gradient(90deg,rgb(var(--accentTeal2)),rgb(var(--accentTeal)));
+  box-shadow:0 10px 24px -10px rgba(5,149,173,.7)}
+.success-home{display:inline-block;margin-top:2px;font-size:13px;color:rgb(var(--textMuted));text-decoration:none}
+.success-home:hover{color:rgb(var(--textSec));text-decoration:underline}
