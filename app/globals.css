@@ -488,7 +488,7 @@ tbody tr{cursor:pointer}tbody tr:hover{background:rgb(var(--surface2))}
 .navdrop-pop button{display:flex;width:100%;text-align:left;background:none;border:0;color:rgb(var(--text));font-size:13.5px;font-weight:600;padding:8px 10px;border-radius:8px;cursor:pointer}
 .navdrop-pop button:hover{background:rgb(var(--surface))}
 .navdrop-pop button.on{color:#fff;background:linear-gradient(90deg,rgb(var(--accentPurple)),rgb(var(--accentMagenta)))}
-.navoverlay{position:fixed;inset:0;z-index:50}
+.navoverlay{position:fixed;inset:0;z-index:30}
 
 /* ===== Fichas header compacto + indicadores (Lote T) ===== */
 .fhead{margin-bottom:12px}
