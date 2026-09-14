@@ -41,6 +41,7 @@ export default function Panel() {
   const [constructorSlug, setConstructorSlug] = useState(null);
   const [masFiltros, setMasFiltros] = useState(false);
   const [fExterior, setFExterior] = useState(false);
+  const [navMenu, setNavMenu] = useState(null);
   const [rows, setRows] = useState(null);
   const [error, setError] = useState('');
   // filtros
@@ -168,6 +169,7 @@ export default function Panel() {
   return (
     <div className="appwrap">
       <IsologoDefs />
+      {navMenu && <div className="navoverlay" onClick={() => setNavMenu(null)} />}
       <header className="topnav">
         <div className="topnav-brand">
           <Isologo size={28} />
@@ -180,13 +182,29 @@ export default function Panel() {
           <button className={'tnav' + (tab === 'fichas' ? ' on' : '')} onClick={() => setTab('fichas')}>Fichas de inscripción</button>
           <button className={'tnav' + (tab === 'inscripciones' ? ' on' : '')} onClick={() => setTab('inscripciones')}>Estudiantes inscriptos</button>
           {tienePermisoDashboard(usuario) && <button className={'tnav' + (tab === 'dashboard' ? ' on' : '')} onClick={() => setTab('dashboard')}>Dashboard</button>}
-          {tienePermisoEmails(usuario) && <button className={'tnav' + (tab === 'emails' ? ' on' : '')} onClick={() => setTab('emails')}>Emails</button>}
-          {tienePermisoActividades(usuario) && <button className={'tnav' + (tab === 'actividades' ? ' on' : '')} onClick={() => setTab('actividades')}>Actividades</button>}
-          {tienePermisoFormularios(usuario) && <button className={'tnav' + (tab === 'formularios' ? ' on' : '')} onClick={() => setTab('formularios')}>Formularios</button>}
-          {tienePermisoConstructor(usuario) && <button className={'tnav' + (tab === 'constructor' ? ' on' : '')} onClick={() => setTab('constructor')}>Constructor</button>}
-          <button className={'tnav' + (tab === 'herramientas' ? ' on' : '')} onClick={() => setTab('herramientas')}>Herramientas</button>
-          {tienePermisoAccesos(usuario) && <button className={'tnav' + (tab === 'accesos' ? ' on' : '')} onClick={() => setTab('accesos')}>Accesos</button>}
-          {tienePermisoAuditoria(usuario) && <button className={'tnav' + (tab === 'auditoria' ? ' on' : '')} onClick={() => setTab('auditoria')}>Auditoría</button>}
+          {(tienePermisoEmails(usuario) || tienePermisoActividades(usuario) || tienePermisoFormularios(usuario) || tienePermisoConstructor(usuario)) && (
+            <div className="navdrop">
+              <button className={'tnav' + (['emails', 'actividades', 'formularios', 'constructor'].includes(tab) ? ' on' : '')} onClick={(e) => { e.stopPropagation(); setNavMenu(navMenu === 'gestion' ? null : 'gestion'); }}>Gestión ▾</button>
+              {navMenu === 'gestion' && (
+                <div className="navdrop-pop" onClick={(e) => e.stopPropagation()}>
+                  {tienePermisoEmails(usuario) && <button className={tab === 'emails' ? 'on' : ''} onClick={() => { setTab('emails'); setNavMenu(null); }}>Emails</button>}
+                  {tienePermisoActividades(usuario) && <button className={tab === 'actividades' ? 'on' : ''} onClick={() => { setTab('actividades'); setNavMenu(null); }}>Actividades</button>}
+                  {tienePermisoFormularios(usuario) && <button className={tab === 'formularios' ? 'on' : ''} onClick={() => { setTab('formularios'); setNavMenu(null); }}>Formularios</button>}
+                  {tienePermisoConstructor(usuario) && <button className={tab === 'constructor' ? 'on' : ''} onClick={() => { setTab('constructor'); setNavMenu(null); }}>Constructor</button>}
+                </div>
+              )}
+            </div>
+          )}
+          <div className="navdrop">
+            <button className={'tnav' + (['herramientas', 'accesos', 'auditoria'].includes(tab) ? ' on' : '')} onClick={(e) => { e.stopPropagation(); setNavMenu(navMenu === 'config' ? null : 'config'); }}>Configuración ▾</button>
+            {navMenu === 'config' && (
+              <div className="navdrop-pop" onClick={(e) => e.stopPropagation()}>
+                <button className={tab === 'herramientas' ? 'on' : ''} onClick={() => { setTab('herramientas'); setNavMenu(null); }}>Herramientas</button>
+                {tienePermisoAccesos(usuario) && <button className={tab === 'accesos' ? 'on' : ''} onClick={() => { setTab('accesos'); setNavMenu(null); }}>Accesos</button>}
+                {tienePermisoAuditoria(usuario) && <button className={tab === 'auditoria' ? 'on' : ''} onClick={() => { setTab('auditoria'); setNavMenu(null); }}>Auditoría</button>}
+              </div>
+            )}
+          </div>
         </nav>
         <div className="topnav-right">
           <button className="iconbtn" title="Buscar inscripciones" aria-label="Buscar" onClick={() => { setTab('inscripciones'); setTimeout(() => document.getElementById('ins-search')?.focus(), 60); }}>🔎</button>

@@ -110,21 +110,24 @@ export default function FichasSection({ usuario, rows, onEditar, onVerInscripcio
       <div className="fhead">
         <div>
           <p className="fhead-sub">Administrá los cursos, ediciones y páginas de inscripción.</p>
-          <p className="fhead-stats">{defs.length} fichas · {conEd} con ediciones · {sinEd} sin ediciones</p>
+          <div className="fstatpills">
+            <span className="fstatpill"><b>{defs.length}</b> Fichas</span>
+            <span className="fstatpill ok"><b>{conEd}</b> Con ediciones</span>
+            <span className="fstatpill warn"><b>{sinEd}</b> Sin ediciones</span>
+          </div>
         </div>
         <span style={{ flex: 1 }} />
         {puedeEditar && <button className="btn btn-primary" style={{ flex: 'none', padding: '10px 18px' }} onClick={() => showToast('El alta de cursos nuevos llega en el próximo lote (cursos dinámicos).')}>+ Nueva ficha</button>}
       </div>
 
-      {/* Alerta administrativa */}
       {sinEd > 0 && (
         <div className="fbanner">
           <span className="fbanner-ico">⚠️</span>
           <div className="fbanner-txt">
-            <b>{sinEd} ficha{sinEd === 1 ? '' : 's'} sin ediciones cargadas</b>
-            <span>Cargá al menos una edición para poder inscribir.</span>
+            <b>Cargá ediciones</b>
+            <span>{sinEd} ficha{sinEd === 1 ? '' : 's'} sin ediciones</span>
           </div>
-          <button className="btn-sm" onClick={() => { setChip('Todas'); setOrden('nombre'); setQ(''); }}>Revisar</button>
+          <button className="btn-sm solid" onClick={() => { const f = defs.find((d) => (d.ediciones || []).length === 0); if (f) onEditar(f.slug); }}>Cargar edición</button>
         </div>
       )}
 
@@ -197,12 +200,20 @@ export default function FichasSection({ usuario, rows, onEditar, onVerInscripcio
                 <div className="fspacer" />
 
                 <div className="factions">
-                  <a className="btn-sm" href={`${APP_URL}/inscripcion/${d.slug}`} target="_blank" rel="noreferrer">👁 Vista previa</a>
-                  {puedeEditar && <button className="btn-sm solid" onClick={() => onEditar(d.slug)}>✎ Editar</button>}
+                  {(() => {
+                    const eds = d.ediciones || [];
+                    let ap;
+                    if (d.estado === 'Borrador') ap = { l: '✎ Continuar edición', f: () => onEditar(d.slug) };
+                    else if (eds.length === 0) ap = { l: '➕ Cargar edición', f: () => onEditar(d.slug) };
+                    else if (d.estado === 'Publicada') ap = { l: '👁 Ver inscripción', f: () => abrirPublica(d) };
+                    else ap = { l: '🎓 Gestionar ediciones', f: () => onEditar(d.slug) };
+                    return <button className="btn-sm solid" style={{ flex: 1, justifyContent: 'center' }} onClick={ap.f}>{ap.l}</button>;
+                  })()}
                   <div className="fmenu">
-                    <button className="btn-sm fmenu-btn" aria-label="Más acciones" onClick={(e) => { e.stopPropagation(); setMenuAbierto(menuAbierto === d.slug ? null : d.slug); }}>•••</button>
+                    <button className="btn-sm fmenu-btn" aria-label="Más acciones" onClick={(e) => { e.stopPropagation(); setMenuAbierto(menuAbierto === d.slug ? null : d.slug); }}>⋮</button>
                     {menuAbierto === d.slug && (
                       <div className="fmenu-pop" onClick={(e) => e.stopPropagation()}>
+                        {puedeEditar && <button onClick={() => { setMenuAbierto(null); onEditar(d.slug); }}>✎ Editar ficha</button>}
                         <button onClick={() => abrirPublica(d)}>👁 Vista previa</button>
                         <button onClick={() => copiarLink(d)}>{copiado === d.slug ? '✓ Copiado' : '🔗 Copiar URL'}</button>
                         {onVerInscripciones && <button onClick={() => { setMenuAbierto(null); onVerInscripciones(d.curso); }}>📋 Ver inscripciones</button>}
@@ -214,8 +225,7 @@ export default function FichasSection({ usuario, rows, onEditar, onVerInscripcio
                           {d.estado !== 'Cerrada' && <button onClick={() => guardarEstado(d, 'Cerrada')}>🔴 Cerrar</button>}
                           {d.estado !== 'Archivada' && <button onClick={() => guardarEstado(d, 'Archivada')}>🗄 Archivar</button>}
                           <div className="sep" />
-                          <button onClick={() => { setMenuAbierto(null); showToast('Duplicar y eliminar cursos llegan con los cursos dinámicos (próximo lote).'); }}>⧉ Duplicar</button>
-                          <button className="danger" onClick={() => { setMenuAbierto(null); showToast('Eliminar un curso base no está permitido; se puede Archivar.'); }}>🗑 Eliminar</button>
+                          <button className="danger" onClick={() => { setMenuAbierto(null); showToast('Eliminar/duplicar cursos base llega con los cursos dinámicos.'); }}>🗑 Eliminar</button>
                         </>}
                       </div>
                     )}

@@ -478,3 +478,25 @@ tbody tr{cursor:pointer}tbody tr:hover{background:rgb(var(--surface2))}
 .escala-b:hover{border-color:rgb(var(--accentTeal))}
 .escala-b.on{background:linear-gradient(135deg,rgb(var(--accentPurple)),rgb(var(--accentMagenta)));color:#fff;border-color:transparent}
 .escala-hint{font-size:11.5px;color:rgb(var(--textMuted));margin-left:4px}
+
+/* ===== Nav agrupado (Lote T) ===== */
+.tnav{background:transparent;border-color:transparent;color:rgb(var(--textMuted));font-weight:600}
+.tnav:hover{background:rgb(var(--surface2));color:rgb(var(--text));border-color:transparent}
+.tnav.on{background:linear-gradient(90deg,rgb(var(--accentPurple)),rgb(var(--accentMagenta)));color:#fff}
+.navdrop{position:relative}
+.navdrop-pop{position:absolute;top:calc(100% + 6px);left:0;background:rgb(var(--surface2));border:1px solid rgb(var(--border));border-radius:12px;padding:6px;min-width:190px;z-index:60;box-shadow:0 16px 40px -16px rgba(0,0,0,.7);display:flex;flex-direction:column}
+.navdrop-pop button{display:flex;width:100%;text-align:left;background:none;border:0;color:rgb(var(--text));font-size:13.5px;font-weight:600;padding:8px 10px;border-radius:8px;cursor:pointer}
+.navdrop-pop button:hover{background:rgb(var(--surface))}
+.navdrop-pop button.on{color:#fff;background:linear-gradient(90deg,rgb(var(--accentPurple)),rgb(var(--accentMagenta)))}
+.navoverlay{position:fixed;inset:0;z-index:50}
+
+/* ===== Fichas header compacto + indicadores (Lote T) ===== */
+.fhead{margin-bottom:12px}
+.fhead-sub{margin:0 0 8px}
+.fstatpills{display:flex;gap:8px;flex-wrap:wrap}
+.fstatpill{display:inline-flex;align-items:center;gap:6px;background:rgb(var(--surface));border:1px solid rgb(var(--border));border-radius:999px;padding:5px 12px;font-size:12.5px;color:rgb(var(--textSec))}
+.fstatpill b{font-family:'Jost';font-weight:700;font-size:15px;color:rgb(var(--text))}
+.fstatpill.ok b{color:rgb(74 222 128)}
+.fstatpill.warn b{color:rgb(251 191 36)}
+.fbanner{padding:10px 12px}
+.fbanner .btn-sm{margin-left:auto}
