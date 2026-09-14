@@ -13,6 +13,7 @@ import Actividades from './Actividades';
 import EmailsPanel from './EmailsPanel';
 import Herramientas from './Herramientas';
 import Auditoria from './Auditoria';
+import AccesoDenegado from './AccesoDenegado';
 import Formularios from './Formularios';
 
 const ALL_COLS = [
@@ -181,27 +182,25 @@ export default function Panel() {
         <nav className="topnav-tabs">
           <button className={'tnav' + (tab === 'fichas' ? ' on' : '')} onClick={() => setTab('fichas')}>Fichas de inscripción</button>
           <button className={'tnav' + (tab === 'inscripciones' ? ' on' : '')} onClick={() => setTab('inscripciones')}>Estudiantes inscriptos</button>
-          {tienePermisoDashboard(usuario) && <button className={'tnav' + (tab === 'dashboard' ? ' on' : '')} onClick={() => setTab('dashboard')}>Dashboard</button>}
-          {(tienePermisoEmails(usuario) || tienePermisoActividades(usuario) || tienePermisoFormularios(usuario) || tienePermisoConstructor(usuario)) && (
-            <div className="navdrop">
-              <button className={'tnav' + (['emails', 'actividades', 'formularios', 'constructor'].includes(tab) ? ' on' : '')} onClick={(e) => { e.stopPropagation(); setNavMenu(navMenu === 'gestion' ? null : 'gestion'); }}>Gestión ▾</button>
-              {navMenu === 'gestion' && (
-                <div className="navdrop-pop" onClick={(e) => e.stopPropagation()}>
-                  {tienePermisoEmails(usuario) && <button className={tab === 'emails' ? 'on' : ''} onClick={() => { setTab('emails'); setNavMenu(null); }}>Emails</button>}
-                  {tienePermisoActividades(usuario) && <button className={tab === 'actividades' ? 'on' : ''} onClick={() => { setTab('actividades'); setNavMenu(null); }}>Actividades</button>}
-                  {tienePermisoFormularios(usuario) && <button className={tab === 'formularios' ? 'on' : ''} onClick={() => { setTab('formularios'); setNavMenu(null); }}>Formularios</button>}
-                  {tienePermisoConstructor(usuario) && <button className={tab === 'constructor' ? 'on' : ''} onClick={() => { setTab('constructor'); setNavMenu(null); }}>Constructor</button>}
-                </div>
-              )}
-            </div>
-          )}
+          <button className={'tnav' + (tab === 'dashboard' ? ' on' : '')} onClick={() => setTab('dashboard')}>Dashboard</button>
+          <div className="navdrop">
+            <button className={'tnav' + (['emails', 'actividades', 'formularios', 'constructor'].includes(tab) ? ' on' : '')} onClick={(e) => { e.stopPropagation(); setNavMenu(navMenu === 'gestion' ? null : 'gestion'); }}>Gestión ▾</button>
+            {navMenu === 'gestion' && (
+              <div className="navdrop-pop" onClick={(e) => e.stopPropagation()}>
+                <button className={tab === 'emails' ? 'on' : ''} onClick={() => { setTab('emails'); setNavMenu(null); }}>Emails</button>
+                <button className={tab === 'actividades' ? 'on' : ''} onClick={() => { setTab('actividades'); setNavMenu(null); }}>Actividades</button>
+                <button className={tab === 'formularios' ? 'on' : ''} onClick={() => { setTab('formularios'); setNavMenu(null); }}>Formularios</button>
+                <button className={tab === 'constructor' ? 'on' : ''} onClick={() => { setTab('constructor'); setNavMenu(null); }}>Constructor</button>
+              </div>
+            )}
+          </div>
           <div className="navdrop">
             <button className={'tnav' + (['herramientas', 'accesos', 'auditoria'].includes(tab) ? ' on' : '')} onClick={(e) => { e.stopPropagation(); setNavMenu(navMenu === 'config' ? null : 'config'); }}>Configuración ▾</button>
             {navMenu === 'config' && (
               <div className="navdrop-pop" onClick={(e) => e.stopPropagation()}>
                 <button className={tab === 'herramientas' ? 'on' : ''} onClick={() => { setTab('herramientas'); setNavMenu(null); }}>Herramientas</button>
-                {tienePermisoAccesos(usuario) && <button className={tab === 'accesos' ? 'on' : ''} onClick={() => { setTab('accesos'); setNavMenu(null); }}>Accesos</button>}
-                {tienePermisoAuditoria(usuario) && <button className={tab === 'auditoria' ? 'on' : ''} onClick={() => { setTab('auditoria'); setNavMenu(null); }}>Auditoría</button>}
+                <button className={tab === 'accesos' ? 'on' : ''} onClick={() => { setTab('accesos'); setNavMenu(null); }}>Accesos</button>
+                <button className={tab === 'auditoria' ? 'on' : ''} onClick={() => { setTab('auditoria'); setNavMenu(null); }}>Auditoría</button>
               </div>
             )}
           </div>
@@ -308,15 +307,17 @@ export default function Panel() {
           </>
         )}
 
-        {rows && tab === 'dashboard' && tienePermisoDashboard(usuario) && <Dashboard rows={filtradas} allRows={rows}
-          filtros={{ fEstado, setFEstado, fCurso, setFCurso, fEd, setFEd, fPais, setFPais, fDesde, setFDesde, fHasta, setFHasta, limpiar, cursos, ediciones, paises, irA: (estado) => { setFEstado(estado || ''); setTab('inscripciones'); } }} />}
+        {tab === 'dashboard' && (tienePermisoDashboard(usuario)
+          ? (rows && <Dashboard rows={filtradas} allRows={rows}
+              filtros={{ fEstado, setFEstado, fCurso, setFCurso, fEd, setFEd, fPais, setFPais, fDesde, setFDesde, fHasta, setFHasta, limpiar, cursos, ediciones, paises, irA: (estado) => { setFEstado(estado || ''); setTab('inscripciones'); } }} />)
+          : <AccesoDenegado seccion="Dashboard" />)}
 
-        {tab === 'constructor' && tienePermisoConstructor(usuario) && <Constructor usuario={usuario} initialSlug={constructorSlug} showToast={showToast} />}
-        {tab === 'emails' && tienePermisoEmails(usuario) && <EmailsPanel usuario={usuario} />}
-        {tab === 'actividades' && tienePermisoActividades(usuario) && <Actividades usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} puedeDocentes={tienePermisoAsignarDocentes(usuario)} />}
-        {tab === 'formularios' && tienePermisoFormularios(usuario) && <Formularios usuario={usuario} showToast={showToast} />}
-        {tab === 'accesos' && tienePermisoAccesos(usuario) && <Accesos usuario={usuario} />}
-        {tab === 'auditoria' && tienePermisoAuditoria(usuario) && <Auditoria usuario={usuario} />}
+        {tab === 'constructor' && (tienePermisoConstructor(usuario) ? <Constructor usuario={usuario} initialSlug={constructorSlug} showToast={showToast} /> : <AccesoDenegado seccion="Constructor" />)}
+        {tab === 'emails' && (tienePermisoEmails(usuario) ? <EmailsPanel usuario={usuario} /> : <AccesoDenegado seccion="Emails" />)}
+        {tab === 'actividades' && (tienePermisoActividades(usuario) ? <Actividades usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} puedeDocentes={tienePermisoAsignarDocentes(usuario)} /> : <AccesoDenegado seccion="Actividades" />)}
+        {tab === 'formularios' && (tienePermisoFormularios(usuario) ? <Formularios usuario={usuario} showToast={showToast} /> : <AccesoDenegado seccion="Formularios" />)}
+        {tab === 'accesos' && (tienePermisoAccesos(usuario) ? <Accesos usuario={usuario} /> : <AccesoDenegado seccion="Accesos" />)}
+        {tab === 'auditoria' && (tienePermisoAuditoria(usuario) ? <Auditoria usuario={usuario} /> : <AccesoDenegado seccion="Auditoría" />)}
       </div>
 
       {/* drawer */}
