@@ -1,28 +1,31 @@
+// Logo oficial Instituto ILCE.
+// Muestra el logo completo (isotipo + "INSTITUTO ILCE"), eligiendo la versión
+// de color o blanca según el tema activo (data-theme), vía CSS en globals.css.
+// `size` = alto en px; el ancho se ajusta solo manteniendo la proporción.
+
+// Se mantiene exportado por compatibilidad: varias páginas hacen
+// `import { Isologo, IsologoDefs }` y renderizan <IsologoDefs />.
+// Ya no hace falta el gradiente SVG, así que no renderiza nada.
 export function IsologoDefs() {
-  return (
-    <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden>
-      <defs>
-        <linearGradient id="ig" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#96198f" />
-          <stop offset=".5" stopColor="#4a128b" />
-          <stop offset="1" stopColor="#0595ad" />
-        </linearGradient>
-      </defs>
-    </svg>
-  );
+  return null;
 }
 
 export function Isologo({ size = 34 }) {
+  const style = { height: size, width: 'auto' };
   return (
-    <svg className="mark" viewBox="0 0 100 100" width={size} height={size} aria-label="Instituto ILCE">
-      <g>
-        <path d="M50 12 A38 38 0 0 1 84 44" strokeWidth="7" />
-        <path d="M76 30 A32 32 0 0 1 70 78" strokeWidth="7" />
-        <path d="M84 56 A38 38 0 0 1 44 88" strokeWidth="7" />
-        <path d="M60 82 A32 32 0 0 1 18 62" strokeWidth="7" />
-        <path d="M16 56 A38 38 0 0 1 30 20" strokeWidth="7" />
-        <path d="M28 26 A32 32 0 0 1 66 24" strokeWidth="7" />
-      </g>
-    </svg>
+    <>
+      <img
+        src="/logo-ilce-color.png"
+        alt="Instituto ILCE"
+        className="ilce-logo ilce-logo-color"
+        style={style}
+      />
+      <img
+        src="/logo-ilce-blanco.png"
+        alt="Instituto ILCE"
+        className="ilce-logo ilce-logo-blanco"
+        style={style}
+      />
+    </>
   );
 }

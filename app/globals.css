@@ -500,3 +500,10 @@ tbody tr{cursor:pointer}tbody tr:hover{background:rgb(var(--surface2))}
 .fstatpill.warn b{color:rgb(251 191 36)}
 .fbanner{padding:10px 12px}
 .fbanner .btn-sm{margin-left:auto}
+
+
+/* ── Logo Instituto ILCE — cambia color/blanco según el tema ── */
+.ilce-logo-color{display:none}
+.ilce-logo-blanco{display:block}
+[data-theme="light"] .ilce-logo-color{display:block}
+[data-theme="light"] .ilce-logo-blanco{display:none}
