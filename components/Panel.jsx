@@ -247,11 +247,11 @@ export default function Panel() {
               };
               return (<>
                 <div className="ins-kpis">
-                  <div className="ins-kpi"><div className="ic">📋</div><div className="n" style={{ color: 'rgb(var(--accentTeal))' }}>{rows.length}</div><div className="l">Total</div></div>
-                  <div className="ins-kpi"><div className="ic">📈</div><div className="n">{sem}</div><div className="l">Últimos 7 días</div></div>
-                  <div className="ins-kpi"><div className="ic">⏳</div><div className="n" style={{ color: 'rgb(251 191 36)' }}>{pend}</div><div className="l">Pendientes</div></div>
-                  <div className="ins-kpi"><div className="ic">👁</div><div className="n" style={{ color: '#d879d1' }}>{enRev}</div><div className="l">En revisión</div></div>
-                  <div className="ins-kpi"><div className="ic">✅</div><div className="n" style={{ color: 'rgb(74 222 128)' }}>{tasa}%</div><div className="l">Completadas</div></div>
+                  <div className="ins-kpi kpi-total"><div className="ic">📋</div><div className="n" style={{ color: 'rgb(var(--accentTeal))' }}>{rows.length}</div><div className="l">Total</div></div>
+                  <div className="ins-kpi kpi-week"><div className="ic">📈</div><div className="n">{sem}</div><div className="l">Últimos 7 días</div></div>
+                  <div className="ins-kpi kpi-pend"><div className="ic">⏳</div><div className="n" style={{ color: 'rgb(251 191 36)' }}>{pend}</div><div className="l">Pendientes</div></div>
+                  <div className="ins-kpi kpi-rev"><div className="ic">👁</div><div className="n" style={{ color: '#d879d1' }}>{enRev}</div><div className="l">En revisión</div></div>
+                  <div className="ins-kpi kpi-comp"><div className="ic">✅</div><div className="n" style={{ color: 'rgb(74 222 128)' }}>{tasa}%</div><div className="l">Completadas</div></div>
                 </div>
                 <div className="fgroup-label">Filtros rápidos</div>
                 <div className="fchips" style={{ marginBottom: 10 }}>
@@ -298,11 +298,11 @@ export default function Panel() {
             <p className="count">Mostrando <b>{Math.min(300, filtradas.length)}</b> de <b>{filtradas.length}</b> inscripciones{filtradas.length > 300 ? ' (afiná la búsqueda para ver el resto)' : ''}</p>
             <div className="tablewrap">
               <table>
-                <thead><tr>{ALL_COLS.filter((c) => visCols.has(c[0])).map((c) => <th key={c[0]}>{c[1]}</th>)}</tr></thead>
+                <thead><tr>{ALL_COLS.filter((c) => visCols.has(c[0])).map((c) => <th key={c[0]} className={'col-' + c[0]}>{c[1]}</th>)}</tr></thead>
                 <tbody>
                   {filtradas.slice(0, 300).map((r) => (
                     <tr key={r.id} onClick={() => abrir(r)}>
-                      {ALL_COLS.filter((c) => visCols.has(c[0])).map(([k]) => <td key={k}>{celda(r, k)}</td>)}
+                      {ALL_COLS.filter((c) => visCols.has(c[0])).map(([k]) => <td key={k} className={'col-' + k}>{celda(r, k)}</td>)}
                     </tr>
                   ))}
                 </tbody>

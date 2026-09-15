@@ -567,3 +567,18 @@ tr.clickable:hover{background:rgb(var(--surface2))}
 .ins-kpi{transition:transform .12s,border-color .12s}
 .ins-kpi:hover{transform:translateY(-1px);border-color:rgba(5,149,173,.4)}
 .ins-kpi .ic{font-size:15px;opacity:.65;margin-bottom:3px;line-height:1}
+
+/* ── Fichas completadas 2a pasada: identidad de color por métrica + responsive ── */
+.ins-kpi{border-top:2px solid transparent}
+.kpi-total{border-top-color:rgba(5,149,173,.55)}
+.kpi-week{border-top-color:rgba(148,170,196,.4)}
+.kpi-pend{border-top-color:rgba(251,191,36,.5)}
+.kpi-rev{border-top-color:rgba(216,121,209,.5)}
+.kpi-comp{border-top-color:rgba(74,222,128,.5)}
+/* En pantallas chicas: dejar solo Nombre, Curso, Edición y Estado */
+@media (max-width:640px){
+  .tablewrap table .col-em,.tablewrap table .col-pais,.tablewrap table .col-prov,
+  .tablewrap table .col-loc,.tablewrap table .col-wa,.tablewrap table .col-doc,
+  .tablewrap table .col-ig,.tablewrap table .col-prof,.tablewrap table .col-origen,
+  .tablewrap table .col-mod,.tablewrap table .col-inscrito,.tablewrap table .col-fecha{display:none}
+}
