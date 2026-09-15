@@ -538,3 +538,17 @@ tr.clickable:hover{background:rgb(var(--surface2))}
 .preview-head .btn-sm{margin-left:auto;flex:none}
 .preview-body{overflow:auto;background:#061424}
 .preview-frame{width:100%;height:70vh;border:0;display:block;background:#061424}
+
+/* ── Formulario de datos: tarjeta más ancha, grilla 2 columnas y secciones ── */
+.phone-wide{width:720px}
+.f-section{font-family:'Jost';font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:rgb(var(--textMuted));font-weight:600;margin:20px 0 11px}
+.f-body > .f-section:first-child{margin-top:2px}
+.f-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+.f-grid .span2{grid-column:1 / -1}
+.f-steps span.cur{box-shadow:0 0 0 3px rgba(150,25,143,.18)}
+@media (max-width:600px){
+  .f-grid{grid-template-columns:1fr}
+  .f-grid .span2{grid-column:auto}
+  .f-foot{flex-direction:column-reverse}
+  .f-foot .btn{width:100%}
+}

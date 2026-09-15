@@ -143,7 +143,7 @@ export default function FichaWizard({ def }) {
 
   return (
     <div className={'stage' + (step === 5 ? ' stage-done' : '')}>
-      <div className="phone">
+      <div className={'phone' + ((step === 2 || step === 3) ? ' phone-wide' : '')}>
         <div className="f-band">
           <div className="kd">FORMACIÓN EN</div>
           <div className="ti">{def.curso}</div>
@@ -162,8 +162,8 @@ export default function FichaWizard({ def }) {
           <div className="f-progress">
             <div className="f-steps">{[0, 1, 2, 3, 4].map((i) => <span key={i} className={i < step ? 'done' : (i === step ? 'cur' : '')} />)}</div>
             <div className="f-meta">
-              <span className="st">{STEP_NAMES[step]}</span>
-              <span className={'saved' + (saving ? ' saving' : '')}>{saving ? 'Guardando…' : (saved || '✓ Guardado')}</span>
+              <span className="st">Paso {step + 1} de 5 · {STEP_NAMES[step]}</span>
+              <span className={'saved' + (saving ? ' saving' : '')}>{saving ? 'Guardando…' : (saved ? '✓ Guardado automáticamente' : '✓ Guardado')}</span>
             </div>
           </div>
         )}
@@ -191,39 +191,51 @@ export default function FichaWizard({ def }) {
           </>)}
 
           {step === 2 && (<>
-            <h3>Datos personales</h3>
-            <Campo err={errs.nom}><label>Nombre <span className="req">*</span></label>
-              <input className="ctrl" value={form.nom || ''} onChange={(e) => set('nom', e.target.value)} placeholder="Tu nombre" /></Campo>
-            <Campo err={errs.ape}><label>Apellido <span className="req">*</span></label>
-              <input className="ctrl" value={form.ape || ''} onChange={(e) => set('ape', e.target.value)} placeholder="Tu apellido" /></Campo>
-            <div className="field"><label>País de residencia <span className="req">*</span></label>
-              <select className="ctrl" value={form.pais || 'Argentina'} onChange={(e) => set('pais', e.target.value)}>
-                {PAISES.map((p) => <option key={p}>{p}</option>)}
-              </select></div>
-            <Campo err={errs.prov}><label>{arg ? 'Provincia' : 'Provincia / Estado'} <span className="req">*</span></label>
-              {arg
-                ? <select className="ctrl" value={form.prov || ''} onChange={(e) => set('prov', e.target.value)}><option value="">Elegí…</option>{PROVINCIAS_AR.map((p) => <option key={p}>{p}</option>)}</select>
-                : <input className="ctrl" value={form.prov || ''} onChange={(e) => set('prov', e.target.value)} placeholder="Provincia o estado" />}
-            </Campo>
-            <Campo err={errs.doc}><label>{arg ? 'DNI / CUIT' : 'Pasaporte / Documento'} <span className="req">*</span></label>
-              {!arg && <div className="help">MÉXICO: INE · Bolivia, Chile, Costa Rica, Ecuador, Uruguay, Paraguay, Venezuela: Cédula de identidad</div>}
-              <input className="ctrl" value={form.doc || ''} onChange={(e) => set('doc', e.target.value)} placeholder={arg ? 'Ej: 30123456 o 20301234569' : 'Número de documento'} /></Campo>
-            <Campo err={errs.loc}><label>Localidad <span className="req">*</span></label>
-              <input className="ctrl" value={form.loc || ''} onChange={(e) => set('loc', e.target.value)} placeholder="Ciudad / localidad" /></Campo>
-            <Campo err={errs.wa}><label>Número de WhatsApp <span className="req">*</span></label>
-              <input className="ctrl" value={form.wa || ''} onChange={(e) => set('wa', e.target.value)} placeholder="Ej: +54 9 11 5555 1234" /></Campo>
-            <div className="field"><label>Fecha de nacimiento</label>
-              <input className="ctrl" type="date" value={form.fnac || ''} onChange={(e) => set('fnac', e.target.value)} /></div>
-            <Campo err={errs.modalidad}><label>Modalidad de cursada <span className="req">*</span></label>
-              <Radio k="modalidad" val="Principalmente en vivo / sincrónico" label="Principalmente en vivo / sincrónico" />
-              <Radio k="modalidad" val="Principalmente grabaciones / asincrónico" label="Principalmente grabaciones / asincrónico" />
-              <Radio k="modalidad" val="Otro" label="Otro" />
+            <div className="f-section">Datos personales</div>
+            <div className="f-grid">
+              <Campo err={errs.nom}><label>Nombre <span className="req">*</span></label>
+                <input className="ctrl" value={form.nom || ''} onChange={(e) => set('nom', e.target.value)} placeholder="Ej.: María" /></Campo>
+              <Campo err={errs.ape}><label>Apellido <span className="req">*</span></label>
+                <input className="ctrl" value={form.ape || ''} onChange={(e) => set('ape', e.target.value)} placeholder="Ej.: González" /></Campo>
+            </div>
+
+            <div className="f-section">Residencia</div>
+            <div className="f-grid">
+              <div className="field"><label>País de residencia <span className="req">*</span></label>
+                <select className="ctrl" value={form.pais || 'Argentina'} onChange={(e) => set('pais', e.target.value)}>
+                  {PAISES.map((p) => <option key={p}>{p}</option>)}
+                </select></div>
+              <Campo err={errs.prov}><label>{arg ? 'Provincia' : 'Provincia / Estado'} <span className="req">*</span></label>
+                {arg
+                  ? <select className="ctrl" value={form.prov || ''} onChange={(e) => set('prov', e.target.value)}><option value="">Elegí…</option>{PROVINCIAS_AR.map((p) => <option key={p}>{p}</option>)}</select>
+                  : <input className="ctrl" value={form.prov || ''} onChange={(e) => set('prov', e.target.value)} placeholder="Provincia o estado" />}
+              </Campo>
+              <Campo err={errs.loc} full><label>Localidad <span className="req">*</span></label>
+                <input className="ctrl" value={form.loc || ''} onChange={(e) => set('loc', e.target.value)} placeholder="Ej.: La Plata" /></Campo>
+            </div>
+
+            <div className="f-section">Identificación y contacto</div>
+            <div className="f-grid">
+              <Campo err={errs.doc}><label>{arg ? 'DNI / CUIT' : 'Pasaporte / Documento'} <span className="req">*</span></label>
+                <input className="ctrl" value={form.doc || ''} onChange={(e) => set('doc', e.target.value)} placeholder={arg ? 'Ej.: 30123456' : 'Número de documento'} />
+                {!arg && <div className="help">México: INE · Bolivia, Chile, Costa Rica, Ecuador, Uruguay, Paraguay, Venezuela: cédula de identidad</div>}</Campo>
+              <Campo err={errs.wa}><label>Número de WhatsApp <span className="req">*</span></label>
+                <input className="ctrl" value={form.wa || ''} onChange={(e) => set('wa', e.target.value)} placeholder="Ej.: +54 9 11 5555 1234" /></Campo>
+              <div className="field"><label>Fecha de nacimiento</label>
+                <input className="ctrl" type="date" value={form.fnac || ''} onChange={(e) => set('fnac', e.target.value)} /></div>
+              <div className="field"><label>Instagram</label>
+                <input className="ctrl" value={form.ig || ''} onChange={(e) => set('ig', e.target.value)} placeholder="@usuario" /></div>
+              <div className="field span2"><label>Profesión</label>
+                <input className="ctrl" value={form.prof || ''} onChange={(e) => set('prof', e.target.value)} placeholder="Tu profesión" /></div>
+            </div>
+
+            <div className="f-section">Modalidad de cursada</div>
+            <Campo err={errs.modalidad}>
+              <Radio k="modalidad" val="Principalmente en vivo / sincrónico" label="Principalmente en vivo / sincrónico" sub="Participación principalmente en clases en tiempo real." />
+              <Radio k="modalidad" val="Principalmente grabaciones / asincrónico" label="Principalmente grabaciones / asincrónico" sub="Cursada principalmente mediante contenidos grabados." />
+              <Radio k="modalidad" val="Otro" label="Otro" sub="Otra modalidad de cursada." />
               {form.modalidad === 'Otro' && <input className="ctrl" style={{ marginTop: 6 }} value={form.modOtro || ''} onChange={(e) => set('modOtro', e.target.value)} placeholder="Contanos cuál" />}
             </Campo>
-            <div className="field"><label>Instagram</label>
-              <input className="ctrl" value={form.ig || ''} onChange={(e) => set('ig', e.target.value)} placeholder="@usuario" /></div>
-            <div className="field"><label>Profesión</label>
-              <input className="ctrl" value={form.prof || ''} onChange={(e) => set('prof', e.target.value)} placeholder="Tu profesión" /></div>
           </>)}
 
           {step === 3 && (<>
@@ -284,11 +296,11 @@ export default function FichaWizard({ def }) {
           <div className="f-foot">
             {step === 0 && <button className="btn btn-primary" onClick={next}>Comenzar</button>}
             {step > 0 && step < 4 && (<>
-              <button className="btn btn-ghost" onClick={prev}>Atrás</button>
-              <button className="btn btn-primary" onClick={next}>{step === 3 ? 'Revisar' : 'Siguiente'}</button>
+              <button className="btn btn-ghost" onClick={prev}>← Atrás</button>
+              <button className="btn btn-primary" onClick={next}>{step === 3 ? 'Revisar →' : 'Siguiente →'}</button>
             </>)}
             {step === 4 && (<>
-              <button className="btn btn-ghost" onClick={prev} disabled={enviando}>Atrás</button>
+              <button className="btn btn-ghost" onClick={prev} disabled={enviando}>← Atrás</button>
               <button className="btn btn-teal" style={{ flex: 1 }} onClick={enviar} disabled={enviando}>{enviando ? 'Enviando…' : 'Enviar inscripción'}</button>
             </>)}
           </div>
@@ -298,6 +310,6 @@ export default function FichaWizard({ def }) {
   );
 }
 
-function Campo({ err, children }) {
-  return <div className={'field' + (err ? ' bad' : '')}>{children}{err && <div className="err">{err}</div>}</div>;
+function Campo({ err, full, children }) {
+  return <div className={'field' + (err ? ' bad' : '') + (full ? ' span2' : '')}>{children}{err && <div className="err">{err}</div>}</div>;
 }
