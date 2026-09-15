@@ -593,3 +593,7 @@ tr.clickable:hover{background:rgb(var(--surface2))}
 .tnav.on{background:rgb(var(--accentPurple) / 0.15);color:rgb(var(--accentPurple));border-color:transparent}
 .tnav.on:hover{background:rgb(var(--accentPurple) / 0.22)}
 .navdrop-pop button.on{background:rgb(var(--accentPurple) / 0.15);color:rgb(var(--accentPurple))}
+
+/* ── Nav plana con grupos (modelo seguimiento-lead) ── */
+.navgroup{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.navgroup-label{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;color:rgb(var(--textMuted));margin:0 2px 0 8px;white-space:nowrap}

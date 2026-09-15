@@ -179,26 +179,18 @@ export default function Panel() {
           <button className={'tnav' + (tab === 'fichas' ? ' on' : '')} onClick={() => setTab('fichas')}>Fichas de inscripción</button>
           <button className={'tnav' + (tab === 'inscripciones' ? ' on' : '')} onClick={() => setTab('inscripciones')}>Fichas completadas</button>
           <button className={'tnav' + (tab === 'dashboard' ? ' on' : '')} onClick={() => setTab('dashboard')}>Dashboard</button>
-          <div className="navdrop">
-            <button className={'tnav' + (['emails', 'actividades', 'formularios', 'constructor'].includes(tab) ? ' on' : '')} onClick={(e) => { e.stopPropagation(); setNavMenu(navMenu === 'gestion' ? null : 'gestion'); }}>Gestión ▾</button>
-            {navMenu === 'gestion' && (
-              <div className="navdrop-pop" onClick={(e) => e.stopPropagation()}>
-                <button className={tab === 'emails' ? 'on' : ''} onClick={() => { setTab('emails'); setNavMenu(null); }}>Emails</button>
-                <button className={tab === 'actividades' ? 'on' : ''} onClick={() => { setTab('actividades'); setNavMenu(null); }}>Actividades</button>
-                <button className={tab === 'formularios' ? 'on' : ''} onClick={() => { setTab('formularios'); setNavMenu(null); }}>Formularios</button>
-                <button className={tab === 'constructor' ? 'on' : ''} onClick={() => { setTab('constructor'); setNavMenu(null); }}>Constructor</button>
-              </div>
-            )}
+          <div className="navgroup">
+            <span className="navgroup-label">Gestión</span>
+            <button className={'tnav' + (tab === 'emails' ? ' on' : '')} onClick={() => setTab('emails')}>Emails</button>
+            <button className={'tnav' + (tab === 'actividades' ? ' on' : '')} onClick={() => setTab('actividades')}>Actividades</button>
+            <button className={'tnav' + (tab === 'formularios' ? ' on' : '')} onClick={() => setTab('formularios')}>Formularios</button>
+            <button className={'tnav' + (tab === 'constructor' ? ' on' : '')} onClick={() => setTab('constructor')}>Constructor</button>
           </div>
-          <div className="navdrop">
-            <button className={'tnav' + (['herramientas', 'accesos', 'auditoria'].includes(tab) ? ' on' : '')} onClick={(e) => { e.stopPropagation(); setNavMenu(navMenu === 'config' ? null : 'config'); }}>Configuración ▾</button>
-            {navMenu === 'config' && (
-              <div className="navdrop-pop" onClick={(e) => e.stopPropagation()}>
-                <button className={tab === 'herramientas' ? 'on' : ''} onClick={() => { setTab('herramientas'); setNavMenu(null); }}>Herramientas</button>
-                <button className={tab === 'accesos' ? 'on' : ''} onClick={() => { setTab('accesos'); setNavMenu(null); }}>Accesos</button>
-                <button className={tab === 'auditoria' ? 'on' : ''} onClick={() => { setTab('auditoria'); setNavMenu(null); }}>Auditoría</button>
-              </div>
-            )}
+          <div className="navgroup">
+            <span className="navgroup-label">Configuración</span>
+            <button className={'tnav' + (tab === 'herramientas' ? ' on' : '')} onClick={() => setTab('herramientas')}>Herramientas</button>
+            <button className={'tnav' + (tab === 'accesos' ? ' on' : '')} onClick={() => setTab('accesos')}>Accesos</button>
+            <button className={'tnav' + (tab === 'auditoria' ? ' on' : '')} onClick={() => setTab('auditoria')}>Auditoría</button>
           </div>
         </nav>
         <div className="topnav-right">
