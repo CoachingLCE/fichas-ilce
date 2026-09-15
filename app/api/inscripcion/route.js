@@ -63,7 +63,7 @@ export async function POST(req) {
     form.coment || '',                    // Comentarios
     form.cons ? 'Sí' : 'No',              // Consentimiento
     '',                                   // Inscrito (lo gestiona el equipo)
-    'Completa',                           // Estado
+    'Completada',                         // Estado
     '',                                   // Responsable (se asigna luego)
     token || '',                          // Token
     form._inicio || '',                   // Fecha inicio

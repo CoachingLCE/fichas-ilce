@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSession } from '../lib/useSession';
 import { tienePermisoInscripciones, tienePermisoCambiarEstado, tienePermisoExportar, tienePermisoDashboard, tienePermisoConstructor, tienePermisoAccesos, tienePermisoActividades, tienePermisoGestionActividades, tienePermisoAsignarDocentes, tienePermisoEmails, tienePermisoAuditoria, tienePermisoFormularios } from '../lib/permisos';
-import { ESTADOS, nombreVisibleRoles } from '../lib/constants';
+import { ESTADOS, normalizarEstado, nombreVisibleRoles } from '../lib/constants';
 import { Isologo, IsologoDefs } from './Isologo';
 import ThemeSelector from './ThemeSelector';
 import Accesos from './Accesos';
@@ -29,7 +29,7 @@ function normaliza(f) {
     pais: f['País'], prov: f['Provincia/Estado'], loc: f.Localidad, wa: f.WhatsApp, doc: f.Documento,
     ig: f.Instagram, prof: f['Profesión'], origen: f.Origen, mod: f.Modalidad, med: f['Medio contacto'],
     salud: f['Tema salud'], sobre: f['Sobre vos'], coment: f.Comentarios, cons: f.Consentimiento,
-    inscrito: f.Inscrito, estado: f.Estado || 'Completa', fecha: (f['Fecha ficha'] || '').slice(0, 10)
+    inscrito: f.Inscrito, estado: normalizarEstado(f.Estado), fecha: (f['Fecha ficha'] || '').slice(0, 10)
   };
 }
 function norm(s) { return (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim(); }
@@ -181,7 +181,7 @@ export default function Panel() {
         </div>
         <nav className="topnav-tabs">
           <button className={'tnav' + (tab === 'fichas' ? ' on' : '')} onClick={() => setTab('fichas')}>Fichas de inscripción</button>
-          <button className={'tnav' + (tab === 'inscripciones' ? ' on' : '')} onClick={() => setTab('inscripciones')}>Estudiantes inscriptos</button>
+          <button className={'tnav' + (tab === 'inscripciones' ? ' on' : '')} onClick={() => setTab('inscripciones')}>Fichas completadas</button>
           <button className={'tnav' + (tab === 'dashboard' ? ' on' : '')} onClick={() => setTab('dashboard')}>Dashboard</button>
           <div className="navdrop">
             <button className={'tnav' + (['emails', 'actividades', 'formularios', 'constructor'].includes(tab) ? ' on' : '')} onClick={(e) => { e.stopPropagation(); setNavMenu(navMenu === 'gestion' ? null : 'gestion'); }}>Gestión ▾</button>
@@ -219,7 +219,7 @@ export default function Panel() {
 
       <div className="main">
         <div className="topbar">
-          <div><div className="crumb">ILCE / FICHAS</div><h1>{{ fichas: 'Fichas de inscripción', inscripciones: 'Estudiantes inscriptos', dashboard: 'Dashboard', emails: 'Emails', actividades: 'Actividades', formularios: 'Formularios', constructor: 'Constructor de fichas', herramientas: 'Herramientas', accesos: 'Accesos', auditoria: 'Historial de acciones' }[tab]}</h1></div>
+          <div><div className="crumb">ILCE / FICHAS</div><h1>{{ fichas: 'Fichas de inscripción', inscripciones: 'Fichas completadas', dashboard: 'Dashboard', emails: 'Emails', actividades: 'Actividades', formularios: 'Formularios', constructor: 'Constructor de fichas', herramientas: 'Herramientas', accesos: 'Accesos', auditoria: 'Historial de acciones' }[tab]}</h1></div>
           {tab === 'inscripciones' && <div className="search">🔎 <input id="ins-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, apellido, email, DNI, WhatsApp, edición…" /></div>}
         </div>
 
@@ -237,7 +237,7 @@ export default function Panel() {
               const sem = rows.filter((r) => (r.fecha || '') >= hace(7)).length;
               const pend = rows.filter((r) => ['Pendiente', 'Iniciada'].includes(r.estado)).length;
               const enRev = rows.filter((r) => r.estado === 'En revisión').length;
-              const comp = rows.filter((r) => ['Completa', 'En revisión', 'Aprobada'].includes(r.estado)).length;
+              const comp = rows.filter((r) => ['Completada', 'En revisión', 'Inscrito'].includes(r.estado)).length;
               const tasa = rows.length ? Math.round(comp / rows.length * 100) : 0;
               const setPeriodo = (t) => {
                 if (t === 'hoy') { setFDesde(hoy); setFHasta(hoy); }
@@ -427,7 +427,7 @@ function Dashboard({ rows, filtros }) {
   const semana = rows.filter((r) => (r.fecha || '') >= hace(7)).length;
   const mesActual = new Date().toISOString().slice(0, 7);
   const delMes = rows.filter((r) => (r.fecha || '').startsWith(mesActual)).length;
-  const completadas = rows.filter((r) => ['Completa', 'En revisión', 'Aprobada'].includes(r.estado)).length;
+  const completadas = rows.filter((r) => ['Completada', 'En revisión', 'Inscrito'].includes(r.estado)).length;
   const tasa = rows.length ? Math.round(completadas / rows.length * 100) : 0;
 
   const group = (fn) => { const m = {}; rows.forEach((r) => { const k = fn(r) || '—'; m[k] = (m[k] || 0) + 1; }); return m; };
@@ -488,7 +488,7 @@ function Dashboard({ rows, filtros }) {
         <div className="dash-kpi"><div className="n">{semana}</div><div className="l">Últimos 7 días</div></div>
         <div className="dash-kpi"><div className="n">{delMes}</div><div className="l">Este mes</div></div>
         <div className="dash-kpi click" onClick={() => F.irA('En revisión')}><div className="n" style={{ color: '#d879d1' }}>{est('En revisión')}</div><div className="l">En revisión</div></div>
-        <div className="dash-kpi click" onClick={() => F.irA('Aprobada')}><div className="n">{est('Aprobada')}</div><div className="l">Aprobadas</div></div>
+        <div className="dash-kpi click" onClick={() => F.irA('Inscrito')}><div className="n" style={{ color: 'rgb(74 222 128)' }}>{est('Inscrito')}</div><div className="l">Inscriptos</div></div>
         <div className="dash-kpi"><div className="n" style={{ color: 'rgb(74 222 128)' }}>{tasa}%</div><div className="l">Completadas</div></div>
       </div>
 

@@ -127,8 +127,8 @@ thead th{position:sticky;top:0;text-align:left;font-weight:700;color:rgb(var(--t
 tbody td{padding:9px 13px;border-bottom:1px solid rgb(var(--border));white-space:nowrap}
 tbody tr{cursor:pointer}tbody tr:hover{background:rgb(var(--surface2))}
 .badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;display:inline-block}
-.b-Aprobada{background:rgb(15 46 34);color:rgb(74 222 128)}
-.b-Completa{background:rgb(12 34 56);color:rgb(96 165 250)}
+.b-Aprobada,.b-Inscrito{background:rgb(15 46 34);color:rgb(74 222 128)}
+.b-Completa,.b-Completada{background:rgb(12 34 56);color:rgb(96 165 250)}
 .b-Enrevisión{background:rgba(150,25,143,.16);color:#d879d1}
 .b-Observada,.b-Rechazada{background:rgb(51 20 20);color:rgb(248 113 113)}
 .b-Pendiente,.b-Iniciada{background:rgb(51 40 10);color:rgb(251 191 36)}
