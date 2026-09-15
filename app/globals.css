@@ -552,3 +552,6 @@ tr.clickable:hover{background:rgb(var(--surface2))}
   .f-foot{flex-direction:column-reverse}
   .f-foot .btn{width:100%}
 }
+
+/* ── Etiquetas de grupo en la zona de filtros ── */
+.fgroup-label{font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:rgb(var(--textMuted));font-weight:700;margin:0 0 6px}

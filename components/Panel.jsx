@@ -253,6 +253,7 @@ export default function Panel() {
                   <div className="ins-kpi"><div className="n" style={{ color: '#d879d1' }}>{enRev}</div><div className="l">En revisión</div></div>
                   <div className="ins-kpi"><div className="n" style={{ color: 'rgb(74 222 128)' }}>{tasa}%</div><div className="l">Completadas</div></div>
                 </div>
+                <div className="fgroup-label">Filtros rápidos</div>
                 <div className="fchips" style={{ marginBottom: 10 }}>
                   <button className="pill" onClick={() => setPeriodo('hoy')}>Hoy</button>
                   <button className="pill" onClick={() => setPeriodo('sem')}>Esta semana</button>
@@ -262,12 +263,14 @@ export default function Panel() {
                 </div>
               </>);
             })()}
+            <div className="fgroup-label">Estado</div>
             <div className="fchips">
               <button className={'fchip' + (fEstado === '' ? ' on' : '')} onClick={() => setFEstado('')}>Todas <span className="cnt">{baseParaChips.length}</span></button>
               {ESTADOS.filter((e) => baseParaChips.some((r) => r.estado === e)).map((e) => (
                 <button key={e} className={'fchip' + (fEstado === e ? ' on' : '')} onClick={() => setFEstado(fEstado === e ? '' : e)}>{e} <span className="cnt">{baseParaChips.filter((r) => r.estado === e).length}</span></button>
               ))}
             </div>
+            <div className="fgroup-label">Filtros</div>
             <div className="filters">
               <select className="fsel" value={fCurso} onChange={(e) => setFCurso(e.target.value)}><option value="">Curso: todos</option>{cursos.map((x) => <option key={x}>{x}</option>)}</select>
               <select className="fsel" value={fEd} onChange={(e) => setFEd(e.target.value)}><option value="">Edición: todas</option>{ediciones.map((x) => <option key={x}>{x}</option>)}</select>
@@ -283,6 +286,7 @@ export default function Panel() {
             </div>
             {(fCurso || fEd || fPais || fEstado || fDesde || fHasta) && (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
+                {(() => { const n = [fEstado, fCurso, fEd, fPais, (fDesde || fHasta)].filter(Boolean).length; return <span style={{ fontSize: 12.5, color: 'rgb(var(--textMuted))', fontWeight: 700 }}>{n} {n === 1 ? 'filtro activo' : 'filtros activos'}</span>; })()}
                 {fEstado && <FiltroChip label={`Estado: ${fEstado}`} onClear={() => setFEstado('')} />}
                 {fCurso && <FiltroChip label={`Curso: ${fCurso}`} onClear={() => setFCurso('')} />}
                 {fEd && <FiltroChip label={`Edición: ${fEd}`} onClear={() => setFEd('')} />}
