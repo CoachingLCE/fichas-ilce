@@ -98,14 +98,14 @@ function Lista({ usuario, showToast, puedeGestionar }) {
     setActs(data.ok ? data.actividades : []);
   }
   const nuevaPreg = () => ({ pregunta: '', opciones: ['', '', ''], correcta: 0 });
-  function nueva() { setEdit({ slug: '', curso: CURSOS[0].nombre, titulo: '', estado: 'Publicada', preguntas: [nuevaPreg()], _nuevo: true }); }
+  function nueva() { setEdit({ slug: '', curso: CURSOS[0].nombre, titulo: '', clase: '', estado: 'Publicada', preguntas: [nuevaPreg()], _nuevo: true }); }
   async function guardar() {
     const e = edit;
     const slug = e.slug || slugify(e.titulo);
     if (!e.titulo.trim()) { showToast('Poné un título'); return; }
     const res = await fetch('/api/actividades', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ solicitanteEmail: usuario.email, slug, curso: e.curso, titulo: e.titulo, estado: e.estado, preguntas: e.preguntas })
+      body: JSON.stringify({ solicitanteEmail: usuario.email, slug, curso: e.curso, titulo: e.titulo, clase: e.clase, estado: e.estado, preguntas: e.preguntas })
     });
     const data = await res.json();
     if (data.ok) { showToast('✓ Actividad guardada'); setEdit(null); cargar(); }
@@ -129,6 +129,8 @@ function Lista({ usuario, showToast, puedeGestionar }) {
           <div style={{ display: 'flex', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: 200 }}><label style={lbl}>Curso</label>
               <select className="fsel" style={{ width: '100%' }} value={e.curso} onChange={(ev) => set({ curso: ev.target.value })}>{CURSOS.map((c) => <option key={c.slug}>{c.nombre}</option>)}</select></div>
+            <div style={{ minWidth: 120 }}><label style={lbl}>N° de clase</label>
+              <input className="ctrl" value={e.clase || ''} onChange={(ev) => set({ clase: ev.target.value })} placeholder="Ej: 14" /></div>
             <div style={{ minWidth: 160 }}><label style={lbl}>Estado</label>
               <select className="fsel" style={{ width: '100%' }} value={e.estado} onChange={(ev) => set({ estado: ev.target.value })}><option>Publicada</option><option>Borrador</option></select></div>
           </div>
@@ -178,7 +180,7 @@ function Lista({ usuario, showToast, puedeGestionar }) {
               </div>
               <div>
                 <div className="ftitle" style={{ fontSize: 18 }}>{a.titulo}</div>
-                <div className="fsub">{a.curso}</div>
+                <div className="fsub">{a.curso}{a.clase ? ` · Clase ${a.clase}` : ''}</div>
               </div>
               <div>
                 <div className="acard-link-label">Enlace de actividad</div>
