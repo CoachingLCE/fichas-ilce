@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { appendRow } from '../../../lib/sheets';
+import { appendRow, readSheet } from '../../../lib/sheets';
 import { TABS } from '../../../lib/constants';
 import { getActividad, corregir } from '../../../lib/actividades';
 import { validarEmail } from '../../../lib/validacion';
-import { enviarResultadoActividad } from '../../../lib/mailer';
+import { enviarResultadoActividad, enviarAvisoActividadDocente } from '../../../lib/mailer';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +27,31 @@ export async function POST(req) {
   } catch (e) {
     return NextResponse.json({ ok: false, error: 'No se pudo guardar' }, { status: 500 });
   }
+
   let emailOk = true;
   try { await enviarResultadoActividad({ email, nombre, curso: act.curso, actividad: act.titulo, puntaje, total }); } catch { emailOk = false; }
+
+  // Avisar a los docentes asignados a este curso/edición (edición vacía del docente = todas las ediciones del curso).
+  try {
+    const edResp = String(edicion || '').trim();
+    const docentes = (await readSheet(TABS.DOCENTES)).filter((d) => d.Email && (d.Curso || '') === act.curso);
+    const yaAvisado = new Set();
+    for (const d of docentes) {
+      const edDoc = String(d['Edición'] || '').trim();
+      if (edDoc && edDoc !== edResp) continue; // el docente es de otra edición
+      const key = (d.Email || '').toLowerCase();
+      if (yaAvisado.has(key)) continue;
+      yaAvisado.add(key);
+      try {
+        await enviarAvisoActividadDocente({
+          docenteEmail: d.Email, docenteNombre: d.Nombre,
+          estudiante: nombre || '', estudianteEmail: email,
+          actividad: act.titulo, curso: act.curso, edicion: edResp,
+          puntaje, total
+        });
+      } catch { /* si falla un mail, seguimos con los demás */ }
+    }
+  } catch { /* no bloquear la respuesta del estudiante si falla el aviso a docentes */ }
+
   return NextResponse.json({ ok: true, puntaje, total, emailOk });
 }
