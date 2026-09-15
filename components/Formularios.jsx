@@ -20,10 +20,16 @@ export default function Formularios({ usuario, showToast }) {
 
 function Lista({ usuario, showToast }) {
   const [forms, setForms] = useState(null);
+  const [error, setError] = useState('');
   useEffect(() => { (async () => {
-    const res = await fetch('/api/formularios?solicitanteEmail=' + encodeURIComponent(usuario.email));
-    const d = await res.json(); setForms(d.ok ? d.formularios : []);
+    try {
+      const res = await fetch('/api/formularios?solicitanteEmail=' + encodeURIComponent(usuario.email));
+      const d = await res.json();
+      if (!d.ok) throw new Error(d.error || 'No se pudieron cargar los formularios');
+      setForms(d.formularios || []);
+    } catch (e) { setError(e.message || 'Error de conexión'); setForms([]); }
   })(); /* eslint-disable-next-line */ }, []);
+  if (error) return <div className="empty"><div className="ico">⚠️</div><h3>No se pudo cargar</h3><p>{error}. Revisá que exista la pestaña “Formularios” en la Sheet.</p></div>;
   if (!forms) return <div className="spin" />;
   if (forms.length === 0) return <div className="empty"><div className="ico">📝</div><h3>No hay formularios cargados</h3><p>Pegá las definiciones en la pestaña Formularios de la Sheet.</p></div>;
   return (
@@ -51,12 +57,17 @@ function Lista({ usuario, showToast }) {
 
 function Respuestas({ usuario }) {
   const [data, setData] = useState(null);
+  const [error, setError] = useState('');
   const [q, setQ] = useState('');
   const [fForm, setFForm] = useState('');
   const [abierto, setAbierto] = useState(null);
   useEffect(() => { (async () => {
-    const res = await fetch('/api/formularios/respuestas?solicitanteEmail=' + encodeURIComponent(usuario.email));
-    const d = await res.json(); setData(d.ok ? d.respuestas : []);
+    try {
+      const res = await fetch('/api/formularios/respuestas?solicitanteEmail=' + encodeURIComponent(usuario.email));
+      const d = await res.json();
+      if (!d.ok) throw new Error(d.error || 'No se pudieron cargar las respuestas');
+      setData(d.respuestas || []);
+    } catch (e) { setError(e.message || 'Error de conexión'); setData([]); }
   })(); /* eslint-disable-next-line */ }, []);
   const forms = useMemo(() => [...new Set((data || []).map((x) => x.formulario).filter(Boolean))].sort(), [data]);
   const filtradas = useMemo(() => {
@@ -68,6 +79,7 @@ function Respuestas({ usuario }) {
     });
   }, [data, q, fForm]);
   const fmt = (iso) => { const d = new Date(iso); return isNaN(d) ? iso : d.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }); };
+  if (error) return <div className="empty"><div className="ico">⚠️</div><h3>No se pudo cargar</h3><p>{error}. Revisá que exista la pestaña “RespuestasFormularios” en la Sheet.</p></div>;
   if (!data) return <div className="spin" />;
   return (
     <div>
