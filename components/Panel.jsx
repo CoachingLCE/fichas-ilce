@@ -50,7 +50,7 @@ export default function Panel() {
   const [fEstado, setFEstado] = useState(''); const [fCurso, setFCurso] = useState('');
   const [fEd, setFEd] = useState(''); const [fPais, setFPais] = useState('');
   const [fDesde, setFDesde] = useState(''); const [fHasta, setFHasta] = useState('');
-  const [visCols, setVisCols] = useState(new Set(['nom', 'ape', 'curso', 'ed', 'pais', 'wa', 'estado', 'fecha']));
+  const [visCols, setVisCols] = useState(new Set(['nom', 'curso', 'ed', 'pais', 'wa', 'estado', 'fecha']));
   const [colModal, setColModal] = useState(false);
   const [sel, setSel] = useState(null); // registro abierto en drawer
   const [historial, setHistorial] = useState([]);
@@ -247,11 +247,11 @@ export default function Panel() {
               };
               return (<>
                 <div className="ins-kpis">
-                  <div className="ins-kpi"><div className="n" style={{ color: 'rgb(var(--accentTeal))' }}>{rows.length}</div><div className="l">Total</div></div>
-                  <div className="ins-kpi"><div className="n">{sem}</div><div className="l">Últimos 7 días</div></div>
-                  <div className="ins-kpi"><div className="n" style={{ color: 'rgb(251 191 36)' }}>{pend}</div><div className="l">Pendientes</div></div>
-                  <div className="ins-kpi"><div className="n" style={{ color: '#d879d1' }}>{enRev}</div><div className="l">En revisión</div></div>
-                  <div className="ins-kpi"><div className="n" style={{ color: 'rgb(74 222 128)' }}>{tasa}%</div><div className="l">Completadas</div></div>
+                  <div className="ins-kpi"><div className="ic">📋</div><div className="n" style={{ color: 'rgb(var(--accentTeal))' }}>{rows.length}</div><div className="l">Total</div></div>
+                  <div className="ins-kpi"><div className="ic">📈</div><div className="n">{sem}</div><div className="l">Últimos 7 días</div></div>
+                  <div className="ins-kpi"><div className="ic">⏳</div><div className="n" style={{ color: 'rgb(251 191 36)' }}>{pend}</div><div className="l">Pendientes</div></div>
+                  <div className="ins-kpi"><div className="ic">👁</div><div className="n" style={{ color: '#d879d1' }}>{enRev}</div><div className="l">En revisión</div></div>
+                  <div className="ins-kpi"><div className="ic">✅</div><div className="n" style={{ color: 'rgb(74 222 128)' }}>{tasa}%</div><div className="l">Completadas</div></div>
                 </div>
                 <div className="fgroup-label">Filtros rápidos</div>
                 <div className="fchips" style={{ marginBottom: 10 }}>
@@ -408,10 +408,27 @@ function FiltroChip({ label, onClear }) {
   );
 }
 
+function esArgentina(p) { return (p || '').trim().toLowerCase() === 'argentina'; }
+function fechaAmigable(iso) {
+  if (!iso) return '';
+  const d = new Date(iso + 'T00:00:00');
+  if (isNaN(d)) return iso;
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  const diff = Math.round((hoy - d) / 86400000);
+  if (diff === 0) return 'Hoy';
+  if (diff === 1) return 'Ayer';
+  if (diff > 1 && diff < 7) return `Hace ${diff} días`;
+  const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  return `${d.getDate()} ${meses[d.getMonth()]} ${d.getFullYear()}`;
+}
 function celda(r, k) {
+  if (k === 'nom') return <span className="ins-name">{[r.nom, r.ape].filter(Boolean).join(' ') || '—'}</span>;
   if (k === 'estado') return <span className={'badge b-' + (r.estado || '').replace(/\s/g, '')}>{r.estado}</span>;
+  if (k === 'pais') return r.pais ? <span className="pchip">{esArgentina(r.pais) ? '🇦🇷' : '🌎'} {r.pais}</span> : '';
+  if (k === 'ed') return r.ed ? <span className="edchip">Ed. {r.ed}</span> : '';
+  if (k === 'curso') return r.curso ? <span className="cchip">{r.curso}</span> : '';
   if (k === 'wa') return <span className="sec">{r.wa}</span>;
-  if (k === 'fecha') return <span className="sec">{r.fecha}</span>;
+  if (k === 'fecha') return <span className="sec" title={r.fecha}>{fechaAmigable(r.fecha)}</span>;
   return r[k] || '';
 }
 function fmtFecha(iso) {

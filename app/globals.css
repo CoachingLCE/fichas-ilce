@@ -555,3 +555,15 @@ tr.clickable:hover{background:rgb(var(--surface2))}
 
 /* ── Etiquetas de grupo en la zona de filtros ── */
 .fgroup-label{font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:rgb(var(--textMuted));font-weight:700;margin:0 0 6px}
+
+/* ── Fichas completadas: tabla más moderna + chips en celdas ── */
+.ins-name{font-weight:700;color:rgb(var(--text))}
+.pchip,.edchip,.cchip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;border:1px solid rgb(var(--border));background:rgb(var(--surface2));white-space:nowrap;line-height:1.4}
+.edchip{color:rgb(var(--textSec))}
+.cchip{color:rgb(var(--accentTeal));border-color:rgba(5,149,173,.35);background:rgba(5,149,173,.10)}
+.tablewrap table td{padding-top:11px;padding-bottom:11px}
+.tablewrap table tbody tr{transition:background .12s}
+.tablewrap table tbody tr:hover{background:rgb(var(--surface2))}
+.ins-kpi{transition:transform .12s,border-color .12s}
+.ins-kpi:hover{transform:translateY(-1px);border-color:rgba(5,149,173,.4)}
+.ins-kpi .ic{font-size:15px;opacity:.65;margin-bottom:3px;line-height:1}
