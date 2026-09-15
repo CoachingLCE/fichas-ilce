@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { APP_URL } from '../lib/constants';
+import { generarHorarios } from '../lib/husos';
 
 // Estructura estándar de la ficha ILCE (se muestra como bloques). La edición de campos con
 // drag & drop llega en un lote siguiente; hoy el foco es título, bienvenida, ediciones y estado,
@@ -148,7 +149,13 @@ export default function Constructor({ usuario, initialSlug, showToast }) {
                 <button className="btn-sm" onClick={() => moveEd(i, 1)} title="Bajar" disabled={i === eds.length - 1}>↓</button>
                 <button className="btn-sm" style={{ color: 'rgb(248 113 113)' }} onClick={() => delEd(i)} title="Quitar">🗑</button>
               </div>
-              <input className="ctrl" value={e.horarios || ''} onChange={(ev) => updEd(i, { horarios: ev.target.value })} placeholder="Horarios por país (opcional)" />
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                <input className="ctrl" type="date" style={{ maxWidth: 160 }} value={e.fecha || ''} onChange={(ev) => updEd(i, { fecha: ev.target.value })} title="Fecha de la clase (hora de Argentina)" />
+                <input className="ctrl" type="time" style={{ maxWidth: 120 }} value={e.horaIni || ''} onChange={(ev) => updEd(i, { horaIni: ev.target.value })} title="Desde (hora AR)" />
+                <input className="ctrl" type="time" style={{ maxWidth: 120 }} value={e.horaFin || ''} onChange={(ev) => updEd(i, { horaFin: ev.target.value })} title="Hasta (hora AR)" />
+                <button className="btn-sm solid" onClick={() => updEd(i, { horarios: generarHorarios(e.fecha, e.horaIni, e.horaFin) })} disabled={!e.fecha || !e.horaIni || !e.horaFin} title="Traduce la hora de Argentina a los demás países">⚙ Calcular husos</button>
+              </div>
+              <input className="ctrl" value={e.horarios || ''} onChange={(ev) => updEd(i, { horarios: ev.target.value })} placeholder="Horarios por país (se completan al calcular, o escribilos a mano)" />
             </div>
           ))}
         </div>
