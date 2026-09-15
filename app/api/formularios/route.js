@@ -9,12 +9,17 @@ export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const usuario = await findUsuario(searchParams.get('solicitanteEmail'));
   if (!usuario || !tienePermisoFormularios(usuario)) return NextResponse.json({ ok: false, error: 'No autorizado' }, { status: 403 });
-  const filas = await readSheet(TABS.FORMULARIOS);
-  const formularios = filas.filter((f) => f.Slug).map((f) => {
-    let campos = []; try { campos = JSON.parse(f['Campos JSON'] || '[]'); } catch {}
-    return { slug: f.Slug, titulo: f['Título'], tipo: f.Tipo, estado: f.Estado || 'Publicada', campos, actualizado: f.Actualizado };
-  });
-  return NextResponse.json({ ok: true, formularios });
+  try {
+    const filas = await readSheet(TABS.FORMULARIOS);
+    const formularios = filas.filter((f) => f.Slug).map((f) => {
+      let campos = []; try { campos = JSON.parse(f['Campos JSON'] || '[]'); } catch {}
+      return { slug: f.Slug, titulo: f['Título'], tipo: f.Tipo, estado: f.Estado || 'Publicada', campos, actualizado: f.Actualizado };
+    });
+    return NextResponse.json({ ok: true, formularios });
+  } catch (e) {
+    // Si la pestaña "Formularios" no existe o falla la lectura, no rompemos: devolvemos vacío.
+    return NextResponse.json({ ok: true, formularios: [], aviso: 'No se pudo leer la pestaña Formularios' });
+  }
 }
 
 export async function POST(req) {
