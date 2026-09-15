@@ -588,3 +588,8 @@ tr.clickable:hover{background:rgb(var(--surface2))}
   border:1px solid rgba(5,149,173,.35);background:rgba(5,149,173,.10);color:rgb(var(--accentTeal));
   font-size:13px;font-weight:700;cursor:pointer;transition:background .12s,border-color .12s;width:100%;justify-content:center}
 .fver-insc:hover{background:rgba(5,149,173,.18);border-color:rgba(5,149,173,.6)}
+
+/* ── Pestañas del panel: estado activo sutil (mismo look que seguimiento-lead) ── */
+.tnav.on{background:rgb(var(--accentPurple) / 0.15);color:rgb(var(--accentPurple));border-color:transparent}
+.tnav.on:hover{background:rgb(var(--accentPurple) / 0.22)}
+.navdrop-pop button.on{background:rgb(var(--accentPurple) / 0.15);color:rgb(var(--accentPurple))}
