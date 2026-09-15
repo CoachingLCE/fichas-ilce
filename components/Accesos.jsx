@@ -86,7 +86,7 @@ export default function Accesos({ usuario }) {
               ['Coordinador de inscripciones', 'Inscripciones (ver y cambiar estado), Dashboard y Exportar. No ve Constructor ni Accesos.'],
               ['Inscripciones', 'Ver inscripciones y cambiar estado. No exporta ni ve Dashboard/Constructor.'],
               ['Estudiantes', 'Solo lectura de inscripciones.'],
-              ['Coordinación académica', 'Solo lectura de inscripciones.'],
+              ['Coordinación académica', 'Gestiona Actividades (Postwork) y asigna docentes; ve Formularios, Emails y Masterclass. No ve inscripciones ni Accesos.'],
               ['Académico', 'Lectura de inscripciones + Dashboard.']
             ].map(([r, d]) => (
               <tr key={r} style={{ borderBottom: '1px solid rgb(var(--border))' }}>
