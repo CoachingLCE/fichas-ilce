@@ -582,3 +582,9 @@ tr.clickable:hover{background:rgb(var(--surface2))}
   .tablewrap table .col-ig,.tablewrap table .col-prof,.tablewrap table .col-origen,
   .tablewrap table .col-mod,.tablewrap table .col-inscrito,.tablewrap table .col-fecha{display:none}
 }
+
+/* ── Fichas de inscripción: acción "Ver listado de inscriptos" en la card ── */
+.fver-insc{display:inline-flex;align-items:center;gap:6px;margin:-4px 0 10px;padding:6px 12px;border-radius:999px;
+  border:1px solid rgba(5,149,173,.35);background:rgba(5,149,173,.10);color:rgb(var(--accentTeal));
+  font-size:13px;font-weight:700;cursor:pointer;transition:background .12s,border-color .12s;width:100%;justify-content:center}
+.fver-insc:hover{background:rgba(5,149,173,.18);border-color:rgba(5,149,173,.6)}

@@ -172,6 +172,7 @@ export default function FichasSection({ usuario, rows, onEditar, onVerInscripcio
                   <div className="fbig-n">{insc}</div>
                   <div className="fbig-l">inscripcion{insc === 1 ? '' : 'es'}<br /><span>{eds.length} edición{eds.length === 1 ? '' : 'es'}</span></div>
                 </div>
+                {insc > 0 && <button className="fver-insc" onClick={() => onVerInscripciones(d.curso)}>Ver listado de inscriptos →</button>}
 
                 <div className="feds">
                   {eds.length === 0 ? (
