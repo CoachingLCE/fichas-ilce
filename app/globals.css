@@ -527,3 +527,14 @@ tbody tr{cursor:pointer}tbody tr:hover{background:rgb(var(--surface2))}
   box-shadow:0 10px 24px -10px rgba(5,149,173,.7)}
 .success-home{display:inline-block;margin-top:2px;font-size:13px;color:rgb(var(--textMuted));text-decoration:none}
 .success-home:hover{color:rgb(var(--textSec));text-decoration:underline}
+
+/* ── Vista previa de correos (sección Emails) ── */
+tr.clickable:hover{background:rgb(var(--surface2))}
+.preview-ov{position:fixed;inset:0;background:rgba(2,10,20,.66);display:flex;align-items:center;justify-content:center;padding:20px;z-index:60}
+.preview-card{background:rgb(var(--surface));border:1px solid rgb(var(--border));border-radius:18px;width:600px;max-width:100%;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 70px -30px rgba(0,0,0,.8)}
+.preview-head{display:flex;align-items:flex-start;gap:12px;padding:16px 18px;border-bottom:1px solid rgb(var(--border))}
+.preview-kd{font-family:'Jost';font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:rgb(var(--textMuted))}
+.preview-asunto{font-size:15px;font-weight:700;color:rgb(var(--text));margin-top:4px;overflow:hidden;text-overflow:ellipsis}
+.preview-head .btn-sm{margin-left:auto;flex:none}
+.preview-body{overflow:auto;background:#061424}
+.preview-frame{width:100%;height:70vh;border:0;display:block;background:#061424}

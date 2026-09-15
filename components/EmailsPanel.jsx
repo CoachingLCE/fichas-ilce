@@ -3,6 +3,9 @@ import { useEffect, useMemo, useState } from 'react';
 
 const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
+// Correos que ya tienen vista previa (usan la misma plantilla que se envía).
+const PREVIEWABLES = new Set(['Confirmación inscripción', 'Aviso equipo']);
+
 const AUTOMATIZACIONES = [
   { evento: 'Se completa una ficha de inscripción', para: 'Al estudiante (con botón de WhatsApp)', tipo: 'Confirmación inscripción' },
   { evento: 'Se completa una ficha de inscripción', para: 'Macarena, Alexander y Jesabel', tipo: 'Aviso equipo' },
@@ -15,11 +18,25 @@ export default function EmailsPanel({ usuario }) {
   const [emails, setEmails] = useState(null);
   const [q, setQ] = useState('');
   const [fTipo, setFTipo] = useState(''); const [fEstado, setFEstado] = useState('');
+  const [preview, setPreview] = useState(null); // { tipo, asunto, html, loading, error, ejemplo }
 
   useEffect(() => { (async () => {
     const res = await fetch('/api/emails?solicitanteEmail=' + encodeURIComponent(usuario.email));
     const d = await res.json(); setEmails(d.ok ? d.emails : []);
   })(); /* eslint-disable-next-line */ }, []);
+
+  async function abrirPreview(tipo) {
+    if (!PREVIEWABLES.has(tipo)) return;
+    setPreview({ tipo, loading: true });
+    try {
+      const res = await fetch(`/api/emails/preview?tipo=${encodeURIComponent(tipo)}&solicitanteEmail=${encodeURIComponent(usuario.email)}`);
+      const d = await res.json();
+      if (!d.ok) throw new Error(d.error || 'No se pudo cargar');
+      setPreview({ tipo, asunto: d.asunto, html: d.html, ejemplo: d.ejemplo });
+    } catch (e) {
+      setPreview({ tipo, error: e.message || 'Error inesperado' });
+    }
+  }
 
   const tipos = useMemo(() => [...new Set((emails || []).map((e) => e.tipo).filter(Boolean))].sort(), [emails]);
   const filtrados = useMemo(() => {
@@ -39,12 +56,20 @@ export default function EmailsPanel({ usuario }) {
       {/* Automatizaciones */}
       <div className="panel">
         <h3>Mails automáticos que genera el sistema</h3>
+        <p className="muted" style={{ fontSize: 12.5, margin: '0 0 10px' }}>Tocá un correo con 👁 para ver una vista previa de lo que recibe la persona.</p>
         <div className="tablewrap" style={{ maxHeight: 'none' }}>
           <table>
-            <thead><tr><th style={{ minWidth: 240 }}>Cuándo se envía</th><th style={{ minWidth: 220 }}>A quién</th><th style={{ minWidth: 160 }}>Tipo</th></tr></thead>
-            <tbody>{AUTOMATIZACIONES.map((a, i) => (
-              <tr key={i}><td>{a.evento}</td><td className="sec">{a.para}</td><td><span className="tagchip">{a.tipo}</span></td></tr>
-            ))}</tbody>
+            <thead><tr><th style={{ minWidth: 240 }}>Cuándo se envía</th><th style={{ minWidth: 220 }}>A quién</th><th style={{ minWidth: 200 }}>Tipo</th></tr></thead>
+            <tbody>{AUTOMATIZACIONES.map((a, i) => {
+              const verMas = PREVIEWABLES.has(a.tipo);
+              return (
+                <tr key={i} className={verMas ? 'clickable' : ''} onClick={verMas ? () => abrirPreview(a.tipo) : undefined} style={verMas ? { cursor: 'pointer' } : undefined}>
+                  <td>{a.evento}</td>
+                  <td className="sec">{a.para}</td>
+                  <td><span className="tagchip">{a.tipo}</span>{verMas && <span style={{ marginLeft: 8, fontSize: 12.5, fontWeight: 700, color: 'rgb(var(--accentTeal))' }}>👁 Ver correo</span>}</td>
+                </tr>
+              );
+            })}</tbody>
           </table>
         </div>
       </div>
@@ -79,6 +104,26 @@ export default function EmailsPanel({ usuario }) {
           </table></div>
         )}
       </div>
+
+      {/* Modal de vista previa */}
+      {preview && (
+        <div className="preview-ov" onClick={() => setPreview(null)}>
+          <div className="preview-card" onClick={(e) => e.stopPropagation()}>
+            <div className="preview-head">
+              <div style={{ minWidth: 0 }}>
+                <div className="preview-kd">Vista previa · {preview.tipo}{preview.ejemplo ? ' · datos de ejemplo' : ''}</div>
+                {preview.asunto && <div className="preview-asunto">{preview.asunto}</div>}
+              </div>
+              <button className="btn-sm" onClick={() => setPreview(null)}>✕ Cerrar</button>
+            </div>
+            <div className="preview-body">
+              {preview.loading ? <div className="spin" style={{ margin: '40px auto' }} />
+                : preview.error ? <div className="note" style={{ margin: 16 }}>No se pudo cargar la vista previa: {preview.error}</div>
+                  : <iframe title="Vista previa del correo" srcDoc={preview.html} className="preview-frame" />}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
