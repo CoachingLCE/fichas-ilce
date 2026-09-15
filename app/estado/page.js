@@ -33,12 +33,8 @@ export default async function Home() {
     <main style={{ minHeight: '100vh', padding: '40px 20px', maxWidth: 820, margin: '0 auto' }}>
       <IsologoDefs />
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
-        <Isologo size={40} />
-        <div style={{ lineHeight: 1 }}>
-          <div className="font-display" style={{ fontSize: 11, letterSpacing: 3, color: 'rgb(var(--textSec))' }}>INSTITUTO</div>
-          <div className="font-display" style={{ fontSize: 22, fontWeight: 700, letterSpacing: 1 }}>ILCE</div>
-        </div>
+      <div style={{ marginBottom: 6 }}>
+        <Isologo size={44} />
       </div>
       <h1 style={{ fontSize: 26, margin: '10px 0 4px' }}>Fichas de Inscripción</h1>
       <p style={{ color: 'rgb(var(--textSec))', marginTop: 0 }}>

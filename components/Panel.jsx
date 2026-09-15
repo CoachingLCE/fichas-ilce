@@ -173,11 +173,7 @@ export default function Panel() {
       {navMenu && <div className="navoverlay" onClick={() => setNavMenu(null)} />}
       <header className="topnav">
         <div className="topnav-brand">
-          <Isologo size={28} />
-          <div style={{ lineHeight: 1 }}>
-            <div className="font-display" style={{ fontSize: 10, letterSpacing: 3, color: 'rgb(var(--textMuted))' }}>INSTITUTO</div>
-            <div className="font-display" style={{ fontSize: 17, fontWeight: 700 }}>ILCE</div>
-          </div>
+          <Isologo size={32} />
         </div>
         <nav className="topnav-tabs">
           <button className={'tnav' + (tab === 'fichas' ? ' on' : '')} onClick={() => setTab('fichas')}>Fichas de inscripción</button>

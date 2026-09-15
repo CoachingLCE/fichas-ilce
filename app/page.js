@@ -37,8 +37,7 @@ export default function LoginRoot() {
       <IsologoDefs />
       <div className="fixed top-4 right-4"><ThemeSelector /></div>
       <div className="w-80 bg-surface2 border border-border rounded-2xl p-7">
-        <div className="flex justify-center mb-3"><Isologo size={40} /></div>
-        <h2 className="text-center text-lg font-semibold mb-1">Instituto ILCE</h2>
+        <div className="flex justify-center mb-4"><Isologo size={44} /></div>
         <p className="text-center text-textSec text-sm mb-5">Ingresá con tu usuario y contraseña</p>
         <form onSubmit={handleSubmit}>
           <label className="text-xs text-textSec block mb-1">Email</label>
