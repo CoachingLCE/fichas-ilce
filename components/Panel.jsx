@@ -75,7 +75,7 @@ export default function Panel() {
   }
 
 
-  const ediciones = useMemo(() => [...new Set((rows || []).map((r) => r.ed).filter(Boolean))].sort(), [rows]);
+  const ediciones = useMemo(() => [...new Set((rows || []).map((r) => r.ed).filter(Boolean))].sort((a, b) => { const na = parseInt(a, 10), nb = parseInt(b, 10); if (!isNaN(na) && !isNaN(nb) && na !== nb) return na - nb; return String(a).localeCompare(String(b), 'es', { numeric: true }); }), [rows]);
   const cursos = useMemo(() => [...new Set((rows || []).map((r) => r.curso).filter(Boolean))].sort(), [rows]);
   const paises = useMemo(() => [...new Set((rows || []).map((r) => r.pais).filter(Boolean))].sort(), [rows]);
 
@@ -258,10 +258,16 @@ export default function Panel() {
                 <button key={e} className={'fchip' + (fEstado === e ? ' on' : '')} onClick={() => setFEstado(fEstado === e ? '' : e)}>{e} <span className="cnt">{baseParaChips.filter((r) => r.estado === e).length}</span></button>
               ))}
             </div>
+            {ediciones.length > 0 && (<>
+              <div className="fgroup-label">Edición</div>
+              <div className="fchips">
+                <button className={'pill' + (fEd === '' ? ' on' : '')} onClick={() => setFEd('')}>Todas</button>
+                {ediciones.map((x) => <button key={x} className={'pill' + (fEd === x ? ' on' : '')} onClick={() => setFEd(fEd === x ? '' : x)}>Ed. {x}</button>)}
+              </div>
+            </>)}
             <div className="fgroup-label">Filtros</div>
             <div className="filters">
               <select className="fsel" value={fCurso} onChange={(e) => setFCurso(e.target.value)}><option value="">Curso: todos</option>{cursos.map((x) => <option key={x}>{x}</option>)}</select>
-              <select className="fsel" value={fEd} onChange={(e) => setFEd(e.target.value)}><option value="">Edición: todas</option>{ediciones.map((x) => <option key={x}>{x}</option>)}</select>
               <button className="btn-sm" onClick={() => setMasFiltros(!masFiltros)}>{masFiltros ? '– Menos filtros' : '+ Más filtros'}</button>
               {masFiltros && (<>
                 <select className="fsel" value={fPais} onChange={(e) => setFPais(e.target.value)}><option value="">País: todos</option>{paises.map((x) => <option key={x}>{x}</option>)}</select>
