@@ -190,7 +190,7 @@ export default function Panel() {
             <span className="navgroup-label">Configuración</span>
             <button className={'tnav' + (tab === 'herramientas' ? ' on' : '')} onClick={() => setTab('herramientas')}>Herramientas</button>
             <button className={'tnav' + (tab === 'accesos' ? ' on' : '')} onClick={() => setTab('accesos')}>Accesos</button>
-            <button className={'tnav' + (tab === 'auditoria' ? ' on' : '')} onClick={() => setTab('auditoria')}>Auditoría</button>
+            <button className={'tnav' + (tab === 'auditoria' ? ' on' : '')} onClick={() => setTab('auditoria')}>Historial de acciones</button>
           </div>
         </nav>
         <div className="topnav-right">
@@ -315,7 +315,7 @@ export default function Panel() {
         {tab === 'actividades' && (tienePermisoActividades(usuario) ? <Actividades usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} puedeDocentes={tienePermisoAsignarDocentes(usuario)} /> : <AccesoDenegado seccion="Actividades" />)}
         {tab === 'formularios' && (tienePermisoFormularios(usuario) ? <Formularios usuario={usuario} showToast={showToast} /> : <AccesoDenegado seccion="Formularios" />)}
         {tab === 'accesos' && (tienePermisoAccesos(usuario) ? <Accesos usuario={usuario} /> : <AccesoDenegado seccion="Accesos" />)}
-        {tab === 'auditoria' && (tienePermisoAuditoria(usuario) ? <Auditoria usuario={usuario} /> : <AccesoDenegado seccion="Auditoría" />)}
+        {tab === 'auditoria' && (tienePermisoAuditoria(usuario) ? <Auditoria usuario={usuario} /> : <AccesoDenegado seccion="Historial de acciones" />)}
       </div>
 
       {/* drawer */}
