@@ -110,10 +110,10 @@ export default function FichasSection({ usuario, rows, onEditar, onVerInscripcio
       <div className="fhead">
         <div>
           <p className="fhead-sub">Administrá los cursos, ediciones y páginas de inscripción.</p>
-          <div className="fstatpills">
-            <span className="fstatpill"><b>{defs.length}</b> Fichas</span>
-            <span className="fstatpill ok"><b>{conEd}</b> Con ediciones</span>
-            <span className="fstatpill warn"><b>{sinEd}</b> Sin ediciones</span>
+          <div className="fstat-cards">
+            <div className="fstat-card"><div className="n">{defs.length}</div><div className="l">Fichas</div></div>
+            <div className="fstat-card"><div className="n" style={{ color: 'rgb(74 222 128)' }}>{conEd}</div><div className="l">Con ediciones</div></div>
+            <div className="fstat-card"><div className="n" style={{ color: 'rgb(251 191 36)' }}>{sinEd}</div><div className="l">Requieren atención</div></div>
           </div>
         </div>
         <span style={{ flex: 1 }} />
