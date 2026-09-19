@@ -251,7 +251,7 @@ export default function Panel() {
             <button className={'tnav' + (tab === 'emails' ? ' on' : '') + (tienePermisoEmails(usuario) ? '' : ' dim')} onClick={() => setTab('emails')}>Emails</button>
             <button className={'tnav' + (tab === 'actividades' ? ' on' : '') + (tienePermisoActividades(usuario) ? '' : ' dim')} onClick={() => setTab('actividades')}>Actividades</button>
             <button className={'tnav' + (tab === 'formularios' ? ' on' : '') + (tienePermisoFormularios(usuario) ? '' : ' dim')} onClick={() => setTab('formularios')}>Formularios</button>
-            <button className={'tnav' + (tab === 'equipo' ? ' on' : '') + (tienePermisoAsignarDocentes(usuario) ? '' : ' dim')} onClick={() => setTab('equipo')}>Equipo</button>
+            <button className={'tnav' + (tab === 'equipo' ? ' on' : '') + (tienePermisoAsignarDocentes(usuario) ? '' : ' dim')} onClick={() => setTab('equipo')}>Equipo Docente</button>
             {/* El Constructor de fichas ya no es una pestaña aparte: se abre desde "Fichas de
                 inscripción" (✎ Editar / + Cargar edición en cada ficha), para que todo lo de fichas
                 quede junto en una sola hoja. */}
@@ -291,7 +291,7 @@ export default function Panel() {
 
       <div className="main">
         <div className="topbar">
-          <div><div className="crumb">ILCE / FICHAS</div><h1>{{ fichas: 'Fichas de inscripción', inscripciones: 'Fichas completadas', dashboard: 'Dashboard', reportes: 'Reportes', emails: 'Emails', actividades: 'Actividades', formularios: 'Formularios', equipo: 'Equipo', constructor: 'Constructor de fichas', herramientas: 'Herramientas', accesos: 'Accesos', auditoria: 'Historial de acciones', buscador: 'Buscador' }[tab]}</h1></div>
+          <div><div className="crumb">ILCE / FICHAS</div><h1>{{ fichas: 'Fichas de inscripción', inscripciones: 'Fichas completadas', dashboard: 'Dashboard', reportes: 'Reportes', emails: 'Emails', actividades: 'Actividades', formularios: 'Formularios', equipo: 'Equipo Docente', constructor: 'Constructor de fichas', herramientas: 'Herramientas', accesos: 'Accesos', auditoria: 'Historial de acciones', buscador: 'Buscador' }[tab]}</h1></div>
           {tab === 'inscripciones' && <div className="search">🔎 <input id="ins-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, apellido, email, DNI, WhatsApp, edición…" /></div>}
         </div>
 
@@ -300,7 +300,7 @@ export default function Panel() {
             <button className={tab === 'fichas' ? 'on' : ''} onClick={() => setTab('fichas')}>Fichas de inscripción</button>
             <button className={tab === 'inscripciones' ? 'on' : ''} onClick={() => setTab('inscripciones')}>Fichas completadas</button>
             {tab === 'fichas' && tienePermisoConstructor(usuario) && (
-              <button className="btn-sm solid" style={{ marginLeft: 'auto' }} onClick={() => fichasRef.current?.abrirConstructor()}>Crear nueva ficha de inscripción</button>
+              <button className="btn-sm solid" style={{ marginLeft: 12 }} onClick={() => fichasRef.current?.abrirConstructor()}>Crear nueva ficha de inscripción</button>
             )}
           </div>
         )}
@@ -417,7 +417,7 @@ export default function Panel() {
         {tab === 'emails' && (tienePermisoEmails(usuario) ? <EmailsPanel usuario={usuario} /> : <AccesoDenegado seccion="Emails" />)}
         {tab === 'actividades' && (tienePermisoActividades(usuario) ? <Actividades usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} puedeDocentes={tienePermisoAsignarDocentes(usuario)} /> : <AccesoDenegado seccion="Actividades" />)}
         {tab === 'formularios' && (tienePermisoFormularios(usuario) ? <Formularios usuario={usuario} showToast={showToast} /> : <AccesoDenegado seccion="Formularios" />)}
-        {tab === 'equipo' && (tienePermisoAsignarDocentes(usuario) ? <Equipo usuario={usuario} /> : <AccesoDenegado seccion="Equipo" />)}
+        {tab === 'equipo' && (tienePermisoAsignarDocentes(usuario) ? <Equipo usuario={usuario} /> : <AccesoDenegado seccion="Equipo Docente" />)}
         {tab === 'accesos' && (tienePermisoAccesos(usuario) ? <Accesos usuario={usuario} /> : <AccesoDenegado seccion="Accesos" />)}
         {tab === 'auditoria' && (tienePermisoAuditoria(usuario) ? <Auditoria usuario={usuario} /> : <AccesoDenegado seccion="Historial de acciones" />)}
       </div>

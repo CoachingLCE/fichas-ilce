@@ -3,7 +3,7 @@
 // (Total, últimos 7 días, pendientes, en revisión, % completadas), más el desglose por curso,
 // por estado y por mes — y ahora también un resumen de Actividades y de Formularios, para
 // no tener que ir pestaña por pestaña a buscar cómo viene cada cosa.
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { ESTADOS, CURSOS } from '../lib/constants';
 
 function iso(d) { return d.toISOString().slice(0, 10); }
@@ -29,10 +29,12 @@ export default function Reportes({ usuario, rows, puedeActividades, puedeFormula
         <button className={sub === 'inscripciones' ? 'on' : ''} onClick={() => setSub('inscripciones')}>Inscripciones</button>
         {puedeActividades && <button className={sub === 'actividades' ? 'on' : ''} onClick={() => setSub('actividades')}>Actividades</button>}
         {puedeFormularios && <button className={sub === 'formularios' ? 'on' : ''} onClick={() => setSub('formularios')}>Formularios</button>}
+        {puedeActividades && <button className={sub === 'cruce' ? 'on' : ''} onClick={() => setSub('cruce')}>Cursos + Actividades</button>}
       </div>
       {sub === 'inscripciones' && <ReportesInscripciones rows={rows} />}
       {sub === 'actividades' && puedeActividades && <ReportesActividades usuario={usuario} />}
       {sub === 'formularios' && puedeFormularios && <ReportesFormularios usuario={usuario} />}
+      {sub === 'cruce' && puedeActividades && <ReportesCruce usuario={usuario} rows={rows} />}
     </div>
   );
 }
@@ -162,7 +164,7 @@ function ReportesInscripciones({ rows }) {
         <div className="panel" style={{ gridColumn: '1 / -1' }}>
           <h3>Mes a mes, por curso</h3>
           {porMesYCurso.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : (
-            <div className="tablewrap" style={{ maxHeight: 340 }}>
+            <div className="tablewrap tablewrap-ancha" style={{ maxHeight: 340 }}>
               <table>
                 <thead><tr>
                   <th>Mes</th>
@@ -185,9 +187,23 @@ function ReportesInscripciones({ rows }) {
   );
 }
 
+// Mínimo de respuestas para que el % de aciertos de una pregunta cuente como dato confiable
+// en el ranking (con 1 sola respuesta, "42%" no significa nada). No afecta el detalle por
+// actividad de Actividades → Reportes, que ya muestra el dato crudo tenga las respuestas
+// que tenga.
+const MIN_RESP_PREGUNTA = 3;
+
+const ORDEN_PREGUNTAS = [
+  { v: 'menor', l: 'Menor % de aciertos primero' },
+  { v: 'mayor', l: 'Mayor % de aciertos primero' },
+  { v: 'actividad', l: 'Por actividad' }
+];
+
 function ReportesActividades({ usuario }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
+  const [ordenPreg, setOrdenPreg] = useState('menor');
+  const [abierta, setAbierta] = useState(null); // slug de la actividad expandida en la tabla de preguntas
   useEffect(() => { (async () => {
     try {
       const res = await fetch('/api/actividades/reporte?solicitanteEmail=' + encodeURIComponent(usuario.email));
@@ -207,6 +223,20 @@ function ReportesActividades({ usuario }) {
   // consigna confusa, etc.) — por eso van ordenadas de menor a mayor, no al revés.
   const ordenadas = conRespuestas.slice().sort((a, b) => a.promedio - b.promedio);
   const maxResp = Math.max(1, ...conRespuestas.map((a) => a.totalResp));
+
+  // Todas las preguntas de todas las actividades, en una sola lista plana — ya vienen
+  // calculadas por /api/actividades/reporte (respondidas/aciertos/pct reales, nada inventado
+  // acá). Se filtran las que todavía no tienen respuestas suficientes como para que el % diga algo.
+  const todasPreguntas = data.flatMap((a) => a.preguntas.map((p, i) => ({
+    actividadSlug: a.slug, actividadTitulo: a.titulo, actividadCurso: a.curso,
+    idx: i, pregunta: p.pregunta, respondidas: p.respondidas, aciertos: p.aciertos, pct: p.pct
+  }))).filter((p) => p.respondidas >= MIN_RESP_PREGUNTA);
+
+  const preguntasOrdenadas = todasPreguntas.slice().sort((a, b) => {
+    if (ordenPreg === 'mayor') return b.pct - a.pct;
+    if (ordenPreg === 'actividad') return a.actividadTitulo.localeCompare(b.actividadTitulo) || a.idx - b.idx;
+    return a.pct - b.pct; // 'menor' (default)
+  });
 
   return (
     <div>
@@ -243,8 +273,173 @@ function ReportesActividades({ usuario }) {
           </div>
         </div>
       )}
+
+      <div className="panel">
+        <div className="sechead">
+          <span className="htitle">Preguntas con menor porcentaje de aciertos</span>
+          <span className="hcount">{todasPreguntas.length} pregunta(s)</span>
+          <span className="grow" />
+          <select className="fsel" value={ordenPreg} onChange={(e) => setOrdenPreg(e.target.value)}>
+            {ORDEN_PREGUNTAS.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
+          </select>
+        </div>
+        {todasPreguntas.length === 0 ? (
+          <p className="muted" style={{ fontSize: 13 }}>
+            Todavía no hay preguntas con al menos {MIN_RESP_PREGUNTA} respuestas como para calcular un % confiable.
+          </p>
+        ) : (
+          <div className="tablewrap tablewrap-ancha" style={{ maxHeight: 420 }}>
+            <table>
+              <thead><tr><th>Actividad</th><th>Pregunta</th><th>Respondida por</th><th>% correcto</th></tr></thead>
+              <tbody>{preguntasOrdenadas.map((p) => {
+                const key = p.actividadSlug + '·' + p.idx;
+                const act = data.find((a) => a.slug === p.actividadSlug);
+                return (
+                  <Fragment key={key}>
+                    <tr className="clickable" style={{ cursor: 'pointer' }} onClick={() => setAbierta(abierta === key ? null : key)}>
+                      <td className="sec">{p.actividadTitulo}<div className="muted" style={{ fontSize: 11 }}>{p.actividadCurso}</div></td>
+                      <td>{p.pregunta}</td>
+                      <td className="sec">{p.respondidas}</td>
+                      <td style={{ fontWeight: 700, color: p.pct < 60 ? 'rgb(248 113 113)' : p.pct < 80 ? 'rgb(251 191 36)' : 'rgb(74 222 128)' }}>{p.pct}%</td>
+                    </tr>
+                    {abierta === key && act && (
+                      <tr><td colSpan={4} style={{ background: 'rgb(var(--surface2))' }}>
+                        <div style={{ padding: '10px 6px' }}>
+                          <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>
+                            Detalle de «{act.titulo}» · {act.totalResp} respuesta(s) · promedio {act.promedio}%
+                          </div>
+                          {act.preguntas.map((pp, i) => (
+                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '4px 0', fontSize: 13, borderBottom: i < act.preguntas.length - 1 ? '1px solid rgb(var(--border))' : 'none' }}>
+                              <span style={{ flex: 1 }}>{pp.pregunta}</span>
+                              <span className="sec" style={{ flex: '0 0 auto' }}>{pp.respondidas} resp.</span>
+                              <span style={{ flex: '0 0 auto', fontWeight: 700, color: pp.pct < 60 ? 'rgb(248 113 113)' : pp.pct < 80 ? 'rgb(251 191 36)' : 'rgb(74 222 128)' }}>{pp.respondidas ? pp.pct + '%' : '—'}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </td></tr>
+                    )}
+                  </Fragment>
+                );
+              })}</tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
+}
+
+// Cruce Curso + Actividades: cuántos de los inscriptos de cada curso efectivamente
+// participaron de al menos una actividad, y con qué promedio. "Inscriptos" toma todas las
+// fichas del curso salvo las claramente inválidas (Rechazada/Cancelada) — mismo criterio
+// que ya usa el resto de Reportes para no inflar ni restar de más. La participación viene
+// de /api/actividades/reporte (porCurso), que cuenta emails únicos con al menos una
+// respuesta — nunca se inventa una relación 1 a 1 entre una ficha puntual y una respuesta.
+function ReportesCruce({ usuario, rows }) {
+  const [porCurso, setPorCurso] = useState(null);
+  const [actividadesPorCurso, setActividadesPorCurso] = useState({});
+  const [error, setError] = useState('');
+  const [abierto, setAbierto] = useState(null);
+
+  useEffect(() => { (async () => {
+    try {
+      const res = await fetch('/api/actividades/reporte?solicitanteEmail=' + encodeURIComponent(usuario.email));
+      const d = await res.json();
+      if (!d.ok) throw new Error(d.error || 'No se pudo cargar');
+      setPorCurso(d.porCurso || []);
+      const m = {};
+      (d.actividades || []).forEach((a) => { (m[a.curso] = m[a.curso] || []).push(a); });
+      setActividadesPorCurso(m);
+    } catch (e) { setError(e.message || 'Error de conexión'); setPorCurso([]); }
+  })(); /* eslint-disable-next-line */ }, []);
+
+  const cruce = useMemoCruce(rows, porCurso || []);
+
+  if (error) return <div className="empty"><div className="ico">⚠️</div><h3>No se pudo cargar</h3><p>{error}</p></div>;
+  if (!porCurso) return <div className="spin" />;
+
+  return (
+    <div>
+      <p className="fhead-sub" style={{ marginBottom: 16 }}>
+        Cuántos de los inscriptos de cada curso efectivamente participaron de alguna actividad (postwork), y con qué promedio.
+        Se cuentan solo fichas activas (se excluyen Rechazada/Cancelada) y estudiantes con al menos una respuesta registrada.
+      </p>
+      {cruce.length === 0 ? (
+        <p className="muted" style={{ fontSize: 13 }}>Todavía no hay datos suficientes para cruzar inscripciones con actividades.</p>
+      ) : (
+        <div className="panel">
+          <div className="tablewrap tablewrap-ancha" style={{ maxHeight: 480 }}>
+            <table>
+              <thead><tr><th>Curso</th><th>Inscriptos</th><th>Realizaron actividades</th><th>% participación</th><th>Promedio</th></tr></thead>
+              <tbody>{cruce.map((c) => {
+                const acts = actividadesPorCurso[c.curso] || [];
+                const puedeExpandir = acts.length > 0;
+                return (
+                  <Fragment key={c.curso}>
+                    <tr className={puedeExpandir ? 'clickable' : ''} style={puedeExpandir ? { cursor: 'pointer' } : undefined}
+                      onClick={puedeExpandir ? () => setAbierto(abierto === c.curso ? null : c.curso) : undefined}>
+                      <td><b>{c.curso}</b>{puedeExpandir && <span style={{ marginLeft: 8, fontSize: 12, color: 'rgb(var(--accentTeal))' }}>{abierto === c.curso ? 'Ocultar detalle ▲' : 'Ver detalle ▾'}</span>}</td>
+                      <td className="sec">{c.inscriptos}</td>
+                      <td className="sec">{c.realizaron}</td>
+                      <td style={{ fontWeight: 700, color: c.pctParticipacion == null ? 'rgb(var(--textMuted))' : c.pctParticipacion < 50 ? 'rgb(248 113 113)' : c.pctParticipacion < 80 ? 'rgb(251 191 36)' : 'rgb(74 222 128)' }}>
+                        {c.pctParticipacion == null ? '—' : c.pctParticipacion + '%'}
+                      </td>
+                      <td style={{ fontWeight: 700, color: c.promedio == null ? 'rgb(var(--textMuted))' : c.promedio < 60 ? 'rgb(248 113 113)' : c.promedio < 80 ? 'rgb(251 191 36)' : 'rgb(74 222 128)' }}>
+                        {c.promedio == null ? '—' : c.promedio + '%'}
+                      </td>
+                    </tr>
+                    {abierto === c.curso && puedeExpandir && (
+                      <tr><td colSpan={5} style={{ background: 'rgb(var(--surface2))' }}>
+                        <div style={{ padding: '10px 6px' }}>
+                          <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>Actividades de {c.curso}:</div>
+                          {acts.slice().sort((a, b) => b.totalResp - a.totalResp).map((a) => (
+                            <div key={a.slug} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '4px 0', fontSize: 13 }}>
+                              <span style={{ flex: 1 }}>{a.titulo}</span>
+                              <span className="sec" style={{ flex: '0 0 auto' }}>{a.totalResp} resp.</span>
+                              <span style={{ flex: '0 0 auto', fontWeight: 700 }}>{a.totalResp ? a.promedio + '%' : '—'}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </td></tr>
+                    )}
+                  </Fragment>
+                );
+              })}</tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Estados de ficha que no cuentan como "inscripto" para este cruce — están claramente dados
+// de baja, no tiene sentido pedirles participación en actividades.
+const ESTADOS_NO_INSCRIPTO = ['Rechazada', 'Cancelada'];
+
+function useMemoCruce(rows, porCurso) {
+  return useMemo(() => {
+    const inscriptosPorCurso = {};
+    rows.forEach((r) => {
+      if (!r.curso || ESTADOS_NO_INSCRIPTO.includes(r.estado)) return;
+      inscriptosPorCurso[r.curso] = (inscriptosPorCurso[r.curso] || 0) + 1;
+    });
+    const cursos = new Set([...Object.keys(inscriptosPorCurso), ...porCurso.map((p) => p.curso)]);
+    const porCursoMap = {};
+    porCurso.forEach((p) => { porCursoMap[p.curso] = p; });
+    return [...cursos].map((curso) => {
+      const inscriptos = inscriptosPorCurso[curso] || 0;
+      const act = porCursoMap[curso];
+      const realizaron = act ? act.estudiantesConActividad : 0;
+      return {
+        curso,
+        inscriptos,
+        realizaron,
+        pctParticipacion: inscriptos > 0 ? Math.round(realizaron / inscriptos * 100) : null,
+        promedio: act && act.totalRespuestas > 0 ? act.promedio : null
+      };
+    }).filter((c) => c.inscriptos > 0 || c.realizaron > 0).sort((a, b) => b.inscriptos - a.inscriptos);
+  }, [rows, porCurso]);
 }
 
 function ReportesFormularios({ usuario }) {

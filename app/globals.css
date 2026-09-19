@@ -820,3 +820,38 @@ tr.clickable:hover{background:rgb(var(--surface2))}
 .ctor-ed-body{margin-top:12px;padding-top:12px;border-top:1px solid rgb(var(--border))}
 
 .ctor-preview-col{position:sticky;top:78px}
+
+/* ── Reportes: responsive ──────────────────────────────────────────────────
+   Tablas con muchas columnas (mes a mes por curso, cruce curso+actividades,
+   preguntas con menor % de aciertos) no deben achicar sus columnas hasta
+   volverse ilegibles: mejor que aparezca el scroll horizontal del propio
+   .tablewrap. `min-width` fuerza eso en vez de que `table{width:100%}` (regla
+   general de .tablewrap) las comprima. Especialmente importante en notebooks
+   y tablets (rango ~768–1100px), que es donde más se nota. */
+.tablewrap-ancha table{min-width:640px}
+@media (max-width:520px){.tablewrap-ancha table{min-width:560px}}
+
+/* KPIs de Reportes: en la franja de notebook/tablet, con 4 a 6 tarjetas en la
+   fila, el auto-fit ya las reacomoda solo — acá solo se evita que una tarjeta
+   quede demasiado angosta y el número se corte. */
+@media (max-width:1100px){
+  .ins-kpis{grid-template-columns:repeat(auto-fit,minmax(126px,1fr))}
+  .ins-kpis-compact{grid-template-columns:repeat(auto-fit,minmax(100px,1fr))}
+}
+@media (max-width:480px){
+  .ins-kpis,.ins-kpis-compact{grid-template-columns:repeat(2,1fr)}
+}
+
+/* Filtros/encabezados de sección (sechead) de Reportes: ya son flex-wrap, pero
+   el <select> de orden de "Preguntas con menor % de aciertos" no debe quedar
+   más angosto que su texto en pantallas chicas ni forzar overflow horizontal. */
+@media (max-width:640px){
+  .sechead select.fsel{width:100%;flex:1 1 220px}
+}
+
+/* Nunca scroll horizontal de página completa por culpa de un panel ancho —
+   los .panel de Reportes (grillas "repeat(auto-fit,minmax(320px,1fr))") deben
+   poder angostarse por debajo de 320px cuando el viewport es más chico que eso. */
+@media (max-width:340px){
+  .panel{padding:14px}
+}
