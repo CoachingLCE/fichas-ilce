@@ -199,14 +199,12 @@ export default function Panel() {
           </div>
           <div className="navgroup">
             <span className="navgroup-label">Configuración</span>
-            <button className={'tnav' + (tab === 'herramientas' ? ' on' : '')} onClick={() => setTab('herramientas')}>Herramientas</button>
             <button className={'tnav' + (tab === 'accesos' ? ' on' : '')} onClick={() => setTab('accesos')}>Accesos</button>
             <button className={'tnav' + (tab === 'auditoria' ? ' on' : '')} onClick={() => setTab('auditoria')}>Historial de acciones</button>
           </div>
         </nav>
         <div className="topnav-right">
           <button className="iconbtn" title="Buscar inscripciones" aria-label="Buscar" onClick={() => { setTab('inscripciones'); setTimeout(() => document.getElementById('ins-search')?.focus(), 60); }}>🔎</button>
-          <button className="iconbtn" title="Herramientas" aria-label="Herramientas" onClick={() => setTab('herramientas')}>⚡</button>
           <ThemeSelector />
           {puedeVerComoOtro(usuarioReal) && (verComo
             ? <div className="vercomo-chip">👁 {verComo.nombre}<button onClick={() => setVerComo(null)} title="Salir del modo vista">✕</button></div>
