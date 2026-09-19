@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import { APP_URL } from '../lib/constants';
+import Constructor from './Constructor';
 
 const ESTADO_META = {
   Publicada: { cls: 'pub', label: 'Publicada', dot: '🟢' },
@@ -10,11 +11,17 @@ const ESTADO_META = {
 };
 const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-export default function FichasSection({ usuario, rows, onEditar, onVerInscripciones, showToast, puedeEditar }) {
+export default function FichasSection({ usuario, rows, onVerInscripciones, showToast, puedeEditar }) {
+  // El Constructor de fichas vive DENTRO de "Fichas de inscripción": editar o cargar una
+  // edición abre el wizard acá mismo (no navega a una pestaña aparte).
+  const [construyendo, setConstruyendo] = useState(null); // slug de la ficha que se está armando, o null
+  function onEditar(slug) { setConstruyendo(slug); }
   const [defs, setDefs] = useState(null);
   const [q, setQ] = useState('');
   const [chip, setChip] = useState('Todas');
-  const [vista, setVista] = useState('cards');
+  // Vista predeterminada: Lista (antes arrancaba en Tarjetas). Si la persona ya eligió una
+  // vista antes, se respeta lo guardado; si no hay nada guardado, arranca en "lista".
+  const [vista, setVista] = useState('lista');
   useEffect(() => { try { const v = localStorage.getItem('ilce-fichas-vista'); if (v === 'cards' || v === 'lista') setVista(v); } catch { /* */ } }, []);
   const cambiarVista = (v) => { setVista(v); try { localStorage.setItem('ilce-fichas-vista', v); } catch { /* */ } };
   const [orden, setOrden] = useState('nombre');
@@ -102,8 +109,13 @@ export default function FichasSection({ usuario, rows, onEditar, onVerInscripcio
     navigator.clipboard?.writeText(`${APP_URL}/inscripcion/${d.slug}`);
     setCopiado(d.slug); clearTimeout(copiarLink._t); copiarLink._t = setTimeout(() => setCopiado(null), 1600);
     setMenuAbierto(null);
+    showToast?.('✓ URL copiada');
   }
   function abrirPublica(d) { window.open(`${APP_URL}/inscripcion/${d.slug}`, '_blank'); setMenuAbierto(null); }
+
+  if (construyendo) {
+    return <Constructor usuario={usuario} initialSlug={construyendo} showToast={showToast} onVolver={() => { setConstruyendo(null); cargar(); }} volverLabel="← Volver a Fichas de inscripción" />;
+  }
 
   if (!defs) return <div className="spin" />;
 
@@ -159,18 +171,25 @@ export default function FichasSection({ usuario, rows, onEditar, onVerInscripcio
       {filtradas.length === 0 ? (
         <div className="empty"><div className="ico">🗂️</div><h3>No encontramos fichas</h3><p>Probá con otro término o cambiá el filtro.</p><button className="btn-sm" onClick={() => { setQ(''); setChip('Todas'); }}>Limpiar filtros</button></div>
       ) : vista === 'lista' ? (
-        <div className="tablewrap"><table>
-          <thead><tr><th>Ficha</th><th>Estado</th><th>Inscripciones</th><th>Ediciones</th><th></th></tr></thead>
+        <div className="tablewrap tablewrap-fichas"><table>
+          <thead><tr><th>Ficha</th><th>Estado</th><th>Inscripciones</th><th>Ediciones</th><th>URL de inscripción</th><th></th></tr></thead>
           <tbody>{filtradas.map((d) => {
             const meta = ESTADO_META[d.estado] || ESTADO_META.Publicada;
             const insc = porCurso[d.curso] || 0;
             const eds = d.ediciones || [];
+            const url = `${APP_URL}/inscripcion/${d.slug}`;
             return (
               <tr key={d.slug}>
                 <td className="ins-name">{d.curso}</td>
                 <td><span className={'fstate ' + meta.cls}><span className="d" />{meta.label}</span></td>
                 <td>{insc > 0 ? <button className="linklike" onClick={() => onVerInscripciones(d.curso)}>{insc} inscriptos →</button> : <span className="sec">0</span>}</td>
                 <td className="sec">{eds.length} edición{eds.length === 1 ? '' : 'es'}</td>
+                <td className="col-url">
+                  <div className="url-cell">
+                    <span className="url-txt" title={url}>{url.replace(/^https?:\/\//, '')}</span>
+                    <button className="url-copy" title="Copiar URL" onClick={(e) => { e.stopPropagation(); copiarLink(d); }}>{copiado === d.slug ? '✓' : '📋'}</button>
+                  </div>
+                </td>
                 <td style={{ textAlign: 'right' }}>{puedeEditar && <button className="btn-sm solid" onClick={() => onEditar(d.slug)}>{eds.length ? '✎ Editar' : '+ Cargar edición'}</button>}</td>
               </tr>
             );

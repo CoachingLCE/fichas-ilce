@@ -62,21 +62,11 @@ export default function Accesos({ usuario }) {
     setConfirmarEliminar(null); cargarUsuarios();
   }
 
-  const [sub, setSub] = useState('usuarios');
-  const subtabs = (
-    <div className="subtabs">
-      <button className={sub === 'usuarios' ? 'on' : ''} onClick={() => setSub('usuarios')}>Usuarios</button>
-      <button className={sub === 'historial' ? 'on' : ''} onClick={() => setSub('historial')}>Historial de accesos</button>
-    </div>
-  );
-
-  if (sub === 'historial') {
-    return (<div style={{ maxWidth: 900 }}>{subtabs}<HistorialAccesos usuario={usuario} /></div>);
-  }
-
+  // La solapa "Historial de accesos" (login/altas/bajas) se sacó de acá — ese registro ya
+  // está afuera, como su propia hoja de navegación ("Historial de acciones", ver Auditoria.jsx),
+  // que además cubre más que solo accesos. Tenerlo duplicado acá adentro era confuso.
   return (
     <div style={{ maxWidth: 900 }}>
-      {subtabs}
       <div className="panel">
         <p style={{ fontSize: 14, fontWeight: 700, margin: '0 0 10px' }}>🔐 Permisos por rol</p>
         <table style={{ fontSize: 12.5 }}>
@@ -180,35 +170,3 @@ export default function Accesos({ usuario }) {
   );
 }
 const lbl = { fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 5, color: 'rgb(var(--textSec))' };
-
-function HistorialAccesos({ usuario }) {
-  const [eventos, setEventos] = useState(null);
-  const [q, setQ] = useState('');
-  useEffect(() => { (async () => {
-    const res = await fetch('/api/accesos/historial?solicitanteEmail=' + encodeURIComponent(usuario.email));
-    const d = await res.json(); setEventos(d.ok ? d.eventos : []);
-  })(); /* eslint-disable-next-line */ }, []);
-  if (!eventos) return <div className="spin" />;
-  const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  const filtrados = q ? eventos.filter((e) => norm(`${e.autor} ${e.accion} ${e.detalle}`).includes(norm(q))) : eventos;
-  const fmt = (iso) => { const d = new Date(iso); return isNaN(d) ? iso : d.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }); };
-  return (
-    <div className="panel">
-      <div className="sechead">
-        <span className="htitle">Historial de accesos</span>
-        <span className="hcount">{filtrados.length} evento(s)</span>
-        <span className="grow" />
-        <div className="fsearch" style={{ maxWidth: 240, flex: 'none' }}>🔎 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar…" /></div>
-      </div>
-      {filtrados.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin eventos registrados.</p> : (
-        <div className="tablewrap" style={{ maxHeight: '60vh' }}><table>
-          <thead><tr><th style={{ minWidth: 120 }}>Fecha</th><th style={{ minWidth: 180 }}>Autor</th><th style={{ minWidth: 160 }}>Acción</th><th style={{ minWidth: 220 }}>Detalle</th></tr></thead>
-          <tbody>{filtrados.map((e, i) => (
-            <tr key={i}><td className="sec">{fmt(e.fecha)}</td><td>{e.autor}</td><td><b>{e.accion}</b></td><td className="sec">{e.detalle}</td></tr>
-          ))}</tbody>
-        </table></div>
-      )}
-      <p className="muted" style={{ fontSize: 11.5, marginTop: 10 }}>Incluye altas y bajas de usuarios y docentes, cambios de rol, restablecimientos de contraseña e inicios de sesión.</p>
-    </div>
-  );
-}

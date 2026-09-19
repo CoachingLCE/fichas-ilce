@@ -92,7 +92,8 @@ function Lista({ usuario, showToast, puedeGestionar }) {
   const [acts, setActs] = useState(null);
   const [edit, setEdit] = useState(null);
   const [q, setQ] = useState('');
-  const [vista, setVista] = useState('cards');
+  // Vista predeterminada: Lista (antes arrancaba en Tarjetas).
+  const [vista, setVista] = useState('lista');
   useEffect(() => { try { const v = localStorage.getItem('ilce-actividades-vista'); if (v === 'cards' || v === 'lista') setVista(v); } catch { /* */ } }, []);
   const cambiarVista = (v) => { setVista(v); try { localStorage.setItem('ilce-actividades-vista', v); } catch { /* */ } };
   useEffect(() => { cargar(); /* eslint-disable-next-line */ }, []);
