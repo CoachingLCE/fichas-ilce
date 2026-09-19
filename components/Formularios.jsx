@@ -13,7 +13,7 @@ export default function Formularios({ usuario, showToast }) {
         <button className={sub === 'respuestas' ? 'on' : ''} onClick={() => setSub('respuestas')}>Respuestas</button>
       </div>
       {sub === 'lista' && <Lista usuario={usuario} showToast={showToast} />}
-      {sub === 'respuestas' && <Respuestas usuario={usuario} />}
+      {sub === 'respuestas' && <Respuestas usuario={usuario} showToast={showToast} />}
     </div>
   );
 }
@@ -55,20 +55,23 @@ function Lista({ usuario, showToast }) {
   );
 }
 
-function Respuestas({ usuario }) {
+function Respuestas({ usuario, showToast }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [q, setQ] = useState('');
   const [fForm, setFForm] = useState('');
   const [abierto, setAbierto] = useState(null);
-  useEffect(() => { (async () => {
+  const [importarAbierto, setImportarAbierto] = useState(false);
+
+  async function cargar() {
     try {
       const res = await fetch('/api/formularios/respuestas?solicitanteEmail=' + encodeURIComponent(usuario.email));
       const d = await res.json();
       if (!d.ok) throw new Error(d.error || 'No se pudieron cargar las respuestas');
       setData(d.respuestas || []);
     } catch (e) { setError(e.message || 'Error de conexión'); setData([]); }
-  })(); /* eslint-disable-next-line */ }, []);
+  }
+  useEffect(() => { cargar(); /* eslint-disable-next-line */ }, []);
   const forms = useMemo(() => [...new Set((data || []).map((x) => x.formulario).filter(Boolean))].sort(), [data]);
   const filtradas = useMemo(() => {
     const qq = norm(q);
@@ -87,7 +90,16 @@ function Respuestas({ usuario }) {
         <div className="fsearch" style={{ maxWidth: 260 }}>🔎 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, email…" /></div>
         <select className="fsel" value={fForm} onChange={(e) => setFForm(e.target.value)}><option value="">Formulario: todos</option>{forms.map((x) => <option key={x}>{x}</option>)}</select>
         {(q || fForm) && <button className="btn-sm" onClick={() => { setQ(''); setFForm(''); }}>Limpiar</button>}
+        <span className="spacer" />
+        <button className="btn-sm solid" onClick={() => setImportarAbierto(true)}>📥 Importar respuestas históricas</button>
       </div>
+      {importarAbierto && (
+        <ImportarRespuestas
+          usuario={usuario}
+          onCerrar={() => setImportarAbierto(false)}
+          onImportado={() => { setImportarAbierto(false); setData(null); cargar(); showToast && showToast('✓ Respuestas importadas'); }}
+        />
+      )}
       <p className="count">{filtradas.length} respuesta(s)</p>
       {filtradas.length === 0 ? <div className="empty"><div className="ico">📭</div><h3>Sin respuestas</h3><p>No hay respuestas para estos filtros.</p></div> : (
         <div className="tablewrap"><table>
@@ -106,7 +118,7 @@ function Respuestas({ usuario }) {
               {abierto === x.id && (
                 <tr><td colSpan={7} style={{ background: 'rgb(var(--surface2))' }}>
                   <div style={{ padding: '10px 6px', display: 'grid', gap: 8 }}>
-                    {Object.entries(x.r || {}).filter(([k]) => !['email', 'nombre', 'curso', 'edicion'].includes(k)).map(([k, v]) => (
+                    {Object.entries(x.r || {}).filter(([k]) => !['email', 'nombre', 'curso', 'edicion', 'importadoDe'].includes(k)).map(([k, v]) => (
                       <div key={k}><div style={{ fontSize: 11.5, color: 'rgb(var(--textMuted))', textTransform: 'capitalize' }}>{k}</div><div style={{ fontSize: 13.5 }}>{String(v)}</div></div>
                     ))}
                   </div>
@@ -116,6 +128,125 @@ function Respuestas({ usuario }) {
           ))}</tbody>
         </table></div>
       )}
+    </div>
+  );
+}
+
+// Importación de encuestas viejas (por ejemplo, respuestas de Google Forms de antes de que
+// existiera este formulario en la app). El archivo (.csv o .xlsx, tal cual lo exporta Google
+// Forms) se parsea acá mismo en el navegador con la misma librería que ya se usa para
+// exportar a Excel — así los datos de estudiantes reales nunca se transcriben a mano.
+function ImportarRespuestas({ usuario, onCerrar, onImportado }) {
+  const [forms, setForms] = useState(null);
+  const [slug, setSlug] = useState('');
+  const [tituloManual, setTituloManual] = useState('');
+  const [curso, setCurso] = useState('');
+  const [edicion, setEdicion] = useState('');
+  const [filas, setFilas] = useState(null);
+  const [nombreArchivo, setNombreArchivo] = useState('');
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState('');
+  const [resultado, setResultado] = useState(null);
+
+  useEffect(() => { (async () => {
+    try {
+      const res = await fetch('/api/formularios?solicitanteEmail=' + encodeURIComponent(usuario.email));
+      const d = await res.json();
+      if (d.ok) setForms(d.formularios || []);
+    } catch { /* si falla, el select de formularios queda vacío y no se puede importar */ }
+  })(); /* eslint-disable-next-line */ }, []);
+
+  async function onArchivo(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError(''); setResultado(null); setFilas(null); setNombreArchivo(file.name);
+    try {
+      const XLSX = await import('xlsx');
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: 'array' });
+      const hoja = wb.Sheets[wb.SheetNames[0]];
+      const nuevasFilas = XLSX.utils.sheet_to_json(hoja, { defval: '' });
+      if (nuevasFilas.length === 0) { setError('El archivo no tiene filas de datos.'); return; }
+      setFilas(nuevasFilas);
+    } catch (err) {
+      setError('No se pudo leer el archivo. Probá exportarlo de nuevo desde Google Forms (Respuestas → ⋮ → Descargar respuestas).');
+    }
+  }
+
+  async function importar() {
+    if ((!slug && !tituloManual.trim()) || !filas) return;
+    setCargando(true); setError(''); setResultado(null);
+    try {
+      const res = await fetch('/api/formularios/importar', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ solicitanteEmail: usuario.email, slug, tituloManual, curso, edicion, filas })
+      });
+      const d = await res.json();
+      if (!d.ok) throw new Error(d.error || 'No se pudo importar');
+      setResultado(d);
+    } catch (err) {
+      setError(err.message || 'Error de conexión');
+    } finally {
+      setCargando(false);
+    }
+  }
+
+  const columnas = filas && filas.length > 0 ? Object.keys(filas[0]) : [];
+
+  return (
+    <div className="mwrap on">
+      <div className="modal" style={{ maxWidth: 540 }}>
+        <h3>📥 Importar respuestas históricas</h3>
+        <p className="muted" style={{ fontSize: 12.5, margin: '4px 0 14px' }}>
+          Subí el archivo tal cual lo bajaste de Google Forms (Respuestas → ⋮ → Descargar respuestas, en .csv o .xlsx).
+          Se lee acá mismo en tu navegador — nada se transcribe a mano, así no hay riesgo de cargar mal un nombre o un email de un estudiante real.
+        </p>
+
+        {!resultado ? (<>
+          <div className="fgroup-label">Formulario de destino</div>
+          <select className="ctrl" value={slug} onChange={(e) => { setSlug(e.target.value); if (e.target.value) setTituloManual(''); }} style={{ width: '100%', marginBottom: 8 }}>
+            <option value="">{forms ? 'Elegí un formulario…' : 'Cargando formularios…'}</option>
+            {(forms || []).map((f) => <option key={f.slug} value={f.slug}>{f.titulo}</option>)}
+          </select>
+          {!slug && (
+            <input className="ctrl" style={{ width: '100%', marginBottom: 10 }} value={tituloManual} onChange={(e) => setTituloManual(e.target.value)}
+              placeholder="…o escribí el nombre si es una encuesta vieja que no está en la lista (ej: Coaching Deportivo — encuesta 2025)" />
+          )}
+
+          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+            <input className="ctrl" style={{ flex: 1 }} value={curso} onChange={(e) => setCurso(e.target.value)} placeholder="Curso (ej: Coaching Deportivo)" />
+            <input className="ctrl" style={{ flex: 1 }} value={edicion} onChange={(e) => setEdicion(e.target.value)} placeholder="Edición (si no viene en el archivo)" />
+          </div>
+
+          <div className="fgroup-label">Archivo (.csv o .xlsx)</div>
+          <input type="file" accept=".csv,.xlsx,.xls" onChange={onArchivo} style={{ marginBottom: 10 }} />
+
+          {error && <p style={{ color: 'rgb(248 113 113)', fontSize: 12.5, marginBottom: 10 }}>{error}</p>}
+
+          {filas && (
+            <div className="note" style={{ marginBottom: 14 }}>
+              <b>{filas.length}</b> fila(s) detectadas en «{nombreArchivo}», con {columnas.length} columna(s):
+              <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>{columnas.slice(0, 6).join(' · ')}{columnas.length > 6 ? '…' : ''}</div>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+            <button className="btn-sm" onClick={onCerrar}>Cancelar</button>
+            <button className="btn-sm solid" disabled={(!slug && !tituloManual.trim()) || !filas || cargando} onClick={importar}>
+              {cargando ? 'Importando…' : filas ? `Importar ${filas.length} fila(s)` : 'Importar'}
+            </button>
+          </div>
+        </>) : (<>
+          <div className="note" style={{ borderLeftColor: 'rgb(74 222 128)', marginBottom: 14 }}>
+            ✓ Se importaron <b>{resultado.importadas}</b> respuesta(s) nueva(s).
+            {resultado.omitidasDuplicadas > 0 && <><br />{resultado.omitidasDuplicadas} ya estaban cargadas (mismo email y fecha) y se omitieron para no duplicar.</>}
+            {resultado.omitidasSinEmail > 0 && <><br />{resultado.omitidasSinEmail} fila(s) no tenían un email detectable y se omitieron.</>}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button className="btn-sm solid" onClick={onImportado}>Listo</button>
+          </div>
+        </>)}
+      </div>
     </div>
   );
 }

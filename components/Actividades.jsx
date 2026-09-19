@@ -88,14 +88,42 @@ export default function Actividades({ usuario, showToast, puedeGestionar, puedeD
   );
 }
 
+// Distintas formas de ordenar el listado de actividades (Diego pidió variantes,
+// sobre todo poder ver por clase dentro de un mismo curso).
+const ORDENES = [
+  { v: 'clase', l: 'Curso y clase' },
+  { v: 'nombre', l: 'Nombre (A-Z)' },
+  { v: 'curso', l: 'Curso (A-Z)' },
+  { v: 'estado', l: 'Estado' },
+  { v: 'preguntas', l: 'Más preguntas primero' },
+];
+function ordenarActividades(lista, orden) {
+  const arr = [...lista];
+  const claseNum = (a) => { const n = parseInt(a.clase, 10); return Number.isFinite(n) ? n : 9999; };
+  const porTitulo = (a, b) => (a.titulo || '').localeCompare(b.titulo || '', 'es', { sensitivity: 'base' });
+  if (orden === 'nombre') arr.sort(porTitulo);
+  else if (orden === 'curso') arr.sort((a, b) => (a.curso || '').localeCompare(b.curso || '', 'es') || porTitulo(a, b));
+  else if (orden === 'estado') arr.sort((a, b) => (a.estado || '').localeCompare(b.estado || '', 'es') || porTitulo(a, b));
+  else if (orden === 'preguntas') arr.sort((a, b) => (b.preguntas?.length || 0) - (a.preguntas?.length || 0) || porTitulo(a, b));
+  else arr.sort((a, b) => (a.curso || '').localeCompare(b.curso || '', 'es') || claseNum(a) - claseNum(b) || porTitulo(a, b));
+  return arr;
+}
+
 function Lista({ usuario, showToast, puedeGestionar }) {
   const [acts, setActs] = useState(null);
   const [edit, setEdit] = useState(null);
   const [q, setQ] = useState('');
   // Vista predeterminada: Lista (antes arrancaba en Tarjetas).
   const [vista, setVista] = useState('lista');
-  useEffect(() => { try { const v = localStorage.getItem('ilce-actividades-vista'); if (v === 'cards' || v === 'lista') setVista(v); } catch { /* */ } }, []);
+  const [orden, setOrden] = useState('clase');
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem('ilce-actividades-vista'); if (v === 'cards' || v === 'lista') setVista(v);
+      const o = localStorage.getItem('ilce-actividades-orden'); if (ORDENES.some((x) => x.v === o)) setOrden(o);
+    } catch { /* */ }
+  }, []);
   const cambiarVista = (v) => { setVista(v); try { localStorage.setItem('ilce-actividades-vista', v); } catch { /* */ } };
+  const cambiarOrden = (v) => { setOrden(v); try { localStorage.setItem('ilce-actividades-orden', v); } catch { /* */ } };
   useEffect(() => { cargar(); /* eslint-disable-next-line */ }, []);
   async function cargar() {
     const res = await fetch('/api/actividades?solicitanteEmail=' + encodeURIComponent(usuario.email));
@@ -167,13 +195,17 @@ function Lista({ usuario, showToast, puedeGestionar }) {
 
   if (!acts) return <div className="spin" />;
   const qq = (q || '').trim().toLowerCase();
-  const filtradas = qq ? acts.filter((a) => [a.titulo, a.curso, a.clase, a.estado, a.slug].filter(Boolean).join(' ').toLowerCase().includes(qq)) : acts;
+  const filtradasSinOrden = qq ? acts.filter((a) => [a.titulo, a.curso, a.clase, a.estado, a.slug].filter(Boolean).join(' ').toLowerCase().includes(qq)) : acts;
+  const filtradas = ordenarActividades(filtradasSinOrden, orden);
   return (
     <div>
       <div className="sechead">
         <span className="hcount">{filtradas.length} actividad{filtradas.length === 1 ? '' : 'es'}</span>
         <span className="grow" />
         <div className="fsearch" style={{ maxWidth: 260 }}>🔎 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, curso, clase o estado…" /></div>
+        <select className="fsel" title="Ordenar por" value={orden} onChange={(e) => cambiarOrden(e.target.value)}>
+          {ORDENES.map((o) => <option key={o.v} value={o.v}>Ordenar: {o.l}</option>)}
+        </select>
         <div className="vista-toggle">
           <button className={vista === 'cards' ? 'on' : ''} onClick={() => cambiarVista('cards')} title="Ver en tarjetas">▦</button>
           <button className={vista === 'lista' ? 'on' : ''} onClick={() => cambiarVista('lista')} title="Ver en lista">☰</button>

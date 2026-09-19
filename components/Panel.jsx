@@ -15,6 +15,9 @@ import Auditoria from './Auditoria';
 import AccesoDenegado from './AccesoDenegado';
 import Formularios from './Formularios';
 import PausaSemanal from './PausaSemanal';
+import Reportes from './Reportes';
+import Buscador from './Buscador';
+import TourGuiado from './TourGuiado';
 
 const ALL_COLS = [
   ['nom', 'Nombre'], ['ape', 'Apellido'], ['em', 'Email'], ['curso', 'Curso'], ['ed', 'Edición'],
@@ -42,7 +45,7 @@ export default function Panel() {
   const usuario = verComo || usuarioReal;
   // El tab activo se refleja en la URL (?tab=...) para que el link de cada página sea
   // compartible y funcione el botón "atrás" del navegador — antes quedaba siempre en /panel.
-  const TABS_VALIDOS = ['fichas', 'inscripciones', 'dashboard', 'emails', 'actividades', 'formularios', 'accesos', 'auditoria'];
+  const TABS_VALIDOS = ['fichas', 'inscripciones', 'dashboard', 'reportes', 'emails', 'actividades', 'formularios', 'accesos', 'auditoria', 'buscador'];
   const [tab, setTab] = useState(() => {
     if (typeof window === 'undefined') return 'fichas';
     const t = new URLSearchParams(window.location.search).get('tab');
@@ -212,9 +215,12 @@ export default function Panel() {
         <nav className="topnav-tabs">
           {/* Pestañas atenuadas cuando el rol de la persona no tiene acceso a esa sección
               (igual siguen siendo clickeables: si entran ven el cartel de Acceso denegado). */}
-          <button className={'tnav' + (tab === 'fichas' ? ' on' : '')} onClick={() => setTab('fichas')}>Fichas de inscripción</button>
-          <button className={'tnav' + (tab === 'inscripciones' ? ' on' : '') + (tienePermisoInscripciones(usuario) ? '' : ' dim')} onClick={() => setTab('inscripciones')}>Fichas completadas</button>
+          {/* "Fichas de inscripción" y "Fichas completadas" quedan unificadas bajo una sola
+              pestaña ("Fichas"), con sub-pestañas adentro — antes competían visualmente
+              como si fueran dos módulos del mismo nivel. */}
+          <button className={'tnav' + (tab === 'fichas' || tab === 'inscripciones' ? ' on' : '')} onClick={() => setTab('fichas')}>Fichas</button>
           <button className={'tnav' + (tab === 'dashboard' ? ' on' : '') + (tienePermisoDashboard(usuario) ? '' : ' dim')} onClick={() => setTab('dashboard')}>Dashboard</button>
+          <button className={'tnav' + (tab === 'reportes' ? ' on' : '') + (tienePermisoDashboard(usuario) ? '' : ' dim')} onClick={() => setTab('reportes')}>Reportes</button>
           <div className="navgroup">
             <span className="navgroup-label">Gestión</span>
             <button className={'tnav' + (tab === 'emails' ? ' on' : '') + (tienePermisoEmails(usuario) ? '' : ' dim')} onClick={() => setTab('emails')}>Emails</button>
@@ -231,11 +237,11 @@ export default function Panel() {
           </div>
         </nav>
         <div className="topnav-right">
-          <button className="iconbtn" title="Buscar inscripciones" aria-label="Buscar" onClick={() => { setTab('inscripciones'); setTimeout(() => document.getElementById('ins-search')?.focus(), 60); }}>🔎</button>
+          <button data-tour="nav-buscador" className={'iconbtn' + (tab === 'buscador' ? ' on' : '')} title="Buscar en fichas, inscripciones, actividades y formularios" aria-label="Buscar" onClick={() => setTab('buscador')}>🔎</button>
           <ThemeSelector />
           {puedeVerComoOtro(usuarioReal) && (verComo
-            ? <div className="vercomo-chip">👁 {verComo.nombre}<button onClick={() => setVerComo(null)} title="Salir del modo vista">✕</button></div>
-            : <select className="fsel vercomo-sel" value="" onFocus={cargarPersonas} onChange={(e) => { const p = personas.find((x) => x.email === e.target.value); if (p) setVerComo(p); }}>
+            ? <div data-tour="ver-como" className="vercomo-chip">👁 {verComo.nombre}<button onClick={() => setVerComo(null)} title="Salir del modo vista">✕</button></div>
+            : <select data-tour="ver-como" className="fsel vercomo-sel" value="" onFocus={cargarPersonas} onChange={(e) => { const p = personas.find((x) => x.email === e.target.value); if (p) setVerComo(p); }}>
                 <option value="">👁 Ver como…</option>
                 {personas.map((p) => <option key={p.email} value={p.email}>{p.nombre} — {nombreVisibleRoles(p.roles)}</option>)}
               </select>)}
@@ -250,12 +256,20 @@ export default function Panel() {
 
       <div className="main">
         <div className="topbar">
-          <div><div className="crumb">ILCE / FICHAS</div><h1>{{ fichas: 'Fichas de inscripción', inscripciones: 'Fichas completadas', dashboard: 'Dashboard', emails: 'Emails', actividades: 'Actividades', formularios: 'Formularios', constructor: 'Constructor de fichas', herramientas: 'Herramientas', accesos: 'Accesos', auditoria: 'Historial de acciones' }[tab]}</h1></div>
+          <div><div className="crumb">ILCE / FICHAS</div><h1>{{ fichas: 'Fichas de inscripción', inscripciones: 'Fichas completadas', dashboard: 'Dashboard', reportes: 'Reportes', emails: 'Emails', actividades: 'Actividades', formularios: 'Formularios', constructor: 'Constructor de fichas', herramientas: 'Herramientas', accesos: 'Accesos', auditoria: 'Historial de acciones', buscador: 'Buscador' }[tab]}</h1></div>
           {tab === 'inscripciones' && <div className="search">🔎 <input id="ins-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, apellido, email, DNI, WhatsApp, edición…" /></div>}
         </div>
 
+        {(tab === 'fichas' || tab === 'inscripciones') && (
+          <div className="subtabs" style={{ marginBottom: 18 }}>
+            <button className={tab === 'fichas' ? 'on' : ''} onClick={() => setTab('fichas')}>Fichas de inscripción</button>
+            <button className={tab === 'inscripciones' ? 'on' : ''} onClick={() => setTab('inscripciones')}>Fichas completadas</button>
+          </div>
+        )}
+
         <PausaSemanal />
 
+        {tab === 'buscador' && <Buscador usuario={usuario} irA={(t) => setTab(t)} setQInscripciones={setQ} />}
         {tab === 'fichas' && <FichasSection usuario={usuario} rows={rows} onEditar={editarFicha} onVerInscripciones={verInscripcionesDe} showToast={showToast} puedeEditar={tienePermisoConstructor(usuario)} />}
         {tab === 'herramientas' && <Herramientas />}
         {error && <div className="note" style={{ borderLeftColor: 'rgb(248 113 113)' }}>{error}</div>}
@@ -263,15 +277,12 @@ export default function Panel() {
 
         {rows && tab === 'inscripciones' && (
           <>
+            {/* Los números/KPIs (Total, últimos 7 días, pendientes, etc.) se movieron a la
+                pestaña "Reportes" — acá solo quedan los filtros rápidos para trabajar el día a día. */}
             {(() => {
               const iso = (d) => d.toISOString().slice(0, 10);
               const hace = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return iso(d); };
               const hoy = iso(new Date());
-              const sem = rows.filter((r) => (r.fecha || '') >= hace(7)).length;
-              const pend = rows.filter((r) => ['Pendiente', 'Iniciada'].includes(r.estado)).length;
-              const enRev = rows.filter((r) => r.estado === 'En revisión').length;
-              const comp = rows.filter((r) => ['Completada', 'En revisión', 'Inscrito'].includes(r.estado)).length;
-              const tasa = rows.length ? Math.round(comp / rows.length * 100) : 0;
               const setPeriodo = (t) => {
                 if (t === 'hoy') { setFDesde(hoy); setFHasta(hoy); }
                 else if (t === 'sem') { setFDesde(hace(7)); setFHasta(hoy); }
@@ -279,13 +290,6 @@ export default function Panel() {
                 setMasFiltros(true);
               };
               return (<>
-                <div className="ins-kpis">
-                  <div className="ins-kpi kpi-total"><div className="ic">📋</div><div className="n" style={{ color: 'rgb(var(--accentTeal))' }}>{rows.length}</div><div className="l">Total</div></div>
-                  <div className="ins-kpi kpi-week"><div className="ic">📈</div><div className="n">{sem}</div><div className="l">Últimos 7 días</div></div>
-                  <div className="ins-kpi kpi-pend"><div className="ic">⏳</div><div className="n" style={{ color: 'rgb(251 191 36)' }}>{pend}</div><div className="l">Pendientes</div></div>
-                  <div className="ins-kpi kpi-rev"><div className="ic">👁</div><div className="n" style={{ color: '#d879d1' }}>{enRev}</div><div className="l">En revisión</div></div>
-                  <div className="ins-kpi kpi-comp"><div className="ic">✅</div><div className="n" style={{ color: 'rgb(74 222 128)' }}>{tasa}%</div><div className="l">Completadas</div></div>
-                </div>
                 <div className="fgroup-label">Filtros rápidos</div>
                 <div className="fchips" style={{ marginBottom: 10 }}>
                   <button className="pill" onClick={() => setPeriodo('hoy')}>Hoy</button>
@@ -303,6 +307,11 @@ export default function Panel() {
                 <button key={e} className={'fchip' + (fEstado === e ? ' on' : '')} onClick={() => setFEstado(fEstado === e ? '' : e)}>{e} <span className="cnt">{baseParaChips.filter((r) => r.estado === e).length}</span></button>
               ))}
             </div>
+            <div className="fgroup-label">Curso</div>
+            <div className="fchips">
+              <button className={'pill' + (fCurso === '' ? ' on' : '')} onClick={() => setFCurso('')}>Todos</button>
+              {cursos.map((x) => <button key={x} className={'pill' + (fCurso === x ? ' on' : '')} onClick={() => setFCurso(fCurso === x ? '' : x)}>{x}</button>)}
+            </div>
             {ediciones.length > 0 && (<>
               <div className="fgroup-label">Edición</div>
               <div className="fchips">
@@ -310,15 +319,23 @@ export default function Panel() {
                 {ediciones.map((x) => <button key={x} className={'pill' + (fEd === x ? ' on' : '')} onClick={() => setFEd(fEd === x ? '' : x)}>Ed. {x}</button>)}
               </div>
             </>)}
-            <div className="fgroup-label">Filtros</div>
-            <div className="filters">
-              <select className="fsel" value={fCurso} onChange={(e) => setFCurso(e.target.value)}><option value="">Curso: todos</option>{cursos.map((x) => <option key={x}>{x}</option>)}</select>
-              <button className="btn-sm" onClick={() => setMasFiltros(!masFiltros)}>{masFiltros ? '– Menos filtros' : '+ Más filtros'}</button>
-              {masFiltros && (<>
-                <select className="fsel" value={fPais} onChange={(e) => setFPais(e.target.value)}><option value="">País: todos</option>{paises.map((x) => <option key={x}>{x}</option>)}</select>
+            {/* Antes acá había un <select> de Curso y otro de País (dropdowns) mezclados con
+                los chips de Estado/Edición de arriba — Diego pidió un solo criterio visual,
+                así que Curso y País pasaron a chips también; solo el rango de fechas, que no
+                es una categoría, sigue como selector nativo. */}
+            <button className="btn-sm" onClick={() => setMasFiltros(!masFiltros)} style={{ marginBottom: 8 }}>{masFiltros ? '– Menos filtros' : '+ Más filtros (país y fechas)'}</button>
+            {masFiltros && (<>
+              <div className="fgroup-label">País</div>
+              <div className="fchips">
+                <button className={'pill' + (fPais === '' ? ' on' : '')} onClick={() => setFPais('')}>Todos</button>
+                {paises.map((x) => <button key={x} className={'pill' + (fPais === x ? ' on' : '')} onClick={() => setFPais(fPais === x ? '' : x)}>{x}</button>)}
+              </div>
+              <div className="filters" style={{ marginBottom: 8 }}>
                 <input type="date" className="fsel" value={fDesde} onChange={(e) => setFDesde(e.target.value)} title="Desde" />
                 <input type="date" className="fsel" value={fHasta} onChange={(e) => setFHasta(e.target.value)} title="Hasta" />
-              </>)}
+              </div>
+            </>)}
+            <div className="filters">
               <span className="spacer" />
               <button className="btn-sm" onClick={() => setColModal(true)}>▦ Columnas</button>
               {puedeExportar && <><button className="btn-sm" onClick={exportCSV}>⬇ CSV</button><button className="btn-sm solid" onClick={exportXLSX}>⬇ Excel</button></>}
@@ -335,7 +352,7 @@ export default function Panel() {
               </div>
             )}
             <p className="count">Mostrando <b>{Math.min(300, filtradas.length)}</b> de <b>{filtradas.length}</b> inscripciones{filtradas.length > 300 ? ' (afiná la búsqueda para ver el resto)' : ''}</p>
-            <div className="tablewrap">
+            <div className="tablewrap tablewrap-inscripciones">
               <table>
                 <thead><tr>{ALL_COLS.filter((c) => visCols.has(c[0])).map((c) => <th key={c[0]} className={'col-' + c[0]}>{c[1]}</th>)}</tr></thead>
                 <tbody>
@@ -354,6 +371,8 @@ export default function Panel() {
           ? (rows && <Dashboard rows={filtradas} allRows={rows}
               filtros={{ fEstado, setFEstado, fCurso, setFCurso, fEd, setFEd, fPais, setFPais, fDesde, setFDesde, fHasta, setFHasta, limpiar, cursos, ediciones, paises, irA: (estado) => { setFEstado(estado || ''); setTab('inscripciones'); } }} />)
           : <AccesoDenegado seccion="Dashboard" />)}
+
+        {tab === 'reportes' && (tienePermisoDashboard(usuario) ? <Reportes rows={rows} /> : <AccesoDenegado seccion="Reportes" />)}
 
         {tab === 'emails' && (tienePermisoEmails(usuario) ? <EmailsPanel usuario={usuario} /> : <AccesoDenegado seccion="Emails" />)}
         {tab === 'actividades' && (tienePermisoActividades(usuario) ? <Actividades usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} puedeDocentes={tienePermisoAsignarDocentes(usuario)} /> : <AccesoDenegado seccion="Actividades" />)}
@@ -419,6 +438,15 @@ export default function Panel() {
         </div>
       </div>
       <VersionBadge />
+      <TourGuiado tab={tab} setTab={setTab} permisos={{
+        dashboard: tienePermisoDashboard(usuario),
+        actividades: tienePermisoActividades(usuario),
+        formularios: tienePermisoFormularios(usuario),
+        emails: tienePermisoEmails(usuario),
+        accesos: tienePermisoAccesos(usuario),
+        auditoria: tienePermisoAuditoria(usuario),
+        verComo: puedeVerComoOtro(usuarioReal)
+      }} />
       <div className={'toast' + (toast ? ' on' : '')}>{toast}</div>
     </div>
   );
@@ -476,8 +504,9 @@ function fmtFecha(iso) {
 }
 
 /* ===================== DASHBOARD ===================== */
-function Dashboard({ rows, filtros }) {
+function Dashboard({ rows, allRows, filtros }) {
   const F = filtros;
+  const universo = allRows || rows;
   const est = (k) => rows.filter((r) => r.estado === k).length;
   const iso = (d) => d.toISOString().slice(0, 10);
   const hoyISO = iso(new Date());
@@ -526,12 +555,33 @@ function Dashboard({ rows, filtros }) {
         <button className="pill" onClick={() => periodo('mes')}>Este mes</button>
         <button className="pill" onClick={() => periodo('90')}>90 días</button>
       </div>
-      <div className="filters" style={{ marginBottom: 8 }}>
-        <select className="fsel" value={F.fCurso} onChange={(e) => F.setFCurso(e.target.value)}><option value="">Curso: todos</option>{F.cursos.map((x) => <option key={x}>{x}</option>)}</select>
-        <select className="fsel" value={F.fEd} onChange={(e) => F.setFEd(e.target.value)}><option value="">Edición: todas</option>{F.ediciones.map((x) => <option key={x}>{x}</option>)}</select>
-        <select className="fsel" value={F.fPais} onChange={(e) => F.setFPais(e.target.value)}><option value="">País: todos</option>{F.paises.map((x) => <option key={x}>{x}</option>)}</select>
-        <select className="fsel" value={F.fEstado} onChange={(e) => F.setFEstado(e.target.value)}><option value="">Estado: todos</option>{ESTADOS.map((x) => <option key={x}>{x}</option>)}</select>
-        {activos.length > 0 && <button className="btn-sm" onClick={F.limpiar}>Limpiar</button>}
+      {/* Antes esto era una fila de <select> (dropdowns) al lado de los chips de arriba —
+          Diego pidió un solo criterio visual para filtrar, así que todo pasó a chips/pills,
+          igual que en "Fichas completadas". */}
+      <div className="fgroup-label">Estado</div>
+      <div className="fchips">
+        <button className={'pill' + (F.fEstado === '' ? ' on' : '')} onClick={() => F.setFEstado('')}>Todos</button>
+        {ESTADOS.filter((e) => universo.some((r) => r.estado === e)).map((e) => (
+          <button key={e} className={'pill' + (F.fEstado === e ? ' on' : '')} onClick={() => F.setFEstado(F.fEstado === e ? '' : e)}>{e}</button>
+        ))}
+      </div>
+      <div className="fgroup-label">Curso</div>
+      <div className="fchips">
+        <button className={'pill' + (F.fCurso === '' ? ' on' : '')} onClick={() => F.setFCurso('')}>Todos</button>
+        {F.cursos.map((x) => <button key={x} className={'pill' + (F.fCurso === x ? ' on' : '')} onClick={() => F.setFCurso(F.fCurso === x ? '' : x)}>{x}</button>)}
+      </div>
+      {F.ediciones.length > 0 && (<>
+        <div className="fgroup-label">Edición</div>
+        <div className="fchips">
+          <button className={'pill' + (F.fEd === '' ? ' on' : '')} onClick={() => F.setFEd('')}>Todas</button>
+          {F.ediciones.map((x) => <button key={x} className={'pill' + (F.fEd === x ? ' on' : '')} onClick={() => F.setFEd(F.fEd === x ? '' : x)}>Ed. {x}</button>)}
+        </div>
+      </>)}
+      <div className="fgroup-label">País</div>
+      <div className="fchips" style={{ marginBottom: 8 }}>
+        <button className={'pill' + (F.fPais === '' ? ' on' : '')} onClick={() => F.setFPais('')}>Todos</button>
+        {F.paises.map((x) => <button key={x} className={'pill' + (F.fPais === x ? ' on' : '')} onClick={() => F.setFPais(F.fPais === x ? '' : x)}>{x}</button>)}
+        {activos.length > 0 && <button className="btn-sm" onClick={F.limpiar}>Limpiar filtros</button>}
       </div>
       {activos.length > 0 && (
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
@@ -558,6 +608,9 @@ function Dashboard({ rows, filtros }) {
         <div className="dash-panel"><h3>Por estado</h3>{cloud(group((r) => r.estado), 8)}</div>
         <div className="dash-panel"><h3>Por origen</h3>{cloud(group((r) => r.origen), 6)}</div>
       </div>
+      {/* Este panel es para explorar con filtros en el momento; los totales "de un vistazo"
+          (sin tocar ningún filtro) y el desglose por mes viven en Reportes. */}
+      <p className="muted" style={{ fontSize: 12, marginTop: 16 }}>¿Buscás los totales generales sin filtrar, o la evolución mes a mes? Eso está en <b>Reportes</b>.</p>
     </>
   );
 }

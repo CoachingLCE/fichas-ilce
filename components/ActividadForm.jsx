@@ -1,6 +1,19 @@
 'use client';
 import { useState, useRef } from 'react';
 import { validarEmail } from '../lib/validacion';
+import { Isologo } from './Isologo';
+
+// Íconos de redes en línea (trazo simple, sin reproducir el isotipo de marca de cada red)
+// para el pie "AL FINALIZAR SIEMPRE" que pidió Diego.
+function IconInstagram() {
+  return (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none" /></svg>);
+}
+function IconWhatsapp() {
+  return (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 20l1.3-3.9A8 8 0 1 1 8.3 19L4 20Z" /><path d="M8.5 9.3c.2-.5.5-.5.8-.5h.5c.2 0 .4 0 .6.5s.7 1.6.7 1.8-.1.3-.2.4l-.4.4c-.1.2-.3.3-.1.6.2.4.8 1.2 1.6 1.9.9.8 1.6 1.1 1.9 1.2.3.1.4.1.6-.1l.5-.6c.2-.2.4-.2.6-.1l1.5.7c.2.1.4.2.4.4 0 .6-.2 1.3-.6 1.6-.4.3-.9.6-1.6.6-1 0-2.5-.4-4.2-1.9-1.9-1.7-2.9-3.3-3.1-3.7-.2-.4-.9-1.4-.9-2.5 0-.6.2-1.1.4-1.4Z" fill="currentColor" stroke="none" /></svg>);
+}
+function IconYoutube() {
+  return (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2.5" y="5.5" width="19" height="13" rx="4" /><path d="M10.5 9.3v5.4l4.6-2.7-4.6-2.7Z" fill="currentColor" stroke="none" /></svg>);
+}
 
 export default function ActividadForm({ act }) {
   const [step, setStep] = useState(0); // 0 = datos, 1..N = preguntas
@@ -49,13 +62,27 @@ export default function ActividadForm({ act }) {
     const pct = resultado.total ? Math.round((resultado.puntaje / resultado.total) * 100) : 0;
     return (
       <div className="quizstage"><div className="quizcard">
-        <div className="quiz-band"><div className="kd">ACTIVIDAD</div><div className="ti">{act.curso}</div></div>
-        <div className="quiz-body" style={{ textAlign: 'center', padding: '40px 30px' }}>
+        <div className="quiz-band">
+          <div className="quiz-band-top"><div className="kd">ACTIVIDAD</div><Isologo size={20} /></div>
+          <div className="ti">{act.curso}</div>
+        </div>
+        <div className="quiz-body" style={{ textAlign: 'center', padding: '40px 30px 8px' }}>
           <div className="quiz-ring">✓</div>
           <h3 style={{ fontSize: 22, margin: '4px 0' }}>¡Actividad enviada!</h3>
           <p className="muted" style={{ fontSize: 14 }}>Tu resultado en <b>{act.titulo}</b>:</p>
           <div style={{ fontFamily: 'Jost', fontWeight: 700, fontSize: 48, color: 'rgb(var(--accentTeal))', margin: '6px 0' }}>{resultado.puntaje} / {resultado.total}</div>
           <p className="muted" style={{ fontSize: 14 }}>{pct}% correctas{resultado.emailOk ? ` · te enviamos el detalle a ${email}` : ''}</p>
+        </div>
+        {/* Pie fijo al finalizar cualquier actividad, pedido por Diego: volver al campus,
+            invitación a la nota del blog, y redes de la comunidad. */}
+        <div className="quiz-postfoot">
+          <a className="quiz-postlink" href="https://institutoilce.com/" target="_blank" rel="noopener noreferrer">← Volver al campus</a>
+          <a className="quiz-postlink quiz-postlink-sec" href="https://www.coachingeducativolider.com/blog" target="_blank" rel="noopener noreferrer">☕ Tomate un descanso y leé una nota</a>
+          <div className="quiz-social">
+            <a href="https://www.instagram.com/institutoilce/" target="_blank" rel="noopener noreferrer" title="Instagram" className="quiz-social-btn"><IconInstagram /></a>
+            <a href="https://www.whatsapp.com/channel/0029VaBfdccGOj9tAv5s1A0G" target="_blank" rel="noopener noreferrer" title="WhatsApp" className="quiz-social-btn"><IconWhatsapp /></a>
+            <a href="https://www.youtube.com/channel/UCORUTxo5fMucj3gKqyyqoAQ" target="_blank" rel="noopener noreferrer" title="YouTube" className="quiz-social-btn"><IconYoutube /></a>
+          </div>
         </div>
       </div></div>
     );
@@ -67,7 +94,7 @@ export default function ActividadForm({ act }) {
   return (
     <div className="quizstage"><div className="quizcard">
       <div className="quiz-band">
-        <div className="kd">ACTIVIDAD · {act.curso.toUpperCase()}</div>
+        <div className="quiz-band-top"><div className="kd">ACTIVIDAD · {act.curso.toUpperCase()}</div><Isologo size={20} /></div>
         <div className="ti">{act.titulo}</div>
       </div>
       <div className="quiz-prog"><div className="quiz-prog-fill" style={{ width: (esDatos ? 4 : progreso) + '%' }} /></div>

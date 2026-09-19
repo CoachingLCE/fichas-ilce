@@ -18,7 +18,18 @@ export async function GET(req) {
   const guardadas = await readSheet(TABS.FICHAS);
   const porSlug = {};
   guardadas.forEach((f) => { try { porSlug[f.Slug] = { ...JSON.parse(f['Definición JSON'] || '{}'), _rowIndex: f._rowIndex }; } catch {} });
-  const defs = CURSOS.map((c) => ({ ...defDefault(c.slug, c.nombre), ...(porSlug[c.slug] || {}) }));
+  // Blindaje: si alguna ficha quedó guardada con "ediciones"/"campos"/"config" en un formato
+  // viejo o corrupto (no array / no objeto), acá se normaliza para que el Constructor y la
+  // lista de Fichas nunca reciban algo que les rompa el .map()/.filter() y tiren pantalla en blanco.
+  const defs = CURSOS.map((c) => {
+    const base = { ...defDefault(c.slug, c.nombre), ...(porSlug[c.slug] || {}) };
+    return {
+      ...base,
+      ediciones: Array.isArray(base.ediciones) ? base.ediciones : [],
+      campos: Array.isArray(base.campos) ? base.campos : undefined,
+      config: (base.config && typeof base.config === 'object' && !Array.isArray(base.config)) ? base.config : undefined
+    };
+  });
   return NextResponse.json({ ok: true, defs });
 }
 

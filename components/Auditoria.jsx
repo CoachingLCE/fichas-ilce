@@ -5,6 +5,11 @@ const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(
 
 // Categoriza cada acción para darle color + ícono según lo que se hizo.
 const CATS = [
+  // Antes "Ficha enviada" (lo que se registra cuando un estudiante completa su ficha de
+  // inscripción, ver app/api/inscripcion/route.js) no matcheaba ninguna categoría — quedaba
+  // como "otro" (un punto gris, sin ícono ni chip propio) y se perdía entre el resto de las
+  // acciones. Ahora tiene su propia categoría para que se pueda ver/filtrar de un vistazo.
+  { id: 'ficha', icono: '📋', color: 'rgb(74 222 128)', test: (a) => /ficha (enviad|completad)/i.test(a) },
   { id: 'crear', icono: '🟢', color: '#4ade80', test: (a) => /(cre[oó]|agreg[oó]|dio acceso|public[oó]|nueva|nuevo|import[oó]|carg[oó])/i.test(a) },
   { id: 'editar', icono: '✏️', color: '#fbbf24', test: (a) => /(edit[oó]|corrig|actualiz[oó]|modific[oó]|renombr[oó])/i.test(a) },
   { id: 'estado', icono: '📌', color: 'rgb(var(--accentTeal))', test: (a) => /(estado|inscri|aprob|revisi)/i.test(a) },
@@ -39,7 +44,7 @@ export default function Auditoria({ usuario }) {
   if (!eventos) return <div className="spin" />;
 
   const CHIPS = [
-    ['', 'Todas'], ['crear', '🟢 Creó'], ['editar', '✏️ Editó'], ['estado', '📌 Estado'],
+    ['', 'Todas'], ['ficha', '📋 Ficha completada'], ['crear', '🟢 Creó'], ['editar', '✏️ Editó'], ['estado', '📌 Estado'],
     ['eliminar', '🗑️ Eliminó'], ['mail', '📧 Correo'], ['login', '🔑 Login']
   ];
   return (
@@ -51,7 +56,7 @@ export default function Auditoria({ usuario }) {
       </div>
       <div className="fchips" style={{ marginBottom: 12 }}>
         {CHIPS.map(([id, label]) => (
-          <button key={id} className={'pill' + (cat === id ? ' on' : '')} onClick={() => setCat(id)}>{label}</button>
+          <button key={id} data-tour={id === 'ficha' ? 'chip-ficha-completada' : undefined} className={'pill' + (cat === id ? ' on' : '')} onClick={() => setCat(id)}>{label}</button>
         ))}
       </div>
       {filtrados.length === 0 ? (

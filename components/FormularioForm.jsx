@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { CURSOS } from '../lib/constants';
 import { validarEmail } from '../lib/validacion';
+import { Isologo } from './Isologo';
 
 export default function FormularioForm({ form }) {
   const [val, setVal] = useState({ curso: CURSOS[0].nombre });
@@ -32,7 +33,7 @@ export default function FormularioForm({ form }) {
   if (enviado) {
     return (
       <div className="quizstage"><div className="quizcard">
-        <div className="quiz-band"><div className="kd">FORMULARIO</div><div className="ti">{form.titulo}</div></div>
+        <div className="quiz-band"><div className="quiz-band-top"><div className="kd">FORMULARIO</div><Isologo size={20} /></div><div className="ti">{form.titulo}</div></div>
         <div className="quiz-body" style={{ textAlign: 'center', padding: '40px 30px' }}>
           <div className="quiz-ring">✓</div>
           <h3 style={{ fontSize: 22, margin: '4px 0' }}>¡Gracias por responder!</h3>
@@ -89,7 +90,7 @@ export default function FormularioForm({ form }) {
 
   return (
     <div className="quizstage"><div className="quizcard">
-      <div className="quiz-band"><div className="kd">FORMULARIO</div><div className="ti">{form.titulo}</div></div>
+      <div className="quiz-band"><div className="quiz-band-top"><div className="kd">FORMULARIO</div><Isologo size={20} /></div><div className="ti">{form.titulo}</div></div>
       <div className="quiz-body">
         {/* Correo siempre primero */}
         <div className="quiz-field">
