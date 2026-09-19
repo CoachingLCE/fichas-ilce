@@ -91,6 +91,7 @@ export default function Actividades({ usuario, showToast, puedeGestionar, puedeD
 function Lista({ usuario, showToast, puedeGestionar }) {
   const [acts, setActs] = useState(null);
   const [edit, setEdit] = useState(null);
+  const [q, setQ] = useState('');
   useEffect(() => { cargar(); /* eslint-disable-next-line */ }, []);
   async function cargar() {
     const res = await fetch('/api/actividades?solicitanteEmail=' + encodeURIComponent(usuario.email));
@@ -161,18 +162,23 @@ function Lista({ usuario, showToast, puedeGestionar }) {
   }
 
   if (!acts) return <div className="spin" />;
+  const qq = (q || '').trim().toLowerCase();
+  const filtradas = qq ? acts.filter((a) => [a.titulo, a.curso, a.clase, a.estado, a.slug].filter(Boolean).join(' ').toLowerCase().includes(qq)) : acts;
   return (
     <div>
       <div className="sechead">
-        <span className="hcount">{acts.length} actividad{acts.length === 1 ? '' : 'es'}</span>
+        <span className="hcount">{filtradas.length} actividad{filtradas.length === 1 ? '' : 'es'}</span>
         <span className="grow" />
+        <div className="fsearch" style={{ maxWidth: 260 }}>🔎 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, curso, clase o estado…" /></div>
         {puedeGestionar && <button className="btn btn-primary" style={{ flex: 'none', padding: '10px 18px' }} onClick={nueva}>+ Nueva actividad</button>}
       </div>
       {acts.length === 0 ? (
         <div className="empty"><div className="ico">📝</div><h3>No hay actividades todavía</h3><p>{puedeGestionar ? 'Creá tu primera actividad (Postwork).' : 'Todavía no se cargaron actividades.'}</p></div>
+      ) : filtradas.length === 0 ? (
+        <div className="empty"><div className="ico">🔎</div><h3>Sin resultados</h3><p>Probá con otro término.</p></div>
       ) : (
         <div className="fgrid">
-          {acts.map((a) => (
+          {filtradas.map((a) => (
             <div className="fcard" key={a.slug}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span className={'fstate ' + (a.estado === 'Publicada' ? 'pub' : 'bor')}><span className="d" />{a.estado}</span>
