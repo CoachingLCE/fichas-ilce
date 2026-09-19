@@ -92,6 +92,9 @@ function Lista({ usuario, showToast, puedeGestionar }) {
   const [acts, setActs] = useState(null);
   const [edit, setEdit] = useState(null);
   const [q, setQ] = useState('');
+  const [vista, setVista] = useState('cards');
+  useEffect(() => { try { const v = localStorage.getItem('ilce-actividades-vista'); if (v === 'cards' || v === 'lista') setVista(v); } catch { /* */ } }, []);
+  const cambiarVista = (v) => { setVista(v); try { localStorage.setItem('ilce-actividades-vista', v); } catch { /* */ } };
   useEffect(() => { cargar(); /* eslint-disable-next-line */ }, []);
   async function cargar() {
     const res = await fetch('/api/actividades?solicitanteEmail=' + encodeURIComponent(usuario.email));
@@ -170,12 +173,30 @@ function Lista({ usuario, showToast, puedeGestionar }) {
         <span className="hcount">{filtradas.length} actividad{filtradas.length === 1 ? '' : 'es'}</span>
         <span className="grow" />
         <div className="fsearch" style={{ maxWidth: 260 }}>🔎 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, curso, clase o estado…" /></div>
+        <div className="vista-toggle">
+          <button className={vista === 'cards' ? 'on' : ''} onClick={() => cambiarVista('cards')} title="Ver en tarjetas">▦</button>
+          <button className={vista === 'lista' ? 'on' : ''} onClick={() => cambiarVista('lista')} title="Ver en lista">☰</button>
+        </div>
         {puedeGestionar && <button className="btn btn-primary" style={{ flex: 'none', padding: '10px 18px' }} onClick={nueva}>+ Nueva actividad</button>}
       </div>
       {acts.length === 0 ? (
         <div className="empty"><div className="ico">📝</div><h3>No hay actividades todavía</h3><p>{puedeGestionar ? 'Creá tu primera actividad (Postwork).' : 'Todavía no se cargaron actividades.'}</p></div>
       ) : filtradas.length === 0 ? (
         <div className="empty"><div className="ico">🔎</div><h3>Sin resultados</h3><p>Probá con otro término.</p></div>
+      ) : vista === 'lista' ? (
+        <div className="tablewrap"><table>
+          <thead><tr><th>Actividad</th><th>Curso</th><th>Clase</th><th>Estado</th><th>Preguntas</th><th></th></tr></thead>
+          <tbody>{filtradas.map((a) => (
+            <tr key={a.slug}>
+              <td className="ins-name">{a.titulo}</td>
+              <td>{a.curso ? <span className="cchip">{a.curso}</span> : ''}</td>
+              <td className="sec">{a.clase || '—'}</td>
+              <td><span className={'fstate ' + (a.estado === 'Publicada' ? 'pub' : 'bor')}><span className="d" />{a.estado}</span></td>
+              <td className="sec">{a.preguntas.length}</td>
+              <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}><a className="btn-sm" href={`${APP_URL}/actividad/${a.slug}`} target="_blank" rel="noreferrer">👁</a> {puedeGestionar && <button className="btn-sm solid" onClick={() => setEdit({ ...a, _nuevo: false })}>✎</button>}</td>
+            </tr>
+          ))}</tbody>
+        </table></div>
       ) : (
         <div className="fgrid">
           {filtradas.map((a) => (

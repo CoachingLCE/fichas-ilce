@@ -645,3 +645,10 @@ tr.clickable:hover{background:rgb(var(--surface2))}
   background:rgb(var(--accentPurple) / .12);border-bottom:1px solid rgb(var(--accentPurple) / .3);color:rgb(var(--text))}
 .vercomo-banner button{margin-left:auto;background:rgb(var(--accentPurple) / .2);border:1px solid rgb(var(--accentPurple) / .4);
   color:rgb(var(--accentPurple));border-radius:8px;padding:4px 12px;font-weight:700;cursor:pointer}
+
+/* ── Toggle de vista Tarjetas/Lista ── */
+.vista-toggle{display:inline-flex;border:1px solid rgb(var(--border));border-radius:9px;overflow:hidden;flex:none}
+.vista-toggle button{background:transparent;border:0;color:rgb(var(--textMuted));width:34px;height:32px;cursor:pointer;font-size:15px;line-height:1}
+.vista-toggle button.on{background:rgb(var(--accentPurple) / .15);color:rgb(var(--accentPurple))}
+.linklike{background:none;border:0;color:rgb(var(--accentTeal));font-weight:700;cursor:pointer;font-size:13px;padding:0}
+.linklike:hover{text-decoration:underline}

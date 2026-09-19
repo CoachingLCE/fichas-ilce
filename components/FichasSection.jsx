@@ -14,6 +14,9 @@ export default function FichasSection({ usuario, rows, onEditar, onVerInscripcio
   const [defs, setDefs] = useState(null);
   const [q, setQ] = useState('');
   const [chip, setChip] = useState('Todas');
+  const [vista, setVista] = useState('cards');
+  useEffect(() => { try { const v = localStorage.getItem('ilce-fichas-vista'); if (v === 'cards' || v === 'lista') setVista(v); } catch { /* */ } }, []);
+  const cambiarVista = (v) => { setVista(v); try { localStorage.setItem('ilce-fichas-vista', v); } catch { /* */ } };
   const [orden, setOrden] = useState('nombre');
   const [menuAbierto, setMenuAbierto] = useState(null);
   const [copiado, setCopiado] = useState(null);
@@ -146,11 +149,33 @@ export default function FichasSection({ usuario, rows, onEditar, onVerInscripcio
           <option value="recientes">Ordenar: Más recientes</option>
           <option value="inscripciones">Ordenar: Más inscripciones</option>
         </select>
+        <div className="vista-toggle">
+          <button className={vista === 'cards' ? 'on' : ''} onClick={() => cambiarVista('cards')} title="Ver en tarjetas">▦</button>
+          <button className={vista === 'lista' ? 'on' : ''} onClick={() => cambiarVista('lista')} title="Ver en lista">☰</button>
+        </div>
       </div>
       <p className="count">{filtradas.length} ficha{filtradas.length === 1 ? '' : 's'} encontrada{filtradas.length === 1 ? '' : 's'}</p>
 
       {filtradas.length === 0 ? (
         <div className="empty"><div className="ico">🗂️</div><h3>No encontramos fichas</h3><p>Probá con otro término o cambiá el filtro.</p><button className="btn-sm" onClick={() => { setQ(''); setChip('Todas'); }}>Limpiar filtros</button></div>
+      ) : vista === 'lista' ? (
+        <div className="tablewrap"><table>
+          <thead><tr><th>Ficha</th><th>Estado</th><th>Inscripciones</th><th>Ediciones</th><th></th></tr></thead>
+          <tbody>{filtradas.map((d) => {
+            const meta = ESTADO_META[d.estado] || ESTADO_META.Publicada;
+            const insc = porCurso[d.curso] || 0;
+            const eds = d.ediciones || [];
+            return (
+              <tr key={d.slug}>
+                <td className="ins-name">{d.curso}</td>
+                <td><span className={'fstate ' + meta.cls}><span className="d" />{meta.label}</span></td>
+                <td>{insc > 0 ? <button className="linklike" onClick={() => onVerInscripciones(d.curso)}>{insc} inscriptos →</button> : <span className="sec">0</span>}</td>
+                <td className="sec">{eds.length} edición{eds.length === 1 ? '' : 'es'}</td>
+                <td style={{ textAlign: 'right' }}>{puedeEditar && <button className="btn-sm solid" onClick={() => onEditar(d.slug)}>{eds.length ? '✎ Editar' : '+ Cargar edición'}</button>}</td>
+              </tr>
+            );
+          })}</tbody>
+        </table></div>
       ) : (
         <div className="fgrid">
           {filtradas.map((d) => {
