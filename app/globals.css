@@ -376,6 +376,10 @@ tbody tr{cursor:pointer}tbody tr:hover{background:rgb(var(--surface2))}
 .fdrop-opt:hover{background:rgb(var(--surface2))}
 .fdrop-opt.on{background:rgb(var(--accentPurple) / .15);color:rgb(var(--accentPurple));font-weight:700}
 .fdrop-empty{padding:10px 12px;font-size:12px;color:rgb(var(--textMuted))}
+.fdrop-vercomo{min-width:0;width:170px}
+.fdrop-vercomo .fdrop-btn{height:32px}
+.fdrop-vercomo .fdrop-panel{max-width:320px;right:0;left:auto}
+.fdrop-vercomo .fdrop-opt{white-space:normal;line-height:1.35}
 .tagcloud{display:flex;flex-wrap:wrap;gap:7px}
 .tagcloud .tc{display:inline-flex;align-items:center;gap:7px;background:rgb(var(--surface2));border:1px solid rgb(var(--border));border-radius:999px;padding:4px 11px;font-size:12.5px;color:rgb(var(--textSec))}
 .tagcloud .tc b{color:rgb(var(--accentTeal));font-family:'Jost'}
@@ -384,6 +388,9 @@ tbody tr{cursor:pointer}tbody tr:hover{background:rgb(var(--surface2))}
 .minibar .tr{flex:1;height:7px;background:rgb(var(--surface2));border-radius:99px;overflow:hidden}
 .minibar .fl{height:100%;border-radius:99px;background:linear-gradient(90deg,rgb(var(--accentPurple)),rgb(var(--accentMagenta)))}
 .minibar .vv{width:32px;text-align:right;color:rgb(var(--textMuted))}
+.tagcloud button.tc,.minibar.minibar-click{font:inherit;text-align:left;cursor:pointer;appearance:none;width:100%}
+.tagcloud button.tc:hover,.minibar-click:hover .lb{border-color:rgb(var(--accentTeal));color:rgb(var(--text))}
+.minibar-click:hover .fl{filter:brightness(1.15)}
 .chipfilt{display:inline-flex;align-items:center;gap:6px;background:rgba(150,25,143,.14);border:1px solid rgba(150,25,143,.4);color:#d879d1;border-radius:999px;padding:4px 11px;font-size:12px;font-weight:700}
 .chipfilt button{background:none;border:0;color:inherit;cursor:pointer;font-size:15px;line-height:1}
 /* KPIs arriba de Inscripciones */

@@ -88,7 +88,7 @@ export async function POST(req) {
   let emailOk = true;
   try {
     await enviarConfirmacionInscripcion({
-      email: form.email, nombre: form.nom, curso: curso.nombre, edicion: edicionLabel, medio: form.medio
+      email: form.email, nombre: form.nom, curso: curso.nombre, edicion: edicionLabel, medio: form.medio, fecha: hoy()
     });
   } catch (e) {
     emailOk = false;
@@ -98,7 +98,7 @@ export async function POST(req) {
   try {
     await enviarAvisoEquipo({
       nombre: form.nom, apellido: form.ape, curso: curso.nombre, edicion: edicionLabel,
-      email: form.email, whatsapp: form.wa, pais: form.pais, medio: form.medio
+      email: form.email, whatsapp: form.wa, pais: form.pais, medio: form.medio, origen: form.origen || ''
     });
   } catch (e) { /* noop */ }
 

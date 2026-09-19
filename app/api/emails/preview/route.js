@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server';
 import { findUsuario, tienePermisoEmails } from '../../../../lib/auth';
-import { plantillaConfirmacion, plantillaAvisoEquipo } from '../../../../lib/mailer';
+import {
+  asuntoConfirmacion, plantillaConfirmacion,
+  asuntoAvisoEquipo, plantillaAvisoEquipo,
+  plantillaCredenciales,
+  asuntoResultadoActividad, plantillaResultadoActividad,
+  asuntoAvisoActividadDocente, plantillaAvisoActividadDocente,
+  asuntoResumenActividades, plantillaResumenActividades
+} from '../../../../lib/mailer';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +16,15 @@ const EJEMPLO = {
   nombre: 'María', apellido: 'González', curso: 'Coaching de Equipos',
   edicion: 'Edición 20 — Jueves 29 de octubre de 2026',
   email: 'maria.gonzalez@correo.com', whatsapp: '+54 9 11 5555 1234',
-  pais: 'Argentina', medio: 'WhatsApp'
+  pais: 'Argentina', medio: 'WhatsApp', origen: 'Instagram',
+  fecha: new Date().toISOString().slice(0, 10),
+  password: 'Hola123',
+  actividad: 'Postwork clase número 2', puntaje: 8, total: 10, slug: 'postwork-deportivo-clase-2',
+  docenteNombre: 'Alexander',
+  filas: [
+    { fecha: new Date().toISOString().slice(0, 10), nombre: 'María González', email: 'maria.gonzalez@correo.com', curso: 'Coaching de Equipos', edicion: '20', actividad: 'Postwork clase número 2', puntaje: 8, total: 10 },
+    { fecha: new Date().toISOString().slice(0, 10), nombre: 'Juan Pérez', email: 'juan.perez@correo.com', curso: 'Coaching Deportivo', edicion: '16', actividad: 'Práctica de repaso', puntaje: 4, total: 10 }
+  ]
 };
 
 export async function GET(req) {
@@ -24,14 +39,23 @@ export async function GET(req) {
   let asunto = '', html = '';
 
   if (tipo === 'Confirmación inscripción') {
-    // El asunto debe coincidir con enviarConfirmacionInscripcion() en lib/mailer.js
-    asunto = `¡Recibimos tu inscripción a ${e.curso}! 🎉 — Instituto ILCE`;
+    asunto = asuntoConfirmacion(e);
     html = plantillaConfirmacion(e);
   } else if (tipo === 'Aviso equipo') {
-    const edCorta = (e.edicion || '').split('—')[0].split('-')[0].trim();
-    // El asunto debe coincidir con enviarAvisoEquipo() en lib/mailer.js
-    asunto = `📥 Nueva ficha — ${e.curso}${e.edicion ? ` (${edCorta})` : ''}: ${e.nombre} ${e.apellido}`.trim();
+    asunto = asuntoAvisoEquipo(e);
     html = plantillaAvisoEquipo(e);
+  } else if (tipo === 'Credenciales acceso') {
+    asunto = 'Tu acceso al panel de ILCE';
+    html = plantillaCredenciales(e);
+  } else if (tipo === 'Resultado actividad') {
+    asunto = asuntoResultadoActividad(e);
+    html = plantillaResultadoActividad(e);
+  } else if (tipo === 'Aviso actividad docente') {
+    asunto = asuntoAvisoActividadDocente({ ...e, estudiante: e.nombre, estudianteEmail: e.email });
+    html = plantillaAvisoActividadDocente({ ...e, estudiante: e.nombre, estudianteEmail: e.email });
+  } else if (tipo === 'Resumen viernes') {
+    asunto = asuntoResumenActividades(e);
+    html = plantillaResumenActividades({ desde: e.filas[0].fecha, hasta: e.fecha, filas: e.filas });
   } else {
     return NextResponse.json({ ok: false, error: 'Ese correo todavía no tiene vista previa' }, { status: 400 });
   }

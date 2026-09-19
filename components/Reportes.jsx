@@ -86,6 +86,18 @@ function ReportesInscripciones({ rows }) {
   const maxMes = Math.max(1, ...porMes.map(([, n]) => n));
   const nombreMes = (k) => { const [y, m] = k.split('-'); return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString('es-AR', { month: 'short', year: '2-digit' }); };
 
+  // Mes a mes, por curso: la misma ventana de "Últimos 6 meses" de arriba, pero cruzada con
+  // el curso — para ver no solo cuántas fichas hubo cada mes, sino de qué cursos.
+  const cursosConDatos = useMemo(() => [...new Set(rows.map((r) => r.curso).filter(Boolean))].sort(), [rows]);
+  const porMesYCurso = useMemo(() => {
+    return porMes.map(([k, total]) => {
+      const delMes = rows.filter((r) => (r.fecha || '').slice(0, 7) === k);
+      const porCurso = {};
+      cursosConDatos.forEach((c) => { porCurso[c] = delMes.filter((r) => r.curso === c).length; });
+      return { mes: k, total, porCurso };
+    });
+  }, [rows, porMes, cursosConDatos]);
+
   return (
     <div>
       <p className="fhead-sub" style={{ marginBottom: 16 }}>Panorama general de fichas de inscripción: totales, embudo por estado, por curso y por mes.</p>
@@ -145,6 +157,28 @@ function ReportesInscripciones({ rows }) {
         <div className="panel" style={{ gridColumn: '1 / -1' }}>
           <h3>Últimos 6 meses</h3>
           {porMes.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : porMes.map(([k, n]) => <Barra key={k} label={nombreMes(k)} n={n} max={maxMes} />)}
+        </div>
+
+        <div className="panel" style={{ gridColumn: '1 / -1' }}>
+          <h3>Mes a mes, por curso</h3>
+          {porMesYCurso.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : (
+            <div className="tablewrap" style={{ maxHeight: 340 }}>
+              <table>
+                <thead><tr>
+                  <th>Mes</th>
+                  {cursosConDatos.map((c) => <th key={c}>{c}</th>)}
+                  <th>Total</th>
+                </tr></thead>
+                <tbody>{porMesYCurso.map((fila) => (
+                  <tr key={fila.mes}>
+                    <td><b>{nombreMes(fila.mes)}</b></td>
+                    {cursosConDatos.map((c) => <td key={c} className="sec">{fila.porCurso[c] || 0}</td>)}
+                    <td style={{ fontWeight: 700 }}>{fila.total}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>

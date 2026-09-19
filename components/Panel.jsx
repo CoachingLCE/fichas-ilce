@@ -12,6 +12,7 @@ import Actividades from './Actividades';
 import EmailsPanel from './EmailsPanel';
 import Herramientas from './Herramientas';
 import Auditoria from './Auditoria';
+import Equipo from './Equipo';
 import AccesoDenegado from './AccesoDenegado';
 import Formularios from './Formularios';
 import PausaSemanal from './PausaSemanal';
@@ -50,13 +51,14 @@ function esValorValido(v) {
 }
 
 export default function Panel() {
+  const fichasRef = useRef(null);
   const { usuario: usuarioReal, cargando: cargandoSesion, logout } = useSession();
   const [verComo, setVerComo] = useState(null); // persona que se está "viendo como" (solo Admin)
   const [personas, setPersonas] = useState([]);
   const usuario = verComo || usuarioReal;
   // El tab activo se refleja en la URL (?tab=...) para que el link de cada página sea
   // compartible y funcione el botón "atrás" del navegador — antes quedaba siempre en /panel.
-  const TABS_VALIDOS = ['fichas', 'inscripciones', 'dashboard', 'reportes', 'emails', 'actividades', 'formularios', 'accesos', 'auditoria', 'buscador'];
+  const TABS_VALIDOS = ['fichas', 'inscripciones', 'dashboard', 'reportes', 'emails', 'actividades', 'formularios', 'equipo', 'accesos', 'auditoria', 'buscador'];
   const [tab, setTab] = useState(() => {
     if (typeof window === 'undefined') return 'fichas';
     const t = new URLSearchParams(window.location.search).get('tab');
@@ -86,7 +88,9 @@ export default function Panel() {
   const [rows, setRows] = useState(null);
   const [error, setError] = useState('');
   // filtros
-  const [q, setQ] = useState('');
+  // "q" también puede venir por URL (?tab=inscripciones&q=email@...) — así el botón "Ver
+  // inscripción en el panel" del mail de aviso al equipo puede saltar directo a la persona.
+  const [q, setQ] = useState(() => (typeof window === 'undefined' ? '' : new URLSearchParams(window.location.search).get('q') || ''));
   const [fEstado, setFEstado] = useState(''); const [fCurso, setFCurso] = useState('');
   const [fEd, setFEd] = useState(''); const [fPais, setFPais] = useState('');
   const [fDesde, setFDesde] = useState(''); const [fHasta, setFHasta] = useState('');
@@ -104,6 +108,16 @@ export default function Panel() {
   function showToast(m) { setToast(m); clearTimeout(showToast._t); showToast._t = setTimeout(() => setToast(''), 2400); }
   function editarFicha(slug) { setConstructorSlug(slug); setTab('constructor'); }
   function verInscripcionesDe(curso) { setFCurso(curso); setTab('inscripciones'); }
+  // Un solo punto de entrada para "apretar un número/chip del Dashboard y ver de qué fichas
+  // se trata": pone ESE filtro puntual (sin tocar los demás que ya estén activos) y salta a
+  // Fichas completadas.
+  function irAConFiltro(campo, valor) {
+    if (campo === 'estado') setFEstado(valor || '');
+    else if (campo === 'curso') setFCurso(valor || '');
+    else if (campo === 'ed') setFEd(valor || '');
+    else if (campo === 'pais') setFPais(valor || '');
+    setTab('inscripciones');
+  }
   async function cargarPersonas() {
     if (personas.length || !usuarioReal) return;
     try {
@@ -237,6 +251,7 @@ export default function Panel() {
             <button className={'tnav' + (tab === 'emails' ? ' on' : '') + (tienePermisoEmails(usuario) ? '' : ' dim')} onClick={() => setTab('emails')}>Emails</button>
             <button className={'tnav' + (tab === 'actividades' ? ' on' : '') + (tienePermisoActividades(usuario) ? '' : ' dim')} onClick={() => setTab('actividades')}>Actividades</button>
             <button className={'tnav' + (tab === 'formularios' ? ' on' : '') + (tienePermisoFormularios(usuario) ? '' : ' dim')} onClick={() => setTab('formularios')}>Formularios</button>
+            <button className={'tnav' + (tab === 'equipo' ? ' on' : '') + (tienePermisoAsignarDocentes(usuario) ? '' : ' dim')} onClick={() => setTab('equipo')}>Equipo</button>
             {/* El Constructor de fichas ya no es una pestaña aparte: se abre desde "Fichas de
                 inscripción" (✎ Editar / + Cargar edición en cada ficha), para que todo lo de fichas
                 quede junto en una sola hoja. */}
@@ -252,10 +267,19 @@ export default function Panel() {
           <ThemeSelector />
           {puedeVerComoOtro(usuarioReal) && (verComo
             ? <div data-tour="ver-como" className="vercomo-chip">👁 {verComo.nombre}<button onClick={() => setVerComo(null)} title="Salir del modo vista">✕</button></div>
-            : <select data-tour="ver-como" className="fsel vercomo-sel" value="" onFocus={cargarPersonas} onChange={(e) => { const p = personas.find((x) => x.email === e.target.value); if (p) setVerComo(p); }}>
-                <option value="">👁 Ver como…</option>
-                {personas.map((p) => <option key={p.email} value={p.email}>{p.nombre} — {nombreVisibleRoles(p.roles)}</option>)}
-              </select>)}
+            : (
+              // Antes era un <select> nativo de 180px: en varios navegadores la lista
+              // desplegada hereda ese mismo ancho y los nombres/roles largos aparecían
+              // recortados. Este dropdown propio no tiene ese límite.
+              <div data-tour="ver-como">
+                <SelectDropdown
+                  className="fdrop-vercomo" placeholder="👁 Ver como…" value="" hidePlaceholderOption searchable
+                  onOpen={cargarPersonas}
+                  onChange={(email) => { const p = personas.find((x) => x.email === email); if (p) setVerComo(p); }}
+                  options={personas.map((p) => ({ value: p.email, label: `${p.nombre} — ${nombreVisibleRoles(p.roles)}` }))}
+                />
+              </div>
+            ))}
           <div className="topnav-user">
             <b>{usuario.nombre}</b>
             <span>{nombreVisibleRoles(usuario.roles)}</span>
@@ -267,21 +291,24 @@ export default function Panel() {
 
       <div className="main">
         <div className="topbar">
-          <div><div className="crumb">ILCE / FICHAS</div><h1>{{ fichas: 'Fichas de inscripción', inscripciones: 'Fichas completadas', dashboard: 'Dashboard', reportes: 'Reportes', emails: 'Emails', actividades: 'Actividades', formularios: 'Formularios', constructor: 'Constructor de fichas', herramientas: 'Herramientas', accesos: 'Accesos', auditoria: 'Historial de acciones', buscador: 'Buscador' }[tab]}</h1></div>
+          <div><div className="crumb">ILCE / FICHAS</div><h1>{{ fichas: 'Fichas de inscripción', inscripciones: 'Fichas completadas', dashboard: 'Dashboard', reportes: 'Reportes', emails: 'Emails', actividades: 'Actividades', formularios: 'Formularios', equipo: 'Equipo', constructor: 'Constructor de fichas', herramientas: 'Herramientas', accesos: 'Accesos', auditoria: 'Historial de acciones', buscador: 'Buscador' }[tab]}</h1></div>
           {tab === 'inscripciones' && <div className="search">🔎 <input id="ins-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, apellido, email, DNI, WhatsApp, edición…" /></div>}
         </div>
 
         {(tab === 'fichas' || tab === 'inscripciones') && (
-          <div className="subtabs" style={{ marginBottom: 18 }}>
+          <div className="subtabs" style={{ marginBottom: 18, display: 'flex', alignItems: 'center' }}>
             <button className={tab === 'fichas' ? 'on' : ''} onClick={() => setTab('fichas')}>Fichas de inscripción</button>
             <button className={tab === 'inscripciones' ? 'on' : ''} onClick={() => setTab('inscripciones')}>Fichas completadas</button>
+            {tab === 'fichas' && tienePermisoConstructor(usuario) && (
+              <button className="btn-sm solid" style={{ marginLeft: 'auto' }} onClick={() => fichasRef.current?.abrirConstructor()}>Crear nueva ficha de inscripción</button>
+            )}
           </div>
         )}
 
         <PausaSemanal />
 
         {tab === 'buscador' && <Buscador usuario={usuario} irA={(t) => setTab(t)} setQInscripciones={setQ} />}
-        {tab === 'fichas' && <FichasSection usuario={usuario} rows={rows} onEditar={editarFicha} onVerInscripciones={verInscripcionesDe} showToast={showToast} puedeEditar={tienePermisoConstructor(usuario)} />}
+        {tab === 'fichas' && <FichasSection ref={fichasRef} usuario={usuario} rows={rows} onEditar={editarFicha} onVerInscripciones={verInscripcionesDe} showToast={showToast} puedeEditar={tienePermisoConstructor(usuario)} />}
         {tab === 'herramientas' && <Herramientas />}
         {error && <div className="note" style={{ borderLeftColor: 'rgb(248 113 113)' }}>{error}</div>}
         {rows === null && !error && tab !== 'herramientas' && <div className="spin" />}
@@ -380,7 +407,7 @@ export default function Panel() {
 
         {tab === 'dashboard' && (tienePermisoDashboard(usuario)
           ? (rows && <Dashboard rows={filtradas} allRows={rows}
-              filtros={{ fEstado, setFEstado, fCurso, setFCurso, fEd, setFEd, fPais, setFPais, fDesde, setFDesde, fHasta, setFHasta, limpiar, cursos, ediciones, paises, irA: (estado) => { setFEstado(estado || ''); setTab('inscripciones'); } }} />)
+              filtros={{ fEstado, setFEstado, fCurso, setFCurso, fEd, setFEd, fPais, setFPais, fDesde, setFDesde, fHasta, setFHasta, limpiar, cursos, ediciones, paises, irA: (estado) => irAConFiltro('estado', estado), irAConFiltro }} />)
           : <AccesoDenegado seccion="Dashboard" />)}
 
         {tab === 'reportes' && (tienePermisoDashboard(usuario)
@@ -390,6 +417,7 @@ export default function Panel() {
         {tab === 'emails' && (tienePermisoEmails(usuario) ? <EmailsPanel usuario={usuario} /> : <AccesoDenegado seccion="Emails" />)}
         {tab === 'actividades' && (tienePermisoActividades(usuario) ? <Actividades usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} puedeDocentes={tienePermisoAsignarDocentes(usuario)} /> : <AccesoDenegado seccion="Actividades" />)}
         {tab === 'formularios' && (tienePermisoFormularios(usuario) ? <Formularios usuario={usuario} showToast={showToast} /> : <AccesoDenegado seccion="Formularios" />)}
+        {tab === 'equipo' && (tienePermisoAsignarDocentes(usuario) ? <Equipo usuario={usuario} /> : <AccesoDenegado seccion="Equipo" />)}
         {tab === 'accesos' && (tienePermisoAccesos(usuario) ? <Accesos usuario={usuario} /> : <AccesoDenegado seccion="Accesos" />)}
         {tab === 'auditoria' && (tienePermisoAuditoria(usuario) ? <Auditoria usuario={usuario} /> : <AccesoDenegado seccion="Historial de acciones" />)}
       </div>
@@ -490,7 +518,7 @@ function FiltroChip({ label, onClear }) {
 // Dropdown compacto de filtro (con búsqueda opcional) — reemplaza las filas enteras de
 // chips/pills para Edición, Curso, Estado y País en el Dashboard, que con muchos valores
 // (16+ ediciones, por ejemplo) ocupaban media pantalla antes de llegar a los números.
-function SelectDropdown({ label, value, options, onChange, placeholder = 'Todos', searchable, hidePlaceholderOption }) {
+function SelectDropdown({ label, value, options, onChange, placeholder = 'Todos', searchable, hidePlaceholderOption, onOpen, className }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const ref = useRef(null);
@@ -502,10 +530,11 @@ function SelectDropdown({ label, value, options, onChange, placeholder = 'Todos'
   }, [open]);
   const filtradas = searchable && q ? options.filter((o) => norm(o.label).includes(norm(q))) : options;
   const actual = options.find((o) => o.value === value);
+  const toggle = () => setOpen((v) => { const next = !v; if (next && onOpen) onOpen(); return next; });
   return (
-    <div className="fdrop" ref={ref}>
-      <div className="fdrop-label">{label}</div>
-      <button type="button" className={'fdrop-btn' + (value ? ' on' : '')} onClick={() => setOpen((v) => !v)}>
+    <div className={'fdrop' + (className ? ' ' + className : '')} ref={ref}>
+      {label && <div className="fdrop-label">{label}</div>}
+      <button type="button" className={'fdrop-btn' + (value ? ' on' : '')} onClick={toggle}>
         <span>{actual ? actual.label : placeholder}</span><span className="fdrop-car">▾</span>
       </button>
       {open && (
@@ -578,14 +607,26 @@ function Dashboard({ rows, allRows, filtros }) {
 
   const group = (fn) => { const m = {}; rows.forEach((r) => { const k = fn(r) || '—'; m[k] = (m[k] || 0) + 1; }); return m; };
   const top = (map, n) => Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, n);
-  const minibars = (map, n = 6) => {
+  // onPick (opcional): al apretar una barra/chip, filtra Fichas completadas por ese valor
+  // puntual — así se puede ver de qué fichas se trata en vez de quedarse solo con el número.
+  // disabledKeys: valores que no corresponden a un filtro real (p. ej. "Sin datos" agrupa
+  // varios valores sucios distintos, no uno solo) y por eso no son clickeables.
+  const minibars = (map, n = 6, onPick, disabledKeys) => {
     const arr = top(map, n); const max = Math.max(1, ...arr.map((a) => a[1]));
-    return arr.map(([k, v]) => (
-      <div className="minibar" key={k}><span className="lb" title={k}>{k}</span><span className="tr"><span className="fl" style={{ width: (v / max * 100) + '%' }} /></span><span className="vv">{v}</span></div>
-    ));
+    return arr.map(([k, v]) => {
+      const clickeable = onPick && !(disabledKeys && disabledKeys.has(k));
+      const contenido = (<><span className="lb" title={k}>{k}</span><span className="tr"><span className="fl" style={{ width: (v / max * 100) + '%' }} /></span><span className="vv">{v}</span></>);
+      return clickeable
+        ? <button type="button" className="minibar minibar-click" key={k} onClick={() => onPick(k)}>{contenido}</button>
+        : <div className="minibar" key={k}>{contenido}</div>;
+    });
   };
-  const cloud = (map, n = 8) => (
-    <div className="tagcloud">{top(map, n).map(([k, v]) => <span className="tc" key={k}>{k} <b>{v}</b></span>)}</div>
+  const cloud = (map, n = 8, onPick, disabledKeys) => (
+    <div className="tagcloud">{top(map, n).map(([k, v]) => (
+      (onPick && !(disabledKeys && disabledKeys.has(k)))
+        ? <button type="button" className="tc" key={k} onClick={() => onPick(k)}>{k} <b>{v}</b></button>
+        : <span className="tc" key={k}>{k} <b>{v}</b></span>
+    ))}</div>
   );
 
   // País/Origen a veces traen valores que no son un país ni un canal real ("SI", "True", el
@@ -698,13 +739,13 @@ function Dashboard({ rows, allRows, filtros }) {
             ))}
           </div>
         </div>
-        <div className="dash-panel dash-panel-lg"><h3>Por estado</h3>{minibars(group((r) => r.estado), 8)}</div>
+        <div className="dash-panel dash-panel-lg"><h3>Por estado</h3>{minibars(group((r) => r.estado), 8, (k) => F.irAConFiltro('estado', k))}</div>
 
-        <div className="dash-panel dash-panel-lg"><h3>Por curso</h3>{minibars(group((r) => r.curso), 8)}</div>
-        <div className="dash-panel dash-panel-lg"><h3>Por edición</h3>{cloud(group((r) => r.ed), 10)}</div>
+        <div className="dash-panel dash-panel-lg"><h3>Por curso</h3>{minibars(group((r) => r.curso), 8, (k) => F.irAConFiltro('curso', k))}</div>
+        <div className="dash-panel dash-panel-lg"><h3>Por edición</h3>{cloud(group((r) => r.ed), 10, (k) => F.irAConFiltro('ed', k))}</div>
 
         <div className="dash-panel dash-panel-lg"><h3>Origen de inscripciones</h3>{minibars(group(origenAgrupado), 8)}</div>
-        <div className="dash-panel dash-panel-lg"><h3>Por país</h3>{cloud(group(paisAgrupado), 10)}</div>
+        <div className="dash-panel dash-panel-lg"><h3>Por país</h3>{cloud(group(paisAgrupado), 10, (k) => F.irAConFiltro('pais', k), new Set(['Sin datos']))}</div>
       </div>
     </>
   );

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, forwardRef, useImperativeHandle } from 'react';
 import { APP_URL } from '../lib/constants';
 import Constructor from './Constructor';
 
@@ -11,11 +11,16 @@ const ESTADO_META = {
 };
 const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-export default function FichasSection({ usuario, rows, onVerInscripciones, showToast, puedeEditar }) {
+const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerInscripciones, showToast, puedeEditar }, ref) {
   // El Constructor de fichas vive DENTRO de "Fichas de inscripción": editar o cargar una
   // edición abre el wizard acá mismo (no navega a una pestaña aparte).
   const [construyendo, setConstruyendo] = useState(null); // slug de la ficha que se está armando, o null
   function onEditar(slug) { setConstruyendo(slug); }
+  // El botón "Crear nueva ficha de inscripción" vive al lado de las sub-pestañas, en Panel.jsx
+  // (no acá adentro), así que Panel necesita poder abrir el Constructor desde afuera.
+  useImperativeHandle(ref, () => ({
+    abrirConstructor: () => { if (defs && defs.length > 0) onEditar(defs[0].slug); }
+  }));
   const [defs, setDefs] = useState(null);
   const [q, setQ] = useState('');
   const [chip, setChip] = useState('Todas');
@@ -62,7 +67,6 @@ export default function FichasSection({ usuario, rows, onVerInscripciones, showT
   }
 
   const cuenta = (estado) => (defs || []).filter((d) => !estado || d.estado === estado).length;
-  const sinEd = useMemo(() => (defs || []).filter((d) => (d.ediciones || []).length === 0).length, [defs]);
 
   const filtradas = useMemo(() => {
     if (!defs) return [];
@@ -126,22 +130,11 @@ export default function FichasSection({ usuario, rows, onVerInscripciones, showT
           <p className="fhead-sub">Administrá los cursos, ediciones y páginas de inscripción.</p>
         </div>
         <span style={{ flex: 1 }} />
-        {puedeEditar && defs.length > 0 && (
-          <button className="btn-sm solid" style={{ flex: 'none', marginRight: 10 }} onClick={() => onEditar(defs[0].slug)} title="Abre el editor de fichas, ediciones y campos">🎨 Constructor</button>
-        )}
+        {/* El acceso directo al Constructor ahora vive al lado de las sub-pestañas "Fichas de
+            inscripción / Fichas completadas" (ver Panel.jsx), como "Crear nueva ficha de
+            inscripción" — se sacó de acá para no duplicarlo. */}
         {puedeEditar && <button className="btn btn-primary" style={{ flex: 'none', padding: '10px 18px' }} onClick={() => showToast('El alta de cursos nuevos llega en el próximo lote (cursos dinámicos).')}>+ Nueva ficha</button>}
       </div>
-
-      {sinEd > 0 && (
-        <div className="fbanner">
-          <span className="fbanner-ico">⚠️</span>
-          <div className="fbanner-txt">
-            <b>Cargá ediciones</b>
-            <span>{sinEd} ficha{sinEd === 1 ? '' : 's'} sin ediciones</span>
-          </div>
-          <button className="btn-sm solid" onClick={() => { const f = defs.find((d) => (d.ediciones || []).length === 0); if (f) onEditar(f.slug); }}>Cargar edición</button>
-        </div>
-      )}
 
       {/* Filtros */}
       <div className="fchips">
@@ -284,7 +277,8 @@ export default function FichasSection({ usuario, rows, onVerInscripciones, showT
       )}
     </div>
   );
-}
+});
+export default FichasSection;
 
 // La próxima edición con fecha de inicio en el futuro (o la más próxima si ya pasaron
 // todas), para tener de un vistazo cuándo arranca lo que sigue de ese curso.

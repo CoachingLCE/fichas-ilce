@@ -4,13 +4,24 @@ import { useEffect, useMemo, useState } from 'react';
 const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
 // Correos que ya tienen vista previa (usan la misma plantilla que se envía).
-const PREVIEWABLES = new Set(['Confirmación inscripción', 'Aviso equipo']);
+const PREVIEWABLES = new Set([
+  'Confirmación inscripción', 'Aviso equipo', 'Credenciales acceso',
+  'Resultado actividad', 'Aviso actividad docente', 'Resumen viernes'
+]);
+
+// Correos que se pueden reintentar automáticamente si fallaron (coincide con REINTENTOS en
+// lib/mailer.js). "Credenciales acceso" queda afuera a propósito: no guarda payload reintentable
+// porque incluiría la contraseña en texto plano una segunda vez en la planilla.
+const REINTENTABLES = new Set([
+  'Confirmación inscripción', 'Aviso equipo', 'Resultado actividad', 'Aviso actividad docente', 'Resumen viernes'
+]);
 
 const AUTOMATIZACIONES = [
   { evento: 'Se completa una ficha de inscripción', para: 'Al estudiante (con botón de WhatsApp)', tipo: 'Confirmación inscripción' },
   { evento: 'Se completa una ficha de inscripción', para: 'Macarena, Alexander y Jesabel', tipo: 'Aviso equipo' },
   { evento: 'Se crea un usuario / se da acceso a un docente', para: 'Al usuario (con su contraseña)', tipo: 'Credenciales acceso' },
   { evento: 'El estudiante responde una actividad (Postwork)', para: 'Al estudiante (con su puntaje)', tipo: 'Resultado actividad' },
+  { evento: 'El estudiante responde una actividad (Postwork)', para: 'Al/los docente(s) del curso/edición', tipo: 'Aviso actividad docente' },
   { evento: 'Todos los viernes (automático)', para: 'Sofía, Paula, Lourdes y Victoria', tipo: 'Resumen viernes' }
 ];
 
@@ -19,11 +30,33 @@ export default function EmailsPanel({ usuario }) {
   const [q, setQ] = useState('');
   const [fTipo, setFTipo] = useState(''); const [fEstado, setFEstado] = useState('');
   const [preview, setPreview] = useState(null); // { tipo, asunto, html, loading, error, ejemplo }
+  const [detalle, setDetalle] = useState(null); // { fecha, tipo, para, asunto, detalle }
+  const [reintentando, setReintentando] = useState(null); // índice de fila en curso
+  const [avisoReintento, setAvisoReintento] = useState(null); // { i, ok, msg }
 
-  useEffect(() => { (async () => {
+  async function cargarEmails() {
     const res = await fetch('/api/emails?solicitanteEmail=' + encodeURIComponent(usuario.email));
     const d = await res.json(); setEmails(d.ok ? d.emails : []);
-  })(); /* eslint-disable-next-line */ }, []);
+  }
+  useEffect(() => { cargarEmails(); /* eslint-disable-next-line */ }, []);
+
+  async function reintentar(e, i) {
+    setReintentando(i); setAvisoReintento(null);
+    try {
+      const res = await fetch('/api/emails/reintentar', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ solicitanteEmail: usuario.email, tipo: e.tipo, payload: e.payload })
+      });
+      const d = await res.json();
+      if (!d.ok) throw new Error(d.error || 'No se pudo reenviar');
+      setAvisoReintento({ i, ok: true, msg: '✅ Reenviado. Va a aparecer como una fila nueva en el registro.' });
+      cargarEmails();
+    } catch (err) {
+      setAvisoReintento({ i, ok: false, msg: '❌ ' + (err.message || 'No se pudo reenviar') });
+    } finally {
+      setReintentando(null);
+    }
+  }
 
   async function abrirPreview(tipo) {
     if (!PREVIEWABLES.has(tipo)) return;
@@ -91,19 +124,55 @@ export default function EmailsPanel({ usuario }) {
           <div className="empty"><div className="ico">✉️</div><h3>Sin envíos registrados</h3><p>Cuando el sistema mande un correo, va a aparecer acá.</p></div>
         ) : (
           <div className="tablewrap"><table>
-            <thead><tr><th style={{ minWidth: 120 }}>Fecha</th><th style={{ minWidth: 150 }}>Tipo</th><th style={{ minWidth: 200 }}>Para</th><th style={{ minWidth: 220 }}>Asunto</th><th style={{ minWidth: 90 }}>Estado</th></tr></thead>
-            <tbody>{filtrados.map((e, i) => (
-              <tr key={i}>
-                <td className="sec">{fmt(e.fecha)}</td>
-                <td><span className="tagchip">{e.tipo}</span></td>
-                <td className="sec">{e.para}</td>
-                <td>{e.asunto}</td>
-                <td><span className={'badge ' + (e.estado === 'Enviado' ? 'b-Aprobada' : 'b-Observada')}>{e.estado}</span></td>
-              </tr>
-            ))}</tbody>
+            <thead><tr><th style={{ minWidth: 120 }}>Fecha</th><th style={{ minWidth: 150 }}>Tipo</th><th style={{ minWidth: 200 }}>Para</th><th style={{ minWidth: 220 }}>Asunto</th><th style={{ minWidth: 90 }}>Estado</th><th style={{ minWidth: 160 }}>Acciones</th></tr></thead>
+            <tbody>{filtrados.map((e, i) => {
+              const fallo = e.estado !== 'Enviado';
+              const puedeReintentar = fallo && REINTENTABLES.has(e.tipo) && e.payload;
+              const aviso = avisoReintento && avisoReintento.i === i ? avisoReintento : null;
+              return (
+                <tr key={i}>
+                  <td className="sec">{fmt(e.fecha)}</td>
+                  <td><span className="tagchip">{e.tipo}</span></td>
+                  <td className="sec">{e.para}</td>
+                  <td>{e.asunto}</td>
+                  <td><span className={'badge ' + (e.estado === 'Enviado' ? 'b-Aprobada' : 'b-Observada')}>{e.estado}</span></td>
+                  <td>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                      {fallo && e.detalle && <button className="btn-sm" onClick={() => setDetalle(e)}>Ver detalle</button>}
+                      {puedeReintentar && (
+                        <button className="btn-sm" disabled={reintentando === i} onClick={() => reintentar(e, i)}>
+                          {reintentando === i ? '⏳ Reintentando…' : '↻ Reintentar'}
+                        </button>
+                      )}
+                      {aviso && <span style={{ fontSize: 12, color: aviso.ok ? 'rgb(var(--accentTeal))' : '#e07a7a' }}>{aviso.msg}</span>}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}</tbody>
           </table></div>
         )}
       </div>
+
+      {/* Modal de detalle de error */}
+      {detalle && (
+        <div className="preview-ov" onClick={() => setDetalle(null)}>
+          <div className="preview-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 520 }}>
+            <div className="preview-head">
+              <div style={{ minWidth: 0 }}>
+                <div className="preview-kd">Detalle del error · {detalle.tipo}</div>
+                <div className="preview-asunto">{detalle.asunto}</div>
+              </div>
+              <button className="btn-sm" onClick={() => setDetalle(null)}>✕ Cerrar</button>
+            </div>
+            <div className="preview-body" style={{ padding: 20 }}>
+              <p className="sec" style={{ margin: '0 0 6px' }}>Para: {detalle.para}</p>
+              <p className="sec" style={{ margin: '0 0 14px' }}>Fecha: {fmt(detalle.fecha)}</p>
+              <div className="note">{detalle.detalle || 'Sin detalle registrado.'}</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de vista previa */}
       {preview && (

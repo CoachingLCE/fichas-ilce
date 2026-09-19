@@ -17,7 +17,7 @@ export async function GET(req) {
   const dias = Number(searchParams.get('dias') || 7);
   const corte = new Date(Date.now() - dias * 24 * 3600 * 1000);
   const filas = (await readSheet(TABS.RESPUESTAS_ACT)).filter((f) => f.ID && f.Fecha && new Date(f.Fecha) >= corte)
-    .map((f) => ({ fecha: (f.Fecha || '').slice(0, 10), nombre: f.Nombre, curso: f.Curso, edicion: f['Edición'], actividad: f.Actividad, puntaje: f['Puntuación'], total: f.Total }));
+    .map((f) => ({ fecha: (f.Fecha || '').slice(0, 10), nombre: f.Nombre, email: f.Email, curso: f.Curso, edicion: f['Edición'], actividad: f.Actividad, puntaje: f['Puntuación'], total: f.Total }));
 
   const desde = corte.toISOString().slice(0, 10);
   const hasta = new Date().toISOString().slice(0, 10);
