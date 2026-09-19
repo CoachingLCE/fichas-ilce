@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSession } from '../lib/useSession';
 import { tienePermisoInscripciones, tienePermisoCambiarEstado, tienePermisoExportar, tienePermisoDashboard, tienePermisoConstructor, tienePermisoAccesos, tienePermisoActividades, tienePermisoGestionActividades, tienePermisoAsignarDocentes, tienePermisoEmails, tienePermisoAuditoria, tienePermisoFormularios, puedeVerComoOtro } from '../lib/permisos';
 import { ESTADOS, normalizarEstado, nombreVisibleRoles } from '../lib/constants';
@@ -37,6 +37,17 @@ function normaliza(f) {
 }
 function norm(s) { return (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim(); }
 function digits(s) { return (s || '').toString().replace(/\D/g, ''); }
+
+// Los campos Pa\u00eds y Origen a veces terminan con valores que no les corresponden (arrastrados
+// de otra pregunta, checkboxes, importaciones viejas, etc.): "SI", "True", el nombre de un
+// estado como "Inscrito", o un simple "-". Esto los detecta para que no aparezcan como si
+// fueran un pa\u00eds o un canal real en filtros y gr\u00e1ficos.
+const VALORES_BASURA_CAMPO = new Set(['si', 'no', 'true', 'false', ...ESTADOS.map((e) => e.toLowerCase())]);
+function esValorValido(v) {
+  const s = (v || '').toString().trim();
+  if (!s || s === '-') return false;
+  return !VALORES_BASURA_CAMPO.has(s.toLowerCase());
+}
 
 export default function Panel() {
   const { usuario: usuarioReal, cargando: cargandoSesion, logout } = useSession();
@@ -114,7 +125,7 @@ export default function Panel() {
 
   const ediciones = useMemo(() => [...new Set((rows || []).map((r) => r.ed).filter(Boolean))].sort((a, b) => { const na = parseInt(a, 10), nb = parseInt(b, 10); if (!isNaN(na) && !isNaN(nb) && na !== nb) return na - nb; return String(a).localeCompare(String(b), 'es', { numeric: true }); }), [rows]);
   const cursos = useMemo(() => [...new Set((rows || []).map((r) => r.curso).filter(Boolean))].sort(), [rows]);
-  const paises = useMemo(() => [...new Set((rows || []).map((r) => r.pais).filter(Boolean))].sort(), [rows]);
+  const paises = useMemo(() => [...new Set((rows || []).map((r) => r.pais).filter(esValorValido))].sort(), [rows]);
 
   const filtradas = useMemo(() => {
     const qq = norm(q);
@@ -372,7 +383,9 @@ export default function Panel() {
               filtros={{ fEstado, setFEstado, fCurso, setFCurso, fEd, setFEd, fPais, setFPais, fDesde, setFDesde, fHasta, setFHasta, limpiar, cursos, ediciones, paises, irA: (estado) => { setFEstado(estado || ''); setTab('inscripciones'); } }} />)
           : <AccesoDenegado seccion="Dashboard" />)}
 
-        {tab === 'reportes' && (tienePermisoDashboard(usuario) ? <Reportes rows={rows} /> : <AccesoDenegado seccion="Reportes" />)}
+        {tab === 'reportes' && (tienePermisoDashboard(usuario)
+          ? <Reportes usuario={usuario} rows={rows} puedeActividades={tienePermisoActividades(usuario)} puedeFormularios={tienePermisoFormularios(usuario)} />
+          : <AccesoDenegado seccion="Reportes" />)}
 
         {tab === 'emails' && (tienePermisoEmails(usuario) ? <EmailsPanel usuario={usuario} /> : <AccesoDenegado seccion="Emails" />)}
         {tab === 'actividades' && (tienePermisoActividades(usuario) ? <Actividades usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} puedeDocentes={tienePermisoAsignarDocentes(usuario)} /> : <AccesoDenegado seccion="Actividades" />)}
@@ -474,6 +487,47 @@ function FiltroChip({ label, onClear }) {
   );
 }
 
+// Dropdown compacto de filtro (con búsqueda opcional) — reemplaza las filas enteras de
+// chips/pills para Edición, Curso, Estado y País en el Dashboard, que con muchos valores
+// (16+ ediciones, por ejemplo) ocupaban media pantalla antes de llegar a los números.
+function SelectDropdown({ label, value, options, onChange, placeholder = 'Todos', searchable, hidePlaceholderOption }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState('');
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+  const filtradas = searchable && q ? options.filter((o) => norm(o.label).includes(norm(q))) : options;
+  const actual = options.find((o) => o.value === value);
+  return (
+    <div className="fdrop" ref={ref}>
+      <div className="fdrop-label">{label}</div>
+      <button type="button" className={'fdrop-btn' + (value ? ' on' : '')} onClick={() => setOpen((v) => !v)}>
+        <span>{actual ? actual.label : placeholder}</span><span className="fdrop-car">▾</span>
+      </button>
+      {open && (
+        <div className="fdrop-panel">
+          {searchable && options.length > 6 && (
+            <input autoFocus className="fdrop-search" placeholder="Buscar…" value={q} onChange={(e) => setQ(e.target.value)} />
+          )}
+          <div className="fdrop-list">
+            {!hidePlaceholderOption && (
+              <div className={'fdrop-opt' + (!value ? ' on' : '')} onClick={() => { onChange(''); setOpen(false); setQ(''); }}>{placeholder}</div>
+            )}
+            {filtradas.map((o) => (
+              <div key={o.value} className={'fdrop-opt' + (value === o.value ? ' on' : '')} onClick={() => { onChange(o.value); setOpen(false); setQ(''); }}>{o.label}</div>
+            ))}
+            {filtradas.length === 0 && <div className="fdrop-empty">Sin resultados</div>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function esArgentina(p) { return (p || '').trim().toLowerCase() === 'argentina'; }
 function fechaAmigable(iso) {
   if (!iso) return '';
@@ -511,12 +565,16 @@ function Dashboard({ rows, allRows, filtros }) {
   const iso = (d) => d.toISOString().slice(0, 10);
   const hoyISO = iso(new Date());
   const hace = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return iso(d); };
-  const hoy = rows.filter((r) => (r.fecha || '') === hoyISO).length;
-  const semana = rows.filter((r) => (r.fecha || '') >= hace(7)).length;
-  const mesActual = new Date().toISOString().slice(0, 7);
-  const delMes = rows.filter((r) => (r.fecha || '').startsWith(mesActual)).length;
-  const completadas = rows.filter((r) => ['Completada', 'En revisión', 'Inscrito'].includes(r.estado)).length;
-  const tasa = rows.length ? Math.round(completadas / rows.length * 100) : 0;
+
+  // KPIs: cada número mide una sola cosa. Antes "Completadas %" sumaba Completada + En
+  // revisión + Inscrito sobre el total, así que con estos datos siempre daba ~100% aunque
+  // "Completada" (75 fichas) fuera apenas un 6% — inconsistente con el número de al lado.
+  // Ahora "Completadas" es el conteo real de estado Completada, y el % se llama "Avance" y
+  // mide cuántas fichas llegaron a Inscripto (el estado final del proceso).
+  const inscritos = est('Inscrito');
+  const completadasN = est('Completada');
+  const revisionN = est('En revisión');
+  const avance = rows.length ? Math.round(inscritos / rows.length * 100) : 0;
 
   const group = (fn) => { const m = {}; rows.forEach((r) => { const k = fn(r) || '—'; m[k] = (m[k] || 0) + 1; }); return m; };
   const top = (map, n) => Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, n);
@@ -530,7 +588,22 @@ function Dashboard({ rows, allRows, filtros }) {
     <div className="tagcloud">{top(map, n).map(([k, v]) => <span className="tc" key={k}>{k} <b>{v}</b></span>)}</div>
   );
 
-  const periodoActivo = !F.fDesde && !F.fHasta ? 'todo' : '';
+  // País/Origen a veces traen valores que no son un país ni un canal real ("SI", "True", el
+  // nombre de un estado). Para los gráficos los agrupamos aparte en vez de mostrarlos como si
+  // fueran datos válidos — la fila cruda en "Fichas completadas" sigue mostrando el valor tal
+  // cual está en la planilla, para que se pueda ubicar y corregir.
+  const paisAgrupado = (r) => (esValorValido(r.pais) ? r.pais.trim() : 'Sin datos');
+  const origenAgrupado = (r) => (esValorValido(r.origen) ? r.origen.trim() : 'Sin informar');
+
+  const periodoActivo = (() => {
+    if (!F.fDesde && !F.fHasta) return 'todo';
+    if (F.fDesde === hoyISO && F.fHasta === hoyISO) return 'hoy';
+    if (F.fDesde === hace(7) && F.fHasta === hoyISO) return '7';
+    const d = new Date();
+    if (F.fDesde === iso(new Date(d.getFullYear(), d.getMonth(), 1)) && F.fHasta === hoyISO) return 'mes';
+    if (F.fDesde === hace(90) && F.fHasta === hoyISO) return '90';
+    return '';
+  })();
   function periodo(tipo) {
     if (tipo === 'todo') { F.setFDesde(''); F.setFHasta(''); return; }
     if (tipo === 'hoy') { F.setFDesde(hoyISO); F.setFHasta(hoyISO); return; }
@@ -546,45 +619,46 @@ function Dashboard({ rows, allRows, filtros }) {
   if (F.fEstado) activos.push(['Estado: ' + F.fEstado, () => F.setFEstado('')]);
   if (F.fDesde || F.fHasta) activos.push([`Fecha: ${F.fDesde || '…'} → ${F.fHasta || '…'}`, () => { F.setFDesde(''); F.setFHasta(''); }]);
 
+  // ⚠ Atención: lo que conviene mirar primero. Solo aparece lo que realmente aplica — si no
+  // hay nada pendiente, en revisión ni con datos sucios, el panel entero no se muestra.
+  const sinPaisValido = rows.filter((r) => !esValorValido(r.pais)).length;
+  const sinOrigenValido = rows.filter((r) => !esValorValido(r.origen)).length;
+  const sinDatosLimpios = Math.max(sinPaisValido, sinOrigenValido);
+  const UMBRAL_MUESTRA = 8; // cursos con muy pocas fichas no dan un % representativo
+  const cursosBajos = F.cursos
+    .map((c) => { const deC = rows.filter((r) => r.curso === c); return { curso: c, total: deC.length, pct: deC.length ? Math.round(deC.filter((r) => r.estado === 'Inscrito').length / deC.length * 100) : 0 }; })
+    .filter((c) => c.total >= UMBRAL_MUESTRA && c.pct < 70)
+    .sort((a, b) => a.pct - b.pct)
+    .slice(0, 2);
+  const atencion = [];
+  if (revisionN > 0) atencion.push({ texto: `${revisionN} ficha${revisionN === 1 ? '' : 's'} pendiente${revisionN === 1 ? '' : 's'} de revisión`, onVer: () => F.irA('En revisión') });
+  cursosBajos.forEach((c) => atencion.push({ texto: `${c.curso}: ${c.pct}% de avance sobre ${c.total} fichas (el más bajo)`, onVer: () => F.setFCurso(c.curso) }));
+  if (sinDatosLimpios > 0) atencion.push({ texto: `${sinDatosLimpios} ficha${sinDatosLimpios === 1 ? '' : 's'} con País y/u Origen sin un dato válido — conviene revisarlas en la planilla`, onVer: null });
+
+  // Evolución: últimas 8 semanas de fichas (según los filtros activos), para ver de un
+  // vistazo si el ritmo de inscripción sube o baja, sin tener que ir a Reportes.
+  const semanas = [];
+  for (let i = 7; i >= 0; i--) {
+    const fin = hace(i * 7); const ini = hace(i * 7 + 6);
+    semanas.push({ label: i === 0 ? 'Esta sem.' : `-${i}sem`, rango: `${ini} → ${fin}`, n: rows.filter((r) => (r.fecha || '') >= ini && (r.fecha || '') <= fin).length });
+  }
+  const maxSem = Math.max(1, ...semanas.map((s) => s.n));
+
   return (
     <>
-      <div className="fchips" style={{ marginBottom: 10 }}>
-        <button className={'pill' + (periodoActivo === 'todo' ? ' on' : '')} onClick={() => periodo('todo')}>Todo</button>
-        <button className="pill" onClick={() => periodo('hoy')}>Hoy</button>
-        <button className="pill" onClick={() => periodo('7')}>7 días</button>
-        <button className="pill" onClick={() => periodo('mes')}>Este mes</button>
-        <button className="pill" onClick={() => periodo('90')}>90 días</button>
-      </div>
-      {/* Antes esto era una fila de <select> (dropdowns) al lado de los chips de arriba —
-          Diego pidió un solo criterio visual para filtrar, así que todo pasó a chips/pills,
-          igual que en "Fichas completadas". */}
-      <div className="fgroup-label">Estado</div>
-      <div className="fchips">
-        <button className={'pill' + (F.fEstado === '' ? ' on' : '')} onClick={() => F.setFEstado('')}>Todos</button>
-        {ESTADOS.filter((e) => universo.some((r) => r.estado === e)).map((e) => (
-          <button key={e} className={'pill' + (F.fEstado === e ? ' on' : '')} onClick={() => F.setFEstado(F.fEstado === e ? '' : e)}>{e}</button>
-        ))}
-      </div>
-      <div className="fgroup-label">Curso</div>
-      <div className="fchips">
-        <button className={'pill' + (F.fCurso === '' ? ' on' : '')} onClick={() => F.setFCurso('')}>Todos</button>
-        {F.cursos.map((x) => <button key={x} className={'pill' + (F.fCurso === x ? ' on' : '')} onClick={() => F.setFCurso(F.fCurso === x ? '' : x)}>{x}</button>)}
-      </div>
-      {F.ediciones.length > 0 && (<>
-        <div className="fgroup-label">Edición</div>
-        <div className="fchips">
-          <button className={'pill' + (F.fEd === '' ? ' on' : '')} onClick={() => F.setFEd('')}>Todas</button>
-          {F.ediciones.map((x) => <button key={x} className={'pill' + (F.fEd === x ? ' on' : '')} onClick={() => F.setFEd(F.fEd === x ? '' : x)}>Ed. {x}</button>)}
-        </div>
-      </>)}
-      <div className="fgroup-label">País</div>
-      <div className="fchips" style={{ marginBottom: 8 }}>
-        <button className={'pill' + (F.fPais === '' ? ' on' : '')} onClick={() => F.setFPais('')}>Todos</button>
-        {F.paises.map((x) => <button key={x} className={'pill' + (F.fPais === x ? ' on' : '')} onClick={() => F.setFPais(F.fPais === x ? '' : x)}>{x}</button>)}
-        {activos.length > 0 && <button className="btn-sm" onClick={F.limpiar}>Limpiar filtros</button>}
+      <div className="fdrop-row">
+        <SelectDropdown label="Período" value={periodoActivo} onChange={periodo} hidePlaceholderOption options={[
+          { value: 'todo', label: 'Todo' }, { value: 'hoy', label: 'Hoy' }, { value: '7', label: '7 días' },
+          { value: 'mes', label: 'Este mes' }, { value: '90', label: '90 días' }
+        ]} />
+        <SelectDropdown label="Edición" value={F.fEd} onChange={F.setFEd} placeholder="Todas las ediciones" searchable options={F.ediciones.map((x) => ({ value: x, label: 'Ed. ' + x }))} />
+        <SelectDropdown label="Curso" value={F.fCurso} onChange={F.setFCurso} placeholder="Todos los cursos" searchable options={F.cursos.map((x) => ({ value: x, label: x }))} />
+        <SelectDropdown label="Estado" value={F.fEstado} onChange={F.setFEstado} placeholder="Todos" options={ESTADOS.filter((e) => universo.some((r) => r.estado === e)).map((e) => ({ value: e, label: e }))} />
+        <SelectDropdown label="País" value={F.fPais} onChange={F.setFPais} placeholder="Todos" searchable options={F.paises.map((x) => ({ value: x, label: x }))} />
+        {activos.length > 0 && <button className="btn-sm" onClick={F.limpiar} style={{ alignSelf: 'flex-end' }}>Limpiar filtros</button>}
       </div>
       {activos.length > 0 && (
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '2px 0 14px' }}>
           {activos.map(([lbl, clear], i) => (
             <span className="chipfilt" key={i}>🟣 {lbl}<button onClick={clear} aria-label="Quitar">×</button></span>
           ))}
@@ -593,24 +667,45 @@ function Dashboard({ rows, allRows, filtros }) {
 
       <div className="dash-kpis">
         <div className="dash-kpi click" onClick={() => F.irA('')}><div className="n" style={{ color: 'rgb(var(--accentTeal))' }}>{rows.length}</div><div className="l">Inscripciones</div></div>
-        <div className="dash-kpi"><div className="n">{hoy}</div><div className="l">Hoy</div></div>
-        <div className="dash-kpi"><div className="n">{semana}</div><div className="l">Últimos 7 días</div></div>
-        <div className="dash-kpi"><div className="n">{delMes}</div><div className="l">Este mes</div></div>
-        <div className="dash-kpi click" onClick={() => F.irA('En revisión')}><div className="n" style={{ color: '#d879d1' }}>{est('En revisión')}</div><div className="l">En revisión</div></div>
-        <div className="dash-kpi click" onClick={() => F.irA('Inscrito')}><div className="n" style={{ color: 'rgb(74 222 128)' }}>{est('Inscrito')}</div><div className="l">Inscriptos</div></div>
-        <div className="dash-kpi"><div className="n" style={{ color: 'rgb(74 222 128)' }}>{tasa}%</div><div className="l">Completadas</div></div>
+        <div className="dash-kpi click" onClick={() => F.irA('Inscrito')}><div className="n" style={{ color: 'rgb(74 222 128)' }}>{inscritos}</div><div className="l">Inscriptos</div></div>
+        <div className="dash-kpi click" onClick={() => F.irA('Completada')}><div className="n">{completadasN}</div><div className="l">Completadas</div></div>
+        <div className="dash-kpi click" onClick={() => F.irA('En revisión')}><div className="n" style={{ color: '#d879d1' }}>{revisionN}</div><div className="l">En revisión</div></div>
+        <div className="dash-kpi"><div className="n" style={{ color: 'rgb(74 222 128)' }}>{avance}%</div><div className="l">Avance (inscriptos)</div></div>
       </div>
 
-      <div className="dash-grid">
-        <div className="dash-panel"><h3>Por curso</h3>{minibars(group((r) => r.curso), 6)}</div>
-        <div className="dash-panel"><h3>Por edición</h3>{cloud(group((r) => r.ed), 8)}</div>
-        <div className="dash-panel"><h3>Por país</h3>{cloud(group((r) => r.pais), 8)}</div>
-        <div className="dash-panel"><h3>Por estado</h3>{cloud(group((r) => r.estado), 8)}</div>
-        <div className="dash-panel"><h3>Por origen</h3>{cloud(group((r) => r.origen), 6)}</div>
+      {atencion.length > 0 && (
+        <div className="dash-atencion">
+          <h3>⚠ Atención</h3>
+          {atencion.map((a, i) => (
+            <div className="dash-atencion-item" key={i}>
+              <span>{a.texto}</span>
+              {a.onVer && <button className="btn-sm" onClick={a.onVer}>Ver →</button>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="dash-grid dash-grid-2">
+        <div className="dash-panel dash-panel-lg">
+          <h3>Evolución (últimas 8 semanas)</h3>
+          <div className="dash-evol">
+            {semanas.map((s) => (
+              <div className="dash-evol-col" key={s.label} title={`${s.rango}: ${s.n}`}>
+                <div className="dash-evol-bar" style={{ height: (s.n / maxSem * 100) + '%' }} />
+                <div className="dash-evol-n">{s.n}</div>
+                <div className="dash-evol-lb">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="dash-panel dash-panel-lg"><h3>Por estado</h3>{minibars(group((r) => r.estado), 8)}</div>
+
+        <div className="dash-panel dash-panel-lg"><h3>Por curso</h3>{minibars(group((r) => r.curso), 8)}</div>
+        <div className="dash-panel dash-panel-lg"><h3>Por edición</h3>{cloud(group((r) => r.ed), 10)}</div>
+
+        <div className="dash-panel dash-panel-lg"><h3>Origen de inscripciones</h3>{minibars(group(origenAgrupado), 8)}</div>
+        <div className="dash-panel dash-panel-lg"><h3>Por país</h3>{cloud(group(paisAgrupado), 10)}</div>
       </div>
-      {/* Este panel es para explorar con filtros en el momento; los totales "de un vistazo"
-          (sin tocar ningún filtro) y el desglose por mes viven en Reportes. */}
-      <p className="muted" style={{ fontSize: 12, marginTop: 16 }}>¿Buscás los totales generales sin filtrar, o la evolución mes a mes? Eso está en <b>Reportes</b>.</p>
     </>
   );
 }

@@ -63,7 +63,6 @@ export default function FichasSection({ usuario, rows, onVerInscripciones, showT
 
   const cuenta = (estado) => (defs || []).filter((d) => !estado || d.estado === estado).length;
   const sinEd = useMemo(() => (defs || []).filter((d) => (d.ediciones || []).length === 0).length, [defs]);
-  const conEd = (defs || []).length - sinEd;
 
   const filtradas = useMemo(() => {
     if (!defs) return [];
@@ -125,13 +124,11 @@ export default function FichasSection({ usuario, rows, onVerInscripciones, showT
       <div className="fhead">
         <div>
           <p className="fhead-sub">Administrá los cursos, ediciones y páginas de inscripción.</p>
-          <div className="fstat-cards">
-            <div className="fstat-card"><div className="n">{defs.length}</div><div className="l">Fichas</div></div>
-            <div className="fstat-card"><div className="n" style={{ color: 'rgb(74 222 128)' }}>{conEd}</div><div className="l">Con ediciones</div></div>
-            <div className="fstat-card"><div className="n" style={{ color: 'rgb(251 191 36)' }}>{sinEd}</div><div className="l">Requieren atención</div></div>
-          </div>
         </div>
         <span style={{ flex: 1 }} />
+        {puedeEditar && defs.length > 0 && (
+          <button className="btn-sm solid" style={{ flex: 'none', marginRight: 10 }} onClick={() => onEditar(defs[0].slug)} title="Abre el editor de fichas, ediciones y campos">🎨 Constructor</button>
+        )}
         {puedeEditar && <button className="btn btn-primary" style={{ flex: 'none', padding: '10px 18px' }} onClick={() => showToast('El alta de cursos nuevos llega en el próximo lote (cursos dinámicos).')}>+ Nueva ficha</button>}
       </div>
 
@@ -172,18 +169,22 @@ export default function FichasSection({ usuario, rows, onVerInscripciones, showT
         <div className="empty"><div className="ico">🗂️</div><h3>No encontramos fichas</h3><p>Probá con otro término o cambiá el filtro.</p><button className="btn-sm" onClick={() => { setQ(''); setChip('Todas'); }}>Limpiar filtros</button></div>
       ) : vista === 'lista' ? (
         <div className="tablewrap tablewrap-fichas"><table>
-          <thead><tr><th>Ficha</th><th>Estado</th><th>Inscripciones</th><th>Ediciones</th><th>URL de inscripción</th><th></th></tr></thead>
+          <thead><tr><th>Ficha</th><th>Estado</th><th>Inscripciones</th><th>Ediciones</th><th>Próxima edición</th><th>Actualizado</th><th>URL de inscripción</th><th></th></tr></thead>
           <tbody>{filtradas.map((d) => {
             const meta = ESTADO_META[d.estado] || ESTADO_META.Publicada;
             const insc = porCurso[d.curso] || 0;
             const eds = d.ediciones || [];
             const url = `${APP_URL}/inscripcion/${d.slug}`;
+            const proxima = proximaEdicion(eds);
+            const actualizado = fmtFecha(d.actualizado);
             return (
               <tr key={d.slug}>
                 <td className="ins-name">{d.curso}</td>
                 <td><span className={'fstate ' + meta.cls}><span className="d" />{meta.label}</span></td>
                 <td>{insc > 0 ? <button className="linklike" onClick={() => onVerInscripciones(d.curso)}>{insc} inscriptos →</button> : <span className="sec">0</span>}</td>
                 <td className="sec">{eds.length} edición{eds.length === 1 ? '' : 'es'}</td>
+                <td className="sec">{proxima || '—'}</td>
+                <td className="sec">{actualizado || '—'}</td>
                 <td className="col-url">
                   <div className="url-cell">
                     <span className="url-txt" title={url}>{url.replace(/^https?:\/\//, '')}</span>
@@ -283,6 +284,19 @@ export default function FichasSection({ usuario, rows, onVerInscripciones, showT
       )}
     </div>
   );
+}
+
+// La próxima edición con fecha de inicio en el futuro (o la más próxima si ya pasaron
+// todas), para tener de un vistazo cuándo arranca lo que sigue de ese curso.
+function proximaEdicion(eds) {
+  const conFecha = (eds || []).filter((e) => e.fecha).slice().sort((a, b) => a.fecha.localeCompare(b.fecha));
+  if (conFecha.length === 0) return null;
+  const hoyISO = new Date().toISOString().slice(0, 10);
+  const futura = conFecha.find((e) => e.fecha >= hoyISO);
+  const e = futura || conFecha[conFecha.length - 1];
+  const dt = new Date(e.fecha + 'T00:00:00');
+  const txt = isNaN(dt) ? e.fecha : dt.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+  return futura ? txt : `${txt} (pasada)`;
 }
 
 function fmtFecha(iso) {

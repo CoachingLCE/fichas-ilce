@@ -26,19 +26,18 @@ export default function PausaSemanal() {
   if (dia === null) return null;
   const m = MENSAJES[dia];
 
+  // Antes ocupaba dos renglones (título + texto) en un panel propio; Diego pidió reducirlo
+  // porque en un panel de gestión le quita protagonismo a lo importante. Ahora es una sola
+  // línea, discreta, con el mensaje del día abreviado.
   return (
     <div style={{
-      borderRadius: 12, padding: '10px 14px', margin: '0 0 14px',
-      background: 'rgb(var(--surface2))', opacity: 0.85,
-      border: '1px solid rgb(var(--border))'
+      display: 'flex', alignItems: 'center', gap: 8, borderRadius: 9, padding: '5px 12px', margin: '0 0 12px',
+      background: 'rgb(var(--surface2))', opacity: 0.75, border: '1px solid rgb(var(--border))'
     }}>
-      <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: 'rgb(var(--textSec))' }}>{m.titulo}</p>
-      <p style={{ margin: '3px 0 0', fontSize: 11.5, color: 'rgb(var(--textMuted))', lineHeight: 1.4 }}>
-        {m.texto}{' '}
-        <a href={LINK_BLOG} target="_blank" rel="noopener noreferrer" style={{ color: 'rgb(var(--accentTeal))', fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>
-          Leer una nota →
-        </a>
-      </p>
+      <span style={{ fontSize: 11, fontWeight: 600, color: 'rgb(var(--textMuted))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.titulo}</span>
+      <a href={LINK_BLOG} target="_blank" rel="noopener noreferrer" style={{ marginLeft: 'auto', flex: 'none', color: 'rgb(var(--accentTeal))', fontWeight: 700, fontSize: 11, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+        Leer una nota →
+      </a>
     </div>
   );
 }
