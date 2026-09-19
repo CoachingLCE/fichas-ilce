@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { useSession } from '../lib/useSession';
-import { tienePermisoInscripciones, tienePermisoCambiarEstado, tienePermisoExportar, tienePermisoDashboard, tienePermisoConstructor, tienePermisoAccesos, tienePermisoActividades, tienePermisoGestionActividades, tienePermisoAsignarDocentes, tienePermisoEmails, tienePermisoAuditoria, tienePermisoFormularios } from '../lib/permisos';
+import { tienePermisoInscripciones, tienePermisoCambiarEstado, tienePermisoExportar, tienePermisoDashboard, tienePermisoConstructor, tienePermisoAccesos, tienePermisoActividades, tienePermisoGestionActividades, tienePermisoAsignarDocentes, tienePermisoEmails, tienePermisoAuditoria, tienePermisoFormularios, puedeVerComoOtro } from '../lib/permisos';
 import { ESTADOS, normalizarEstado, nombreVisibleRoles } from '../lib/constants';
 import { Isologo, IsologoDefs } from './Isologo';
 import ThemeSelector from './ThemeSelector';
@@ -36,7 +36,10 @@ function norm(s) { return (s || '').toString().toLowerCase().normalize('NFD').re
 function digits(s) { return (s || '').toString().replace(/\D/g, ''); }
 
 export default function Panel() {
-  const { usuario, cargando: cargandoSesion, logout } = useSession();
+  const { usuario: usuarioReal, cargando: cargandoSesion, logout } = useSession();
+  const [verComo, setVerComo] = useState(null); // persona que se está "viendo como" (solo Admin)
+  const [personas, setPersonas] = useState([]);
+  const usuario = verComo || usuarioReal;
   const [tab, setTab] = useState('fichas');
   const [toast, setToast] = useState('');
   const [constructorSlug, setConstructorSlug] = useState(null);
@@ -64,6 +67,14 @@ export default function Panel() {
   function showToast(m) { setToast(m); clearTimeout(showToast._t); showToast._t = setTimeout(() => setToast(''), 2400); }
   function editarFicha(slug) { setConstructorSlug(slug); setTab('constructor'); }
   function verInscripcionesDe(curso) { setFCurso(curso); setTab('inscripciones'); }
+  async function cargarPersonas() {
+    if (personas.length || !usuarioReal) return;
+    try {
+      const res = await fetch('/api/personas-vista?solicitanteEmail=' + encodeURIComponent(usuarioReal.email));
+      const d = await res.json();
+      if (d.ok) setPersonas(d.personas || []);
+    } catch { /* silencioso */ }
+  }
 
   async function cargar() {
     try {
@@ -197,6 +208,12 @@ export default function Panel() {
           <button className="iconbtn" title="Buscar inscripciones" aria-label="Buscar" onClick={() => { setTab('inscripciones'); setTimeout(() => document.getElementById('ins-search')?.focus(), 60); }}>🔎</button>
           <button className="iconbtn" title="Herramientas" aria-label="Herramientas" onClick={() => setTab('herramientas')}>⚡</button>
           <ThemeSelector />
+          {puedeVerComoOtro(usuarioReal) && (verComo
+            ? <div className="vercomo-chip">👁 {verComo.nombre}<button onClick={() => setVerComo(null)} title="Salir del modo vista">✕</button></div>
+            : <select className="fsel vercomo-sel" value="" onFocus={cargarPersonas} onChange={(e) => { const p = personas.find((x) => x.email === e.target.value); if (p) setVerComo(p); }}>
+                <option value="">👁 Ver como…</option>
+                {personas.map((p) => <option key={p.email} value={p.email}>{p.nombre} — {nombreVisibleRoles(p.roles)}</option>)}
+              </select>)}
           <div className="topnav-user">
             <b>{usuario.nombre}</b>
             <span>{nombreVisibleRoles(usuario.roles)}</span>
@@ -204,6 +221,7 @@ export default function Panel() {
           <button className="btn-sm" onClick={() => { logout(); window.location.href = '/'; }}>Salir</button>
         </div>
       </header>
+      {verComo && <div className="vercomo-banner">👁 Modo vista — estás viendo la app como <b>{verComo.nombre}</b> ({nombreVisibleRoles(verComo.roles)}), en solo lectura. <button onClick={() => setVerComo(null)}>Salir del modo vista</button></div>}
 
       <div className="main">
         <div className="topbar">

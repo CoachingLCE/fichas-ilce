@@ -635,3 +635,13 @@ tr.clickable:hover{background:rgb(var(--surface2))}
 .fstat-card{background:rgb(var(--surface));border:1px solid rgb(var(--border));border-radius:14px;padding:12px 18px;min-width:112px}
 .fstat-card .n{font-family:'Jost';font-size:26px;font-weight:700;line-height:1;color:rgb(var(--text))}
 .fstat-card .l{font-size:12px;color:rgb(var(--textMuted));margin-top:5px}
+
+/* ── Ver como (modo vista de solo lectura) ── */
+.vercomo-sel{height:32px;max-width:180px}
+.vercomo-chip{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 6px 0 12px;border-radius:999px;
+  background:rgb(var(--accentPurple) / .15);border:1px solid rgb(var(--accentPurple) / .35);color:rgb(var(--accentPurple));font-size:12.5px;font-weight:700;white-space:nowrap}
+.vercomo-chip button{background:rgb(var(--accentPurple) / .25);border:0;color:inherit;border-radius:999px;width:20px;height:20px;cursor:pointer;line-height:1;font-size:12px}
+.vercomo-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;padding:9px 16px;
+  background:rgb(var(--accentPurple) / .12);border-bottom:1px solid rgb(var(--accentPurple) / .3);color:rgb(var(--text))}
+.vercomo-banner button{margin-left:auto;background:rgb(var(--accentPurple) / .2);border:1px solid rgb(var(--accentPurple) / .4);
+  color:rgb(var(--accentPurple));border-radius:8px;padding:4px 12px;font-weight:700;cursor:pointer}
