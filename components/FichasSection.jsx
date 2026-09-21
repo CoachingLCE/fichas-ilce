@@ -43,7 +43,7 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
   }
 
   // Conteos de inscripciones por curso y por (curso+edición)
-  const { porCurso, porEd } = useMemo(() => {
+  const { porCurso } = useMemo(() => {
     const pc = {}, pe = {};
     (rows || []).forEach((r) => {
       if (!r.curso) return;
@@ -53,18 +53,6 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
     });
     return { porCurso: pc, porEd: pe };
   }, [rows]);
-
-  function contarEd(curso, label) {
-    // best-effort: suma las filas cuya edición coincide con el label configurado
-    const ln = norm(label);
-    let total = 0;
-    Object.keys(porEd).forEach((k) => {
-      const [c, kn] = k.split('||');
-      if (c !== curso) return;
-      if (kn === ln || ln.startsWith(kn) || kn.startsWith(ln.split(' ').slice(0, 2).join(' '))) total += porEd[k];
-    });
-    return total;
-  }
 
   const cuenta = (estado) => (defs || []).filter((d) => !estado || d.estado === estado).length;
 
@@ -190,72 +178,27 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
           })}</tbody>
         </table></div>
       ) : (
-        <div className="fgrid">
+        <div className="pcard-wrap">
+        <div className="pcard-grid">
           {filtradas.map((d) => {
             const meta = ESTADO_META[d.estado] || ESTADO_META.Publicada;
             const insc = porCurso[d.curso] || 0;
             const eds = d.ediciones || [];
-            const fecha = fmtFecha(d.actualizado);
-            const alerta = d.estado === 'Publicada' && eds.length === 0;
+            const url = `${APP_URL}/inscripcion/${d.slug}`;
+            const subDefault = `Ficha de inscripción — ${d.curso}`;
+            const sub = (d.titulo && d.titulo.trim() && d.titulo.trim() !== subDefault && d.titulo.trim() !== d.curso) ? d.titulo.trim() : null;
             return (
-              <div className="fcard" key={d.slug}>
-                <div className="fcard-top">
-                  <span className={'fstate ' + meta.cls}><span className="d" />{meta.label}</span>
-                  {fecha && <span className="fcard-upd">Act. {fecha}</span>}
-                </div>
-
-                <div className="ftitle">{d.curso}</div>
-
-                <div className="fbig">
-                  <div className="fbig-n">{insc}</div>
-                  <div className="fbig-l">inscripcion{insc === 1 ? '' : 'es'}<br /><span>{eds.length} edición{eds.length === 1 ? '' : 'es'}</span></div>
-                </div>
-                {insc > 0 && <button className="fver-insc" onClick={() => onVerInscripciones(d.curso)}>Ver listado de inscriptos →</button>}
-
-                <div className="feds">
-                  {eds.length === 0 ? (
-                    <div className="fnoed-neutral">
-                      <span>Sin ediciones cargadas</span>
-                      {puedeEditar && <button onClick={() => onEditar(d.slug)}>+ Agregar edición</button>}
-                    </div>
-                  ) : (<>
-                    <div className="feds-title">Ediciones</div>
-                    {eds.slice(0, 3).map((e, i) => {
-                      const parts = (e.label || '').split('—');
-                      const num = parts[0].trim();
-                      const fe = parts[1] ? parts[1].trim() : '';
-                      return (
-                        <div className="fed-row" key={i}>
-                          <div className="fed-info"><span className="nm">{num}</span>{fe && <span className="fe">{fe}</span>}</div>
-                          <span className="c">{contarEd(d.curso, e.label)}</span>
-                        </div>
-                      );
-                    })}
-                    {eds.length > 3 && <button className="fed-more" onClick={() => onEditar(d.slug)}>Ver todas ({eds.length})</button>}
-                    {puedeEditar && eds.length <= 3 && <button className="fed-more" onClick={() => onEditar(d.slug)}>+ Agregar edición</button>}
-                  </>)}
-                </div>
-
-                <div className="fspacer" />
-
-                <div className="factions">
-                  {(() => {
-                    const eds = d.ediciones || [];
-                    let ap;
-                    if (d.estado === 'Borrador') ap = { l: '✎ Continuar edición', f: () => onEditar(d.slug) };
-                    else if (eds.length === 0) ap = { l: '➕ Cargar edición', f: () => onEditar(d.slug) };
-                    else if (d.estado === 'Publicada') ap = { l: '👁 Ver inscripción', f: () => abrirPublica(d) };
-                    else ap = { l: '🎓 Gestionar ediciones', f: () => onEditar(d.slug) };
-                    return <button className="btn-sm solid" style={{ flex: 1, justifyContent: 'center' }} onClick={ap.f}>{ap.l}</button>;
-                  })()}
+              <div className="pcard" key={d.slug}>
+                <div className="pcard-head">
+                  <span className={'pcard-dot ' + meta.cls}><span className="d" />{meta.label}</span>
                   <div className="fmenu">
-                    <button className="btn-sm fmenu-btn" aria-label="Más acciones" onClick={(e) => { e.stopPropagation(); setMenuAbierto(menuAbierto === d.slug ? null : d.slug); }}>⋮</button>
+                    <button className="pcard-menu-btn" aria-label="Más acciones" onClick={(e) => { e.stopPropagation(); setMenuAbierto(menuAbierto === d.slug ? null : d.slug); }}>•••</button>
                     {menuAbierto === d.slug && (
                       <div className="fmenu-pop" onClick={(e) => e.stopPropagation()}>
                         {puedeEditar && <button onClick={() => { setMenuAbierto(null); onEditar(d.slug); }}>✎ Editar ficha</button>}
                         <button onClick={() => abrirPublica(d)}>👁 Vista previa</button>
-                        <button onClick={() => copiarLink(d)}>{copiado === d.slug ? '✓ Copiado' : '🔗 Copiar URL'}</button>
                         {onVerInscripciones && <button onClick={() => { setMenuAbierto(null); onVerInscripciones(d.curso); }}>📋 Ver inscripciones</button>}
+                        <button onClick={() => copiarLink(d)}>{copiado === d.slug ? '✓ Copiado' : '🔗 Copiar URL'}</button>
                         {puedeEditar && <button onClick={() => { setMenuAbierto(null); onEditar(d.slug); }}>➕ Crear edición</button>}
                         {puedeEditar && <>
                           <div className="sep" />
@@ -270,9 +213,84 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
                     )}
                   </div>
                 </div>
+
+                <div className="pcard-title" title={d.curso}>{d.curso}</div>
+                {sub && <div className="pcard-sub" title={sub}>{sub}</div>}
+
+                <div className="pcard-metrics">
+                  <button type="button" className="pcard-metric" disabled={insc === 0} onClick={() => insc > 0 && onVerInscripciones(d.curso)}>
+                    <span className="pcard-metric-n">{insc || '—'}</span>
+                    <span className="pcard-metric-l">Inscriptos{insc > 0 ? ' →' : ''}</span>
+                  </button>
+                  <button type="button" className="pcard-metric" disabled={eds.length === 0} onClick={() => eds.length > 0 && onEditar(d.slug)}>
+                    <span className="pcard-metric-n">{eds.length || '—'}</span>
+                    <span className="pcard-metric-l">Edición{eds.length === 1 ? '' : 'es'}{eds.length > 0 ? ' →' : ''}</span>
+                  </button>
+                </div>
+
+                <div className="pcard-divider" />
+
+                {(() => {
+                  if (eds.length === 0) {
+                    if (d.estado === 'Publicada') {
+                      return (
+                        <div className="pcard-next pcard-next-warn">
+                          <span className="pcard-next-ico">⚠</span>
+                          <div>
+                            <div className="pcard-next-label">Sin próxima edición</div>
+                            {puedeEditar && <button className="pcard-next-link" onClick={() => onEditar(d.slug)}>Agregar edición</button>}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="pcard-next pcard-next-neutral">
+                        <div>
+                          <div className="pcard-next-label">Sin ediciones cargadas</div>
+                          {puedeEditar && <button className="pcard-next-link" onClick={() => onEditar(d.slug)}>+ Agregar edición</button>}
+                        </div>
+                      </div>
+                    );
+                  }
+                  const det = proximaEdicionDetalle(eds);
+                  if (!det) {
+                    return (
+                      <div className="pcard-next pcard-next-warn">
+                        <span className="pcard-next-ico">⚠</span>
+                        <div>
+                          <div className="pcard-next-label">Sin fecha definida</div>
+                          {puedeEditar && <button className="pcard-next-link" onClick={() => onEditar(d.slug)}>Gestionar edición</button>}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="pcard-next">
+                      <div className="pcard-next-label">{det.pasada ? 'Última edición' : 'Próxima edición'}</div>
+                      <div className="pcard-next-date">{det.fecha}{det.pasada && <span className="pcard-next-tag"> · pasada</span>}</div>
+                      {det.numero && <div className="pcard-next-ed">{det.numero}</div>}
+                    </div>
+                  );
+                })()}
+
+                <div className="pcard-divider" />
+
+                <div className="pcard-url">
+                  <span className="pcard-url-txt" title={url}>{url.replace(/^https?:\/\//, '')}</span>
+                  <button className="pcard-url-copy" title="Copiar URL" onClick={(e) => { e.stopPropagation(); copiarLink(d); }}>{copiado === d.slug ? '✓' : '📋'}</button>
+                </div>
+
+                {(() => {
+                  let ap;
+                  if (d.estado === 'Borrador') ap = puedeEditar ? { l: 'Continuar editando', f: () => onEditar(d.slug) } : { l: 'Vista previa', f: () => abrirPublica(d) };
+                  else if (eds.length === 0) ap = puedeEditar ? { l: 'Agregar edición', f: () => onEditar(d.slug) } : { l: 'Vista previa', f: () => abrirPublica(d) };
+                  else ap = onVerInscripciones ? { l: 'Ver inscripciones', f: () => onVerInscripciones(d.curso) } : { l: 'Vista previa', f: () => abrirPublica(d) };
+                  return <button className="btn-sm solid pcard-cta" onClick={ap.f}>{ap.l} →</button>;
+                })()}
               </div>
             );
           })}
+        </div>
         </div>
       )}
     </div>
@@ -291,6 +309,20 @@ function proximaEdicion(eds) {
   const dt = new Date(e.fecha + 'T00:00:00');
   const txt = isNaN(dt) ? e.fecha : dt.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' });
   return futura ? txt : `${txt} (pasada)`;
+}
+
+// Versión "detalle" de próxima edición para la tarjeta nueva: separa fecha, número de
+// edición y si ya pasó, en vez de devolver un solo string armado (como proximaEdicion).
+function proximaEdicionDetalle(eds) {
+  const conFecha = (eds || []).filter((e) => e.fecha).slice().sort((a, b) => a.fecha.localeCompare(b.fecha));
+  if (conFecha.length === 0) return null;
+  const hoyISO = new Date().toISOString().slice(0, 10);
+  const futura = conFecha.find((e) => e.fecha >= hoyISO);
+  const e = futura || conFecha[conFecha.length - 1];
+  const dt = new Date(e.fecha + 'T00:00:00');
+  const fecha = isNaN(dt) ? e.fecha : dt.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase().replace('.', '');
+  const numero = (e.label || '').split('—')[0].trim() || null;
+  return { fecha, numero, pasada: !futura };
 }
 
 function fmtFecha(iso) {

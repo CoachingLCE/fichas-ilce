@@ -21,6 +21,16 @@ export default function Formularios({ usuario, showToast }) {
 function Lista({ usuario, showToast }) {
   const [forms, setForms] = useState(null);
   const [error, setError] = useState('');
+  // Mismo patrón de "dos vistas" (tarjetas/lista) que ya existe en Actividades, con su propia
+  // clave de localStorage para no pisar la preferencia de esa otra sección.
+  const [vista, setVista] = useState('cards');
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem('ilce-formularios-vista');
+      if (v === 'cards' || v === 'lista') setVista(v);
+    } catch { /* */ }
+  }, []);
+  const cambiarVista = (v) => { setVista(v); try { localStorage.setItem('ilce-formularios-vista', v); } catch { /* */ } };
   useEffect(() => { (async () => {
     try {
       const res = await fetch('/api/formularios?solicitanteEmail=' + encodeURIComponent(usuario.email));
@@ -33,24 +43,53 @@ function Lista({ usuario, showToast }) {
   if (!forms) return <div className="spin" />;
   if (forms.length === 0) return <div className="empty"><div className="ico">📝</div><h3>No hay formularios cargados</h3><p>Pegá las definiciones en la pestaña Formularios de la Sheet.</p></div>;
   return (
-    <div className="fgrid">
-      {forms.map((f) => (
-        <div className="fcard" key={f.slug}>
-          <div className="fcard-top">
-            <span className={'fstate ' + (f.estado === 'Publicada' ? 'pub' : 'bor')}><span className="d" />{f.estado}</span>
-            <span className="tagchip">{f.tipo || 'Formulario'}</span>
-          </div>
-          <div className="ftitle" style={{ fontSize: 18 }}>{f.titulo}</div>
-          <div className="fsub">{f.campos.length} campos</div>
-          <div className="fspacer" />
-          <div><div className="acard-link-label">Enlace</div>
-            <div className="flink"><span className="u">/formulario/{f.slug}</span>
-              <button onClick={() => { navigator.clipboard?.writeText(`${APP_URL}/formulario/${f.slug}`); showToast('✓ Enlace copiado'); }}>Copiar</button></div></div>
-          <div className="factions">
-            <a className="btn-sm solid" style={{ flex: 1, justifyContent: 'center' }} href={`${APP_URL}/formulario/${f.slug}`} target="_blank" rel="noreferrer">👁 Abrir</a>
-          </div>
+    <div>
+      <div className="sechead">
+        <span className="hcount">{forms.length} formulario{forms.length === 1 ? '' : 's'}</span>
+        <span className="grow" />
+        <div className="vista-toggle">
+          <button className={vista === 'cards' ? 'on' : ''} onClick={() => cambiarVista('cards')} title="Ver en tarjetas">▦</button>
+          <button className={vista === 'lista' ? 'on' : ''} onClick={() => cambiarVista('lista')} title="Ver en lista">☰</button>
         </div>
-      ))}
+      </div>
+      {vista === 'lista' ? (
+        <div className="tablewrap"><table>
+          <thead><tr><th>Formulario</th><th>Tipo</th><th>Estado</th><th>Campos</th><th>Enlace</th><th></th></tr></thead>
+          <tbody>{forms.map((f) => (
+            <tr key={f.slug}>
+              <td className="ins-name">{f.titulo}</td>
+              <td>{f.tipo ? <span className="cchip">{f.tipo}</span> : '—'}</td>
+              <td><span className={'fstate ' + (f.estado === 'Publicada' ? 'pub' : 'bor')}><span className="d" />{f.estado}</span></td>
+              <td className="sec">{f.campos.length}</td>
+              <td className="sec">/formulario/{f.slug}</td>
+              <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                <button className="btn-sm" onClick={() => { navigator.clipboard?.writeText(`${APP_URL}/formulario/${f.slug}`); showToast('✓ Enlace copiado'); }}>Copiar</button>{' '}
+                <a className="btn-sm solid" href={`${APP_URL}/formulario/${f.slug}`} target="_blank" rel="noreferrer">👁</a>
+              </td>
+            </tr>
+          ))}</tbody>
+        </table></div>
+      ) : (
+        <div className="fgrid">
+          {forms.map((f) => (
+            <div className="fcard" key={f.slug}>
+              <div className="fcard-top">
+                <span className={'fstate ' + (f.estado === 'Publicada' ? 'pub' : 'bor')}><span className="d" />{f.estado}</span>
+                <span className="tagchip">{f.tipo || 'Formulario'}</span>
+              </div>
+              <div className="ftitle" style={{ fontSize: 18 }}>{f.titulo}</div>
+              <div className="fsub">{f.campos.length} campos</div>
+              <div className="fspacer" />
+              <div><div className="acard-link-label">Enlace</div>
+                <div className="flink"><span className="u">/formulario/{f.slug}</span>
+                  <button onClick={() => { navigator.clipboard?.writeText(`${APP_URL}/formulario/${f.slug}`); showToast('✓ Enlace copiado'); }}>Copiar</button></div></div>
+              <div className="factions">
+                <a className="btn-sm solid" style={{ flex: 1, justifyContent: 'center' }} href={`${APP_URL}/formulario/${f.slug}`} target="_blank" rel="noreferrer">👁 Abrir</a>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
