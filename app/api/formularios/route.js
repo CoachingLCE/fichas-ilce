@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { readSheet, appendRow, updateRow } from '../../../lib/sheets';
 import { TABS } from '../../../lib/constants';
 import { findUsuario, tienePermisoFormularios } from '../../../lib/auth';
+import { parseCampos } from '../../../lib/formularios';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,9 +13,8 @@ export async function GET(req) {
   try {
     const filas = await readSheet(TABS.FORMULARIOS);
     const formularios = filas.filter((f) => f.Slug).map((f) => {
-      let campos = []; try { campos = JSON.parse(f['Campos JSON'] || '[]'); } catch {}
-      if (!Array.isArray(campos)) campos = [];
-      return { slug: f.Slug, titulo: f['Título'], tipo: f.Tipo, estado: f.Estado || 'Publicada', campos, actualizado: f.Actualizado };
+      const { campos, cursoFijo } = parseCampos(f['Campos JSON']);
+      return { slug: f.Slug, titulo: f['Título'], tipo: f.Tipo, estado: f.Estado || 'Publicada', campos, cursoFijo, actualizado: f.Actualizado };
     });
     return NextResponse.json({ ok: true, formularios });
   } catch (e) {
