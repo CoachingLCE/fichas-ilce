@@ -19,7 +19,9 @@ export default function ActividadForm({ act }) {
   const [step, setStep] = useState(0); // 0 = datos, 1..N = preguntas
   const [email, setEmail] = useState('');
   const [nombre, setNombre] = useState('');
-  const [edicion, setEdicion] = useState('');
+  // Si quien armó la actividad ya le puso una edición, no hace falta preguntársela
+  // de nuevo al estudiante (y de paso se evita que la escriba mal).
+  const [edicion, setEdicion] = useState(act.edicion || '');
   const [resp, setResp] = useState({});
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState(null);
@@ -69,9 +71,13 @@ export default function ActividadForm({ act }) {
         <div className="quiz-body" style={{ textAlign: 'center', padding: '40px 30px 8px' }}>
           <div className="quiz-ring">✓</div>
           <h3 style={{ fontSize: 22, margin: '4px 0' }}>¡Actividad enviada!</h3>
-          <p className="muted" style={{ fontSize: 14 }}>Tu resultado en <b>{act.titulo}</b>:</p>
-          <div style={{ fontFamily: 'Jost', fontWeight: 700, fontSize: 48, color: 'rgb(var(--accentTeal))', margin: '6px 0' }}>{resultado.puntaje} / {resultado.total}</div>
-          <p className="muted" style={{ fontSize: 14 }}>{pct}% correctas{resultado.emailOk ? ` · te enviamos el detalle a ${email}` : ''}</p>
+          {act.mostrarResultado === false ? (
+            <p className="muted" style={{ fontSize: 14 }}>Registramos tus respuestas de <b>{act.titulo}</b>{resultado.emailOk ? ` y te enviamos el detalle a ${email}` : ''}.</p>
+          ) : (<>
+            <p className="muted" style={{ fontSize: 14 }}>Tu resultado en <b>{act.titulo}</b>:</p>
+            <div style={{ fontFamily: 'Jost', fontWeight: 700, fontSize: 48, color: 'rgb(var(--accentTeal))', margin: '6px 0' }}>{resultado.puntaje} / {resultado.total}</div>
+            <p className="muted" style={{ fontSize: 14 }}>{pct}% correctas{resultado.emailOk ? ` · te enviamos el detalle a ${email}` : ''}</p>
+          </>)}
         </div>
         {/* Pie fijo al finalizar cualquier actividad, pedido por Diego: volver al campus,
             invitación a la nota del blog, y redes de la comunidad. */}
@@ -107,9 +113,15 @@ export default function ActividadForm({ act }) {
             <div className="quiz-field"><label>Correo <span className="req">*</span></label>
               <input className="ctrl" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tunombre@correo.com" /></div>
             <div className="quiz-field"><label>Nombre y apellido</label>
-              <input className="ctrl" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Tu nombre" /></div>
-            <div className="quiz-field"><label>Número de edición</label>
-              <input className="ctrl" value={edicion} onChange={(e) => setEdicion(e.target.value)} placeholder="Ej: 15" /></div>
+              <input className="ctrl" value={nombre} onChange={(e) => setNombre(e.target.value.replace(/[0-9]/g, ''))} placeholder="Tu nombre" /></div>
+            {act.edicion ? (
+              <div className="quiz-field"><label>Edición</label>
+                <div className="ctrl" style={{ color: 'rgb(var(--textSec))', display: 'flex', alignItems: 'center' }}>Edición {act.edicion}</div></div>
+            ) : (
+              <div className="quiz-field"><label>Número de edición</label>
+                <input className="ctrl" value={edicion} onChange={(e) => setEdicion(e.target.value.replace(/\D/g, ''))}
+                  inputMode="numeric" pattern="[0-9]*" placeholder="Ej: 15" /></div>
+            )}
           </>
         ) : (
           <>

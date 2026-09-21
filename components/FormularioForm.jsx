@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { CURSOS } from '../lib/constants';
-import { validarEmail } from '../lib/validacion';
+import { validarEmail, inferirTipoCampo, validarValorCampo, filtrarTelefono } from '../lib/validacion';
 import { Isologo } from './Isologo';
 
 export default function FormularioForm({ form }) {
@@ -16,6 +16,8 @@ export default function FormularioForm({ form }) {
     if (!validarEmail(val.email)) { setError('Ingresá un correo válido.'); return; }
     for (const c of form.campos) {
       if (c.required && (val[c.key] == null || String(val[c.key]).trim() === '')) { setError('Completá: ' + c.label); return; }
+      const msgCampo = validarValorCampo(c, val[c.key]);
+      if (msgCampo) { setError(msgCampo); return; }
     }
     setEnviando(true); setError('');
     try {
@@ -75,6 +77,37 @@ export default function FormularioForm({ form }) {
           <label>{c.label}{c.required && <span className="req"> *</span>}</label>
           {c.help && <div className="quiz-help">{c.help}</div>}
           <textarea className="ctrl" style={{ minHeight: 84, resize: 'vertical' }} value={val[c.key] || ''} onChange={(e) => set(c.key, e.target.value)} />
+        </div>
+      );
+    }
+    // El campo no trae un "tipo" explícito para número/teléfono/nombre (los Formularios se
+    // arman escribiendo el JSON a mano) — se infiere del label para no dejar pasar libremente
+    // cosas como un nombre con números o un WhatsApp con letras.
+    const inferido = inferirTipoCampo(c);
+    if (inferido === 'numero') {
+      return (
+        <div className="quiz-field" key={c.key}>
+          <label>{c.label}{c.required && <span className="req"> *</span>}</label>
+          {c.help && <div className="quiz-help">{c.help}</div>}
+          <input className="ctrl" type="text" inputMode="numeric" pattern="[0-9]*" value={val[c.key] || ''} onChange={(e) => set(c.key, e.target.value.replace(/\D/g, ''))} placeholder={c.placeholder || ''} />
+        </div>
+      );
+    }
+    if (inferido === 'telefono') {
+      return (
+        <div className="quiz-field" key={c.key}>
+          <label>{c.label}{c.required && <span className="req"> *</span>}</label>
+          {c.help && <div className="quiz-help">{c.help}</div>}
+          <input className="ctrl" type="text" inputMode="tel" value={val[c.key] || ''} onChange={(e) => set(c.key, filtrarTelefono(e.target.value))} placeholder={c.placeholder || ''} />
+        </div>
+      );
+    }
+    if (inferido === 'nombre') {
+      return (
+        <div className="quiz-field" key={c.key}>
+          <label>{c.label}{c.required && <span className="req"> *</span>}</label>
+          {c.help && <div className="quiz-help">{c.help}</div>}
+          <input className="ctrl" type="text" value={val[c.key] || ''} onChange={(e) => set(c.key, e.target.value.replace(/[0-9]/g, ''))} placeholder={c.placeholder || ''} />
         </div>
       );
     }

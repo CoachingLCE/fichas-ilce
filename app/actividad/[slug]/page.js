@@ -1,15 +1,27 @@
-import { getActividad } from '../../../lib/actividades';
+import { getActividad, estadoEfectivo } from '../../../lib/actividades';
 import { IsologoDefs, Isologo } from '../../../components/Isologo';
 import ActividadForm from '../../../components/ActividadForm';
 import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
+const fechaLegible = (iso) => {
+  if (!iso) return '';
+  const dt = new Date(iso + 'T00:00:00');
+  if (isNaN(dt)) return iso;
+  return dt.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+};
+
 export default async function ActividadPublica({ params }) {
   const act = await getActividad(params.slug);
   if (!act) return notFound();
+  const efectivo = estadoEfectivo(act);
+  const disponible = efectivo === 'Publicada' && act.preguntas.length > 0;
 
-  if (act.estado !== 'Publicada' || !act.preguntas.length) {
+  if (!disponible) {
+    const mensaje = efectivo === 'Programada'
+      ? `Esta actividad va a estar disponible a partir del ${fechaLegible(act.fechaDisponible)}. Volvé a entrar ese día.`
+      : 'Esta actividad todavía no está publicada. Volvé más tarde.';
     return (
       <>
         <IsologoDefs />
@@ -21,8 +33,8 @@ export default async function ActividadPublica({ params }) {
             </div>
             <div style={{ padding: 26, textAlign: 'center' }}>
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}><Isologo size={30} /></div>
-              <h1 style={{ fontSize: 18, margin: '0 0 8px' }}>Actividad no disponible</h1>
-              <p style={{ color: 'rgb(var(--textSec))', fontSize: 14, margin: 0 }}>Esta actividad todavía no está publicada. Volvé más tarde.</p>
+              <h1 style={{ fontSize: 18, margin: '0 0 8px' }}>{efectivo === 'Programada' ? 'Todavía no disponible' : 'Actividad no disponible'}</h1>
+              <p style={{ color: 'rgb(var(--textSec))', fontSize: 14, margin: 0 }}>{mensaje}</p>
             </div>
           </div>
         </main>

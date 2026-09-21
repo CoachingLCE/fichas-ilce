@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { appendRow } from '../../../lib/sheets';
 import { TABS } from '../../../lib/constants';
 import { getFormulario } from '../../../lib/formularios';
-import { validarEmail } from '../../../lib/validacion';
+import { validarEmail, validarValorCampo } from '../../../lib/validacion';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +21,8 @@ export async function POST(req) {
     if (c.required && (r[c.key] == null || String(r[c.key]).trim() === '')) {
       return NextResponse.json({ ok: false, error: `Falta: ${c.label}` }, { status: 400 });
     }
+    const msgCampo = validarValorCampo(c, r[c.key]);
+    if (msgCampo) return NextResponse.json({ ok: false, error: msgCampo }, { status: 400 });
   }
   const id = 'FR' + Date.now().toString(36).toUpperCase();
   try {

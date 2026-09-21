@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { PAISES, PROVINCIAS_AR } from '../lib/constants';
-import { validarEmail, validarWhatsapp, validarDoc, esArgentina } from '../lib/validacion';
+import { validarEmail, validarWhatsapp, validarDoc, validarNombre, filtrarTelefono, esArgentina } from '../lib/validacion';
 
 const STEP_NAMES = ['Bienvenida', 'Edición y horario', 'Datos personales', 'Sobre vos', 'Revisión', '¡Listo!'];
 
@@ -81,7 +81,9 @@ export default function FichaWizard({ def }) {
     if (s === 1 && def.ediciones.length && !form.edicion) e.edicion = 'Elegí una edición.';
     if (s === 2) {
       if (!(form.nom || '').trim()) e.nom = 'Completá tu nombre.';
+      else if (!validarNombre(form.nom)) e.nom = 'El nombre no puede tener números.';
       if (!(form.ape || '').trim()) e.ape = 'Completá tu apellido.';
+      else if (!validarNombre(form.ape)) e.ape = 'El apellido no puede tener números.';
       if (!(form.prov || '').trim()) e.prov = 'Completá este dato.';
       if (!validarDoc(form.doc, form.pais)) e.doc = arg ? 'DNI (7-8) o CUIT (11) válido.' : 'Documento inválido.';
       if (!(form.loc || '').trim()) e.loc = 'Completá tu localidad.';
@@ -194,9 +196,9 @@ export default function FichaWizard({ def }) {
             <div className="f-section">Datos personales</div>
             <div className="f-grid">
               <Campo err={errs.nom}><label>Nombre <span className="req">*</span></label>
-                <input className="ctrl" value={form.nom || ''} onChange={(e) => set('nom', e.target.value)} placeholder="Ej.: María" /></Campo>
+                <input className="ctrl" value={form.nom || ''} onChange={(e) => set('nom', e.target.value.replace(/[0-9]/g, ''))} placeholder="Ej.: María" /></Campo>
               <Campo err={errs.ape}><label>Apellido <span className="req">*</span></label>
-                <input className="ctrl" value={form.ape || ''} onChange={(e) => set('ape', e.target.value)} placeholder="Ej.: González" /></Campo>
+                <input className="ctrl" value={form.ape || ''} onChange={(e) => set('ape', e.target.value.replace(/[0-9]/g, ''))} placeholder="Ej.: González" /></Campo>
             </div>
 
             <div className="f-section">Residencia</div>
@@ -220,7 +222,7 @@ export default function FichaWizard({ def }) {
                 <input className="ctrl" value={form.doc || ''} onChange={(e) => set('doc', e.target.value)} placeholder={arg ? 'Ej.: 30123456' : 'Número de documento'} />
                 {!arg && <div className="help">México: INE · Bolivia, Chile, Costa Rica, Ecuador, Uruguay, Paraguay, Venezuela: cédula de identidad</div>}</Campo>
               <Campo err={errs.wa}><label>Número de WhatsApp <span className="req">*</span></label>
-                <input className="ctrl" value={form.wa || ''} onChange={(e) => set('wa', e.target.value)} placeholder="Ej.: +54 9 11 5555 1234" /></Campo>
+                <input className="ctrl" value={form.wa || ''} onChange={(e) => set('wa', filtrarTelefono(e.target.value))} inputMode="tel" placeholder="Ej.: +54 9 11 5555 1234" /></Campo>
               <div className="field"><label>Fecha de nacimiento</label>
                 <input className="ctrl" type="date" value={form.fnac || ''} onChange={(e) => set('fnac', e.target.value)} /></div>
               <div className="field"><label>Instagram</label>
