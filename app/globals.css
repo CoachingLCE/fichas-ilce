@@ -15,6 +15,15 @@
   --accentTeal2: 3 115 139;     /* #03738b */
   --accentPurple: 74 18 139;    /* #4a128b */
   --accentMagenta: 150 25 143;  /* #96198f */
+  /* Grammar de estado (Reportes y afines): un solo significado por color, nunca decorativo.
+     Mismos valores que ya se usaban sueltos (rgb(74 222 128) etc.) — acá quedan centralizados. */
+  --good: 74 222 128;
+  --goodBg: 15 46 34;
+  --warn: 251 191 36;
+  --warningText: 251 191 36;
+  --warningBg: 51 40 10;
+  --bad: 248 113 113;
+  --badBg: 51 20 20;
 }
 [data-theme="light"] {
   --bg: 245 248 251;
@@ -28,6 +37,13 @@
   --accentTeal2: 6 95 116;
   --accentPurple: 74 18 139;
   --accentMagenta: 150 25 143;
+  --good: 74 222 128;
+  --goodBg: 15 46 34;
+  --warn: 251 191 36;
+  --warningText: 251 191 36;
+  --warningBg: 51 40 10;
+  --bad: 248 113 113;
+  --badBg: 51 20 20;
 }
 
 * { box-sizing: border-box; }
@@ -942,6 +958,118 @@ tr.clickable:hover{background:rgb(var(--surface2))}
 .bar.bar-click:hover .lb{color:rgb(var(--text))}
 .bar.bar-click:hover .fill{filter:brightness(1.15)}
 .bar .fill.r{background:linear-gradient(90deg,rgb(220 38 38),rgb(248 113 113))}
+
+/* ============================================================
+   REPORTES v2 — "centro de análisis administrativo" premium.
+   Prefijo ".repx" para no chocar con nada existente. Reutiliza a propósito
+   .panel, .sechead, .tablewrap, los ".fdrop" (dropdown de filtro), .fchip,
+   .tagchip, .btn-sm y .pill — acá solo se agrega lo que esos sistemas no
+   cubrían (header propio, nav segmentada, popover de filtros, KPIs
+   sobrios, barra-en-celda, embudo partido, tarjetas de insight, ícono
+   lineal).
+   ============================================================ */
+.repx-icon{width:16px;height:16px;flex:0 0 auto;display:inline-block;vertical-align:-3px}
+.repx-icon.lg{width:20px;height:20px}
+.empty .repx-icon.lg{width:36px;height:36px;margin-bottom:10px;color:rgb(var(--textMuted))}
+
+/* Header propio: título + "actualizado hace..." separados de los filtros */
+.repx-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.repx-head-txt{min-width:0}
+.repx-head .fhead-sub{margin:0}
+.repx-head-meta{display:flex;align-items:center;gap:6px;font-size:12px;color:rgb(var(--textMuted));margin-top:4px}
+.repx-head-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+
+/* Navegación como control segmentado (una sola pieza, no pestañas subrayadas) */
+.repx-nav{display:inline-flex;align-items:center;gap:2px;background:rgb(var(--surface2));border:1px solid rgb(var(--border));border-radius:12px;padding:3px;margin-bottom:16px;flex-wrap:wrap}
+.repx-nav button{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 14px;border-radius:9px;border:0;background:transparent;color:rgb(var(--textSec));font-size:13.5px;font-weight:700;cursor:pointer;transition:background .15s,color .15s;white-space:nowrap}
+.repx-nav button:hover{color:rgb(var(--text))}
+.repx-nav button.on{background:rgb(var(--surface));color:rgb(var(--accentTeal));box-shadow:0 1px 3px rgba(0,0,0,.18)}
+[data-theme="light"] .repx-nav button.on{box-shadow:0 1px 2px rgba(15,23,42,.1)}
+
+/* Toolbar de filtros: presets de período + "Más filtros" + acciones */
+.repx-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.repx-toolbar .grow{flex:1}
+.repx-icon.spinning{animation:sp 1s linear infinite}
+.repx-rowarrow{color:rgb(var(--textMuted));transition:color .15s}
+tr.clickable:hover .repx-rowarrow{color:rgb(var(--accentTeal))}
+.repx-period{display:flex;gap:6px;flex-wrap:wrap}
+.repx-more-wrap{position:relative}
+.repx-more-pop{position:absolute;top:calc(100% + 6px);left:0;z-index:35;background:rgb(var(--surface));border:1px solid rgb(var(--border));border-radius:14px;padding:14px;min-width:280px;box-shadow:0 20px 45px -18px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:10px}
+.repx-more-pop .repx-more-row{display:flex;gap:8px;flex-wrap:wrap}
+.repx-more-pop .repx-more-row .fdrop{flex:1;min-width:130px}
+.repx-chips-row{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+
+/* KPIs sobrios: máx. 4, sin emojis, valor/etiqueta/sub-contexto */
+.repx-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
+.repx-kpi{background:rgb(var(--surface));border:1px solid rgb(var(--border));border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;transition:.15s}
+.repx-kpi.click{cursor:pointer}
+.repx-kpi.click:hover{border-color:rgb(var(--accentTeal) / .5);transform:translateY(-1px)}
+.repx-kpi-top{display:flex;align-items:center;justify-content:space-between;gap:8px;color:rgb(var(--textMuted))}
+.repx-kpi-n{font-family:'Jost';font-weight:700;font-size:27px;line-height:1;color:rgb(var(--text))}
+.repx-kpi-l{font-size:12.5px;color:rgb(var(--textSec));font-weight:600}
+.repx-kpi-sub{display:flex;align-items:center;gap:5px;font-size:11.5px;color:rgb(var(--textMuted));font-weight:600}
+.repx-kpi-sub.good{color:rgb(var(--good))}
+.repx-kpi-sub.bad{color:rgb(var(--bad))}
+
+/* Tarjetas de "Resumen del período" — frases con datos reales, no relleno */
+.repx-insights{display:flex;flex-direction:column;gap:8px}
+.repx-insight{display:flex;align-items:flex-start;gap:10px;background:rgb(var(--surface2));border:1px solid rgb(var(--border));border-radius:12px;padding:10px 13px;font-size:13.5px;color:rgb(var(--textSec))}
+.repx-insight .repx-icon{margin-top:2px;color:rgb(var(--accentTeal))}
+.repx-insight b{color:rgb(var(--text))}
+.repx-insight.good .repx-icon{color:rgb(var(--good))}
+.repx-insight.warn .repx-icon{color:rgb(var(--warn))}
+.repx-insight.bad .repx-icon{color:rgb(var(--bad))}
+
+/* Tabla premium: barra proporcional dentro de la celda, para no repetir el
+   mismo ranking como lista de barras Y como tabla por separado. */
+.repx-cellbar{display:flex;align-items:center;gap:9px;min-width:140px}
+.repx-cellbar .tr{flex:1;height:6px;border-radius:99px;background:rgb(var(--surface2));overflow:hidden}
+.repx-cellbar .fl{height:100%;border-radius:99px;background:linear-gradient(90deg,rgb(var(--accentTeal2)),rgb(var(--accentTeal)))}
+.repx-cellbar .vv{flex:0 0 auto;font-weight:700;font-variant-numeric:tabular-nums;min-width:26px;text-align:right}
+tr.clickable .repx-cellbar:hover .fl{filter:brightness(1.15)}
+
+/* Embudo partido: "Proceso de inscripción" vs. "Salidas del proceso" */
+.repx-funnel-groups{display:flex;flex-direction:column;gap:18px}
+.repx-funnel-grouplbl{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:8px}
+.repx-funnel-grouplbl span{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:rgb(var(--textMuted));font-weight:700}
+.repx-funnel-grouplbl b{font-size:13px;color:rgb(var(--textSec));font-weight:700}
+.repx-completion{display:flex;align-items:center;gap:12px;background:rgb(var(--surface2));border:1px solid rgb(var(--border));border-radius:14px;padding:14px 16px;margin-bottom:16px}
+.repx-completion-n{font-family:'Jost';font-weight:700;font-size:30px;line-height:1}
+.repx-completion-txt{font-size:12.5px;color:rgb(var(--textSec));line-height:1.35}
+
+/* Enlace de navegación cruzada, visualmente evidente (no un simple <tr> clickeable mudo) */
+.repx-crosslink{display:inline-flex;align-items:center;gap:6px;margin-top:10px;background:none;border:0;padding:0;color:rgb(var(--accentTeal));font-weight:700;font-size:12.5px;cursor:pointer}
+.repx-crosslink:hover{text-decoration:underline}
+.repx-crosslink .repx-icon{width:13px;height:13px}
+
+/* Toggle tabla/tarjetas (Resultados por actividad) — reutiliza .vista-toggle ya existente,
+   con etiquetas visibles en vez de solo íconos */
+.repx-viewtoggle{display:inline-flex;border:1px solid rgb(var(--border));border-radius:9px;overflow:hidden;flex:none}
+.repx-viewtoggle button{display:flex;align-items:center;gap:6px;background:transparent;border:0;color:rgb(var(--textMuted));padding:0 12px;height:32px;cursor:pointer;font-size:12.5px;font-weight:700}
+.repx-viewtoggle button.on{background:rgb(var(--accentPurple) / .15);color:rgb(var(--accentPurple))}
+.repx-actcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.repx-actcard{background:rgb(var(--surface));border:1px solid rgb(var(--border));border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.repx-actcard-t{font-size:13.5px;font-weight:700;line-height:1.25}
+.repx-actcard-c{font-size:11.5px;color:rgb(var(--textMuted))}
+.repx-actcard-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;color:rgb(var(--textSec))}
+.repx-actcard-pct{font-weight:700;font-family:'Jost';font-size:17px}
+
+/* Sección de-enfatizada (Análisis de preguntas): mismo .panel pero más chica y discreta */
+.repx-deemph{opacity:.92}
+.repx-deemph .sechead .htitle{font-size:13.5px;color:rgb(var(--textSec))}
+
+/* Franja de valor sobre fondo neutro (para el % correcto/promedio/pct de una fila) */
+.repx-pct{font-weight:700;font-variant-numeric:tabular-nums}
+.repx-pct.good{color:rgb(var(--good))}
+.repx-pct.warn{color:rgb(var(--warn))}
+.repx-pct.bad{color:rgb(var(--bad))}
+.repx-pct.muted{color:rgb(var(--textMuted))}
+
+@media (max-width:640px){
+  .repx-head{align-items:stretch}
+  .repx-head-actions{width:100%;justify-content:flex-end}
+  .repx-kpis{grid-template-columns:repeat(2,1fr)}
+}
 
 /* ============================================================
    ACTIVIDADES — wizard de creación, preguntas, agrupado, ficha de detalle
