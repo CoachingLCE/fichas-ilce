@@ -101,6 +101,7 @@ function Respuestas({ usuario, showToast }) {
   const [fForm, setFForm] = useState('');
   const [abierto, setAbierto] = useState(null);
   const [importarAbierto, setImportarAbierto] = useState(false);
+  const [orden, setOrden] = useState({ col: 'fecha', dir: 'desc' });
 
   async function cargar() {
     try {
@@ -120,6 +121,14 @@ function Respuestas({ usuario, showToast }) {
       return true;
     });
   }, [data, q, fForm]);
+  const ordenadas = useMemo(() => {
+    const { col, dir } = orden;
+    const val = (x) => (col === 'fecha' ? (x.fecha || '') : (x[col] || '')).toString().toLowerCase();
+    const arr = [...filtradas].sort((a, b) => { const va = val(a), vb = val(b); const c = va < vb ? -1 : va > vb ? 1 : 0; return dir === 'asc' ? c : -c; });
+    return arr;
+  }, [filtradas, orden]);
+  const ordenarPor = (col) => setOrden((o) => (o.col === col ? { col, dir: o.dir === 'asc' ? 'desc' : 'asc' } : { col, dir: 'asc' }));
+  const flecha = (col) => (orden.col === col ? (orden.dir === 'asc' ? ' ▲' : ' ▼') : '');
   const fmt = (iso) => { const d = new Date(iso); return isNaN(d) ? iso : d.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }); };
   if (error) return <div className="empty"><div className="ico">⚠️</div><h3>No se pudo cargar</h3><p>{error}. Revisá que exista la pestaña “RespuestasFormularios” en la Sheet.</p></div>;
   if (!data) return <div className="spin" />;
@@ -142,8 +151,16 @@ function Respuestas({ usuario, showToast }) {
       <p className="count">{filtradas.length} respuesta(s)</p>
       {filtradas.length === 0 ? <div className="empty"><div className="ico">📭</div><h3>Sin respuestas</h3><p>No hay respuestas para estos filtros.</p></div> : (
         <div className="tablewrap"><table>
-          <thead><tr><th style={{ minWidth: 110 }}>Fecha</th><th style={{ minWidth: 150 }}>Nombre</th><th style={{ minWidth: 180 }}>Email</th><th style={{ minWidth: 130 }}>Curso</th><th style={{ minWidth: 70 }}>Edic.</th><th style={{ minWidth: 160 }}>Formulario</th><th style={{ minWidth: 70 }}></th></tr></thead>
-          <tbody>{filtradas.map((x) => (
+          <thead><tr>
+            <th style={{ minWidth: 110, cursor: 'pointer' }} onClick={() => ordenarPor('fecha')}>Fecha{flecha('fecha')}</th>
+            <th style={{ minWidth: 150, cursor: 'pointer' }} onClick={() => ordenarPor('nombre')}>Nombre{flecha('nombre')}</th>
+            <th style={{ minWidth: 180, cursor: 'pointer' }} onClick={() => ordenarPor('email')}>Email{flecha('email')}</th>
+            <th style={{ minWidth: 130, cursor: 'pointer' }} onClick={() => ordenarPor('curso')}>Curso{flecha('curso')}</th>
+            <th style={{ minWidth: 70, cursor: 'pointer' }} onClick={() => ordenarPor('edicion')}>Edic.{flecha('edicion')}</th>
+            <th style={{ minWidth: 160, cursor: 'pointer' }} onClick={() => ordenarPor('formulario')}>Formulario{flecha('formulario')}</th>
+            <th style={{ minWidth: 70 }}></th>
+          </tr></thead>
+          <tbody>{ordenadas.map((x) => (
             <>
               <tr key={x.id} onClick={() => setAbierto(abierto === x.id ? null : x.id)}>
                 <td className="sec">{(x.fecha || '').slice(0, 10)}</td>
