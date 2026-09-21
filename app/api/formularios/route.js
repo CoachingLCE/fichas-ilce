@@ -13,12 +13,16 @@ export async function GET(req) {
     const filas = await readSheet(TABS.FORMULARIOS);
     const formularios = filas.filter((f) => f.Slug).map((f) => {
       let campos = []; try { campos = JSON.parse(f['Campos JSON'] || '[]'); } catch {}
+      if (!Array.isArray(campos)) campos = [];
       return { slug: f.Slug, titulo: f['Título'], tipo: f.Tipo, estado: f.Estado || 'Publicada', campos, actualizado: f.Actualizado };
     });
     return NextResponse.json({ ok: true, formularios });
   } catch (e) {
-    // Si la pestaña "Formularios" no existe o falla la lectura, no rompemos: devolvemos vacío.
-    return NextResponse.json({ ok: true, formularios: [], aviso: 'No se pudo leer la pestaña Formularios' });
+    // Antes esto devolvía { ok:true, formularios:[] } para "no romper" — pero eso hacía
+    // que un error real (timeout, cuota de Google, etc.) se viera igual que la pestaña
+    // vacía ("Pegá las definiciones..."), que confunde cuando SÍ hay filas cargadas.
+    // Mejor mostrar el motivo real.
+    return NextResponse.json({ ok: false, error: e.message || 'No se pudo leer la pestaña Formularios' }, { status: 500 });
   }
 }
 

@@ -16,6 +16,8 @@ export async function GET(req) {
     }).reverse();
     return NextResponse.json({ ok: true, respuestas });
   } catch (e) {
-    return NextResponse.json({ ok: true, respuestas: [], aviso: 'No se pudo leer la pestaña RespuestasFormularios' });
+    // Mismo criterio que en /api/formularios: mostrar el error real en vez de ocultarlo
+    // detrás de un "no hay respuestas" que confunde cuando en realidad falló la lectura.
+    return NextResponse.json({ ok: false, error: e.message || 'No se pudo leer la pestaña RespuestasFormularios' }, { status: 500 });
   }
 }

@@ -179,7 +179,10 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
       setDirty(false); setGuardadoAt(Date.now());
       if (!silencioso) showToast?.('✓ Cambios guardados');
     } catch (e) {
-      showToast?.('⚠ No pudimos guardar los cambios');
+      // Antes el toast era siempre genérico, sin importar la causa real (timeout de
+      // Sheets, cuota, JSON cortado, etc.) — mostrar el motivo ayuda a distinguir un
+      // problema puntual/transitorio de uno que se repite siempre igual.
+      showToast?.('⚠ No pudimos guardar los cambios' + (e.message ? ': ' + e.message : ''));
     }
     setGuardando(false);
   }

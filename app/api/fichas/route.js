@@ -34,7 +34,8 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  const body = await req.json();
+  let body;
+  try { body = await req.json(); } catch { return NextResponse.json({ ok: false, error: 'JSON inválido' }, { status: 400 }); }
   const usuario = await findUsuario(body.solicitanteEmail);
   if (!usuario || !tienePermisoConstructor(usuario)) return NextResponse.json({ ok: false, error: 'Sin permiso' }, { status: 403 });
   const { slug, def } = body || {};
@@ -50,9 +51,16 @@ export async function POST(req) {
     wizardCompletado: def.wizardCompletado || undefined
   };
   const fila = [slug, curso.nombre, limpio.titulo, limpio.estado, JSON.stringify(limpio), new Date().toISOString()];
-  const guardadas = await readSheet(TABS.FICHAS, { noCache: true });
-  const existente = guardadas.find((f) => f.Slug === slug);
-  if (existente) await updateRow(TABS.FICHAS, existente._rowIndex, fila);
-  else await appendRow(TABS.FICHAS, fila);
-  return NextResponse.json({ ok: true });
+  try {
+    const guardadas = await readSheet(TABS.FICHAS, { noCache: true });
+    const existente = guardadas.find((f) => f.Slug === slug);
+    if (existente) await updateRow(TABS.FICHAS, existente._rowIndex, fila);
+    else await appendRow(TABS.FICHAS, fila);
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    // Sin este try/catch, un timeout o error transitorio de Google Sheets rompía la función
+    // a mitad de guardado: el navegador recibía una respuesta vacía/cortada y el Constructor
+    // solo podía mostrar un "No pudimos guardar" genérico, sin decir por qué falló de verdad.
+    return NextResponse.json({ ok: false, error: e.message || 'Error al guardar' }, { status: 500 });
+  }
 }

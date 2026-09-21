@@ -24,7 +24,11 @@ async function construirReporte(usuario) {
   // Definiciones (para saber las preguntas y la correcta)
   const defsRaw = await readSheet(TABS.ACTIVIDADES);
   const defs = defsRaw.filter((f) => f.Slug).map((f) => {
-    let preguntas = []; try { preguntas = JSON.parse(f['Preguntas JSON'] || '[]'); } catch {}
+    let preguntas = [];
+    try { preguntas = JSON.parse(f['Preguntas JSON'] || '[]'); } catch {}
+    // El parse puede tener éxito y devolver algo que no es un array (una celda con "{}",
+    // un texto suelto, etc.) — sin este chequeo, el .map de más abajo rompía todo el reporte.
+    if (!Array.isArray(preguntas)) preguntas = [];
     return { slug: f.Slug, curso: f.Curso, titulo: f['Título'], preguntas };
   });
   const porTitulo = {};
