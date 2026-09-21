@@ -31,6 +31,7 @@ function Lista({ usuario, showToast }) {
     } catch { /* */ }
   }, []);
   const cambiarVista = (v) => { setVista(v); try { localStorage.setItem('ilce-formularios-vista', v); } catch { /* */ } };
+  const [conteos, setConteos] = useState(null); // { [tituloFormulario]: cantidad de respuestas }
   useEffect(() => { (async () => {
     try {
       const res = await fetch('/api/formularios?solicitanteEmail=' + encodeURIComponent(usuario.email));
@@ -39,6 +40,16 @@ function Lista({ usuario, showToast }) {
       setForms(d.formularios || []);
     } catch (e) { setError(e.message || 'Error de conexión'); setForms([]); }
   })(); /* eslint-disable-next-line */ }, []);
+  useEffect(() => { (async () => {
+    try {
+      const res = await fetch('/api/formularios/respuestas?solicitanteEmail=' + encodeURIComponent(usuario.email));
+      const d = await res.json();
+      const m = {};
+      if (d.ok) (d.respuestas || []).forEach((x) => { const k = x.formulario || ''; m[k] = (m[k] || 0) + 1; });
+      setConteos(m);
+    } catch { setConteos({}); }
+  })(); /* eslint-disable-next-line */ }, []);
+  const nResp = (f) => (conteos ? (conteos[f.titulo] || 0) : null);
   if (error) return <div className="empty"><div className="ico">⚠️</div><h3>No se pudo cargar</h3><p>{error}. Revisá que exista la pestaña “Formularios” en la Sheet.</p></div>;
   if (!forms) return <div className="spin" />;
   if (forms.length === 0) return <div className="empty"><div className="ico">📝</div><h3>No hay formularios cargados</h3><p>Pegá las definiciones en la pestaña Formularios de la Sheet.</p></div>;
@@ -54,13 +65,14 @@ function Lista({ usuario, showToast }) {
       </div>
       {vista === 'lista' ? (
         <div className="tablewrap"><table>
-          <thead><tr><th>Formulario</th><th>Tipo</th><th>Estado</th><th>Campos</th><th>Enlace</th><th></th></tr></thead>
+          <thead><tr><th>Formulario</th><th>Tipo</th><th>Estado</th><th>Campos</th><th>Respuestas</th><th>Enlace</th><th></th></tr></thead>
           <tbody>{forms.map((f) => (
             <tr key={f.slug}>
               <td className="ins-name">{f.titulo}</td>
               <td>{f.tipo ? <span className="cchip">{f.tipo}</span> : '—'}</td>
               <td><span className={'fstate ' + (f.estado === 'Publicada' ? 'pub' : 'bor')}><span className="d" />{f.estado}</span></td>
               <td className="sec">{f.campos.length}</td>
+              <td>{nResp(f) === null ? <span className="sec">…</span> : (nResp(f) > 0 ? <span className="cnt" style={{ fontWeight: 700 }}>{nResp(f)}</span> : <span className="sec">0</span>)}</td>
               <td className="sec">/formulario/{f.slug}</td>
               <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                 <button className="btn-sm" onClick={() => { navigator.clipboard?.writeText(`${APP_URL}/formulario/${f.slug}`); showToast('✓ Enlace copiado'); }}>Copiar</button>{' '}
@@ -78,7 +90,7 @@ function Lista({ usuario, showToast }) {
                 <span className="tagchip">{f.tipo || 'Formulario'}</span>
               </div>
               <div className="ftitle" style={{ fontSize: 18 }}>{f.titulo}</div>
-              <div className="fsub">{f.campos.length} campos</div>
+              <div className="fsub">{f.campos.length} campos{nResp(f) !== null ? ` · ${nResp(f)} respuesta${nResp(f) === 1 ? '' : 's'}` : ''}</div>
               <div className="fspacer" />
               <div><div className="acard-link-label">Enlace</div>
                 <div className="flink"><span className="u">/formulario/{f.slug}</span>
