@@ -1101,3 +1101,11 @@ tr.clickable .repx-cellbar:hover .fl{filter:brightness(1.15)}
 .detalle-meta{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-top:4px}
 .detalle-meta .k{font-size:11px;color:rgb(var(--textMuted));text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
 .detalle-meta .v{font-size:14px;font-weight:600}
+
+/* ── Evolución de inscripciones: KPIs sobre el gráfico ── */
+.evol-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.evol-kpi{background:rgb(var(--surface2));border:1px solid rgb(var(--border));border-radius:12px;padding:12px 14px}
+.evol-kpi .ic{opacity:.9;margin-bottom:4px;display:flex}
+.evol-kpi .n{font-family:'Jost';font-size:24px;font-weight:700;line-height:1}
+.evol-kpi .l{font-size:12px;color:rgb(var(--textMuted));margin-top:3px}
+@media (max-width:640px){.evol-kpis{grid-template-columns:repeat(2,1fr)}}

@@ -456,7 +456,24 @@ function ReportesResumen({ rows, irAConFiltro }) {
           {RANGOS_EVOL.map((r) => <button key={r.v} className={'fchip' + (rango === r.v ? ' on' : '')} onClick={() => setRango(r.v)}>{r.l}</button>)}
         </div>
       }>
-        <MiniChart series={[{ nombre: 'Nuevas', data: serie.total }, { nombre: 'Completadas', data: serie.completadas, color: 'rgb(74 222 128)' }, { nombre: 'Pendientes', data: serie.pendientes, color: 'rgb(251 191 36)' }]} />
+        {(() => {
+          const sum = (a) => (a || []).reduce((x, y) => x + (Number(y) || 0), 0);
+          const nuevas = sum(serie.total), comp = sum(serie.completadas), pend = sum(serie.pendientes);
+          const tasa = nuevas ? Math.round(comp / nuevas * 100) : 0;
+          const hayPend = pend > 0;
+          const series = [{ nombre: 'Nuevas', data: serie.total }, { nombre: 'Completadas', data: serie.completadas, color: 'rgb(74 222 128)' }];
+          if (hayPend) series.push({ nombre: 'Pendientes', data: serie.pendientes, color: 'rgb(251 191 36)' });
+          return (<>
+            <div className="evol-kpis">
+              <div className="evol-kpi"><div className="ic" style={{ color: 'rgb(var(--accentTeal))' }}>{Ico.trend({})}</div><div className="n">{nuevas}</div><div className="l">Nuevas</div></div>
+              <div className="evol-kpi"><div className="ic" style={{ color: 'rgb(74 222 128)' }}>{Ico.check({})}</div><div className="n">{comp}</div><div className="l">Completadas</div></div>
+              <div className="evol-kpi"><div className="ic" style={{ color: 'rgb(251 191 36)' }}>{Ico.clock({})}</div><div className="n">{pend}</div><div className="l">Pendientes</div></div>
+              <div className="evol-kpi"><div className="ic" style={{ color: 'rgb(74 222 128)' }}>{Ico.circleDash({})}</div><div className="n">{tasa}%</div><div className="l">Tasa de completitud</div></div>
+            </div>
+            <MiniChart series={series} />
+            {!hayPend && <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>Pendientes: 0 en el período — no se grafica para no ensuciar la lectura.</div>}
+          </>);
+        })()}
       </Seccion>
 
       <Seccion titulo="Por curso" sub="Ranking de fichas por curso — clickeá una fila para verlo en Fichas completadas.">
