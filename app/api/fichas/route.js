@@ -43,6 +43,7 @@ export async function POST(req) {
   if (!curso || !def) return NextResponse.json({ ok: false, error: 'Datos inválidos' }, { status: 400 });
   const limpio = {
     titulo: def.titulo || '', bienvenida: def.bienvenida || '', estado: def.estado || 'Publicada', ediciones: def.ediciones || [],
+    onDemand: def.onDemand === true || undefined,
     // Campos del Constructor por pasos (wizard): selección/orden de campos, configuración de
     // respuestas, y en qué paso quedó cada ficha (para el "continuar donde dejaste").
     campos: Array.isArray(def.campos) ? def.campos : undefined,

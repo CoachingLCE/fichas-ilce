@@ -222,15 +222,29 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
                     <span className="pcard-metric-n">{insc || '—'}</span>
                     <span className="pcard-metric-l">Inscriptos{insc > 0 ? ' →' : ''}</span>
                   </button>
-                  <button type="button" className="pcard-metric" disabled={eds.length === 0} onClick={() => eds.length > 0 && onEditar(d.slug)}>
-                    <span className="pcard-metric-n">{eds.length || '—'}</span>
-                    <span className="pcard-metric-l">Edición{eds.length === 1 ? '' : 'es'}{eds.length > 0 ? ' →' : ''}</span>
+                  <button type="button" className="pcard-metric" disabled={eds.length === 0 || d.onDemand} onClick={() => eds.length > 0 && onEditar(d.slug)}>
+                    {d.onDemand
+                      ? <span className="pcard-metric-n" style={{ fontSize: 17 }}>On demand</span>
+                      : eds.length > 0
+                        ? <span className="pcard-metric-n">{eds.length}</span>
+                        : <span className="pcard-metric-n" style={{ fontSize: 12.5, fontWeight: 600, color: 'rgb(var(--textMuted))', lineHeight: 1.25 }}>Aún no hay nada cargado</span>}
+                    <span className="pcard-metric-l">Próximas ediciones{eds.length > 0 && !d.onDemand ? ' →' : ''}</span>
                   </button>
                 </div>
 
                 <div className="pcard-divider" />
 
                 {(() => {
+                  if (d.onDemand) {
+                    return (
+                      <div className="pcard-next pcard-next-neutral">
+                        <div>
+                          <div className="pcard-next-label">Modalidad on demand</div>
+                          <div className="pcard-next-date" style={{ color: 'rgb(var(--textSec))' }}>Disponible siempre, sin ediciones programadas.</div>
+                        </div>
+                      </div>
+                    );
+                  }
                   if (eds.length === 0) {
                     if (d.estado === 'Publicada') {
                       return (
