@@ -66,7 +66,7 @@ export default function Accesos({ usuario }) {
   // está afuera, como su propia hoja de navegación ("Historial de acciones", ver Auditoria.jsx),
   // que además cubre más que solo accesos. Tenerlo duplicado acá adentro era confuso.
   return (
-    <div style={{ maxWidth: 900 }}>
+    <div>
       <div className="panel">
         <p style={{ fontSize: 14, fontWeight: 700, margin: '0 0 10px' }}>🔐 Permisos por rol</p>
         <table style={{ fontSize: 12.5 }}>
