@@ -11,6 +11,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { ESTADOS, CURSOS } from '../lib/constants';
 import { SelectDropdown, FiltroChip } from './SelectDropdown';
 import MiniChart from './MiniChart';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, Legend } from 'recharts';
 import { exportarCSV, exportarXLSX } from '../lib/exportUtils';
 
 function iso(d) { return d.toISOString().slice(0, 10); }
@@ -457,12 +458,11 @@ function ReportesResumen({ rows, irAConFiltro }) {
         </div>
       }>
         {(() => {
-          const sum = (a) => (a || []).reduce((x, y) => x + (Number(y) || 0), 0);
+          const sum = (a) => (a || []).reduce((x, p) => x + (p.v || 0), 0);
           const nuevas = sum(serie.total), comp = sum(serie.completadas), pend = sum(serie.pendientes);
           const tasa = nuevas ? Math.round(comp / nuevas * 100) : 0;
           const hayPend = pend > 0;
-          const series = [{ nombre: 'Nuevas', data: serie.total }, { nombre: 'Completadas', data: serie.completadas, color: 'rgb(74 222 128)' }];
-          if (hayPend) series.push({ nombre: 'Pendientes', data: serie.pendientes, color: 'rgb(251 191 36)' });
+          const dataChart = serie.total.map((p, i) => ({ dia: p.label, Nuevas: p.v, Completadas: serie.completadas[i].v, Pendientes: serie.pendientes[i].v }));
           return (<>
             <div className="evol-kpis">
               <div className="evol-kpi"><div className="ic" style={{ color: 'rgb(var(--accentTeal))' }}>{Ico.trend({})}</div><div className="n">{nuevas}</div><div className="l">Nuevas</div></div>
@@ -470,8 +470,21 @@ function ReportesResumen({ rows, irAConFiltro }) {
               <div className="evol-kpi"><div className="ic" style={{ color: 'rgb(251 191 36)' }}>{Ico.clock({})}</div><div className="n">{pend}</div><div className="l">Pendientes</div></div>
               <div className="evol-kpi"><div className="ic" style={{ color: 'rgb(74 222 128)' }}>{Ico.circleDash({})}</div><div className="n">{tasa}%</div><div className="l">Tasa de completitud</div></div>
             </div>
-            <MiniChart series={series} />
-            {!hayPend && <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>Pendientes: 0 en el período — no se grafica para no ensuciar la lectura.</div>}
+            <div style={{ width: '100%', height: 300 }}>
+              <ResponsiveContainer>
+                <LineChart data={dataChart} margin={{ top: 8, right: 16, left: -10, bottom: 4 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#20304d" vertical={false} />
+                  <XAxis dataKey="dia" stroke="#6b7299" fontSize={11} tickLine={false} axisLine={{ stroke: '#20304d' }} minTickGap={26} />
+                  <YAxis stroke="#6b7299" fontSize={11} allowDecimals={false} tickLine={false} axisLine={false} width={30} />
+                  <RTooltip contentStyle={{ background: '#0f1e33', border: '1px solid #20304d', borderRadius: 10 }} itemStyle={{ color: '#e7eef6' }} labelStyle={{ color: '#e7eef6', fontWeight: 700, marginBottom: 4 }} />
+                  <Legend wrapperStyle={{ fontSize: 11, paddingTop: 6 }} iconType="plainline" />
+                  <Line type="monotone" dataKey="Nuevas" stroke="#22d3ee" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="Completadas" stroke="#4ade80" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                  {hayPend && <Line type="monotone" dataKey="Pendientes" stroke="#fbbf24" strokeWidth={2} dot={false} strokeDasharray="4 3" />}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            {!hayPend && <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>Pendientes: 0 en el período — no se grafica.</div>}
           </>);
         })()}
       </Seccion>
