@@ -54,7 +54,6 @@ export default function FormularioForm({ form }) {
             {[1, 2, 3, 4, 5].map((n) => (
               <button key={n} type="button" className={'escala-b' + (Number(val[c.key]) === n ? ' on' : '')} onClick={() => set(c.key, n)}>{n}</button>
             ))}
-            <span className="escala-hint">1 = más baja · 5 = más alta</span>
           </div>
         </div>
       );
@@ -121,20 +120,33 @@ export default function FormularioForm({ form }) {
     );
   }
 
+  const escalas = form.campos.filter((c) => c.tipo === 'escala');
+  const otros = form.campos.filter((c) => c.tipo !== 'escala');
   return (
-    <div className="quizstage"><div className="quizcard">
-      <div className="quiz-band"><div className="quiz-band-top"><div className="kd">FORMULARIO</div><Isologo size={20} /></div><div className="ti">{form.titulo}</div></div>
+    <div className="quizstage"><div className="quizcard quizcard-form">
+      <div className="quiz-band">
+        <div className="quiz-band-top"><div className="kd">FORMULARIO</div><Isologo size={22} /></div>
+        <div className="ti">{form.titulo}</div>
+        {form.cursoFijo && <div className="quiz-band-sub">{form.cursoFijo}</div>}
+      </div>
       <div className="quiz-body">
         {/* Correo siempre primero */}
         <div className="quiz-field">
           <label>Correo <span className="req">*</span></label>
           <input className="ctrl" type="email" value={val.email || ''} onChange={(e) => set('email', e.target.value)} placeholder="tunombre@correo.com" />
         </div>
-        {form.campos.map((c) => campo(c))}
+        {otros.map((c) => campo(c))}
+        {escalas.length > 0 && (
+          <div className="quiz-section">
+            <div className="quiz-section-h">Tu experiencia hasta ahora</div>
+            <div className="quiz-section-hint">Realizá una valoración siendo <b>1</b> el puntaje más bajo y <b>5</b> el más alto.</div>
+            {escalas.map((c) => campo(c))}
+          </div>
+        )}
         {error && <div className="err" style={{ display: 'block', marginTop: 6 }}>{error}</div>}
       </div>
       <div className="quiz-foot">
-        <button className="btn btn-teal" style={{ flex: 1 }} onClick={enviar} disabled={enviando}>{enviando ? 'Enviando…' : 'Enviar'}</button>
+        <button className="btn btn-teal quiz-submit" onClick={enviar} disabled={enviando}>{enviando ? 'Enviando…' : 'Enviar respuestas'}</button>
       </div>
     </div></div>
   );
