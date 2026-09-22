@@ -34,12 +34,35 @@ export default function FormularioForm({ form }) {
 
   if (enviado) {
     return (
-      <div className="quizstage"><div className="quizcard">
+      <div className="quizstage"><div className="quizcard quizcard-form">
         <div className="quiz-band"><div className="quiz-band-top"><div className="kd">FORMULARIO</div><Isologo size={20} /></div><div className="ti">{form.titulo}</div></div>
-        <div className="quiz-body" style={{ textAlign: 'center', padding: '40px 30px' }}>
-          <div className="quiz-ring">✓</div>
-          <h3 style={{ fontSize: 22, margin: '4px 0' }}>¡Gracias por responder!</h3>
-          <p className="muted" style={{ fontSize: 14 }}>Registramos tus respuestas correctamente.</p>
+        <div className="quiz-body" style={{ padding: '36px 30px 30px' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div className="quiz-ring">✓</div>
+            <h3 style={{ fontSize: 22, margin: '4px 0' }}>¡Gracias por responder!</h3>
+            <p className="muted" style={{ fontSize: 14 }}>Registramos tus respuestas correctamente.</p>
+          </div>
+          <div className="cta-title">¿Qué te gustaría hacer ahora?</div>
+          <div className="cta-cards">
+            <div className="cta-card">
+              <div className="cta-emoji">📚</div>
+              <div className="cta-h">Seguir aprendiendo</div>
+              <div className="cta-d">Leé una nota recomendada de nuestro blog.</div>
+              <a className="cta-btn" href="https://www.coachingeducativolider.com/blog" target="_blank" rel="noopener noreferrer">Ir al Blog</a>
+            </div>
+            <div className="cta-card">
+              <div className="cta-emoji">🎓</div>
+              <div className="cta-h">Volver al Campus</div>
+              <div className="cta-d">Continuá con tus clases, actividades y materiales.</div>
+              <a className="cta-btn cta-btn-primary" href="http://campus.institutoilce.com/" target="_blank" rel="noopener noreferrer">Volver al Campus</a>
+            </div>
+            <div className="cta-card">
+              <div className="cta-emoji">📱</div>
+              <div className="cta-h">Seguinos en Instagram</div>
+              <div className="cta-d">Conocé novedades, eventos, recursos y contenidos nuevos.</div>
+              <a className="cta-btn" href="https://www.instagram.com/institutoilce" target="_blank" rel="noopener noreferrer">Ir a Instagram</a>
+            </div>
+          </div>
         </div>
       </div></div>
     );

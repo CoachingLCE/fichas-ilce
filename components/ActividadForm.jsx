@@ -82,7 +82,7 @@ export default function ActividadForm({ act }) {
         {/* Pie fijo al finalizar cualquier actividad, pedido por Diego: volver al campus,
             invitación a la nota del blog, y redes de la comunidad. */}
         <div className="quiz-postfoot">
-          <a className="quiz-postlink" href="https://institutoilce.com/" target="_blank" rel="noopener noreferrer">← Volver al campus</a>
+          <a className="quiz-postlink" href="http://campus.institutoilce.com/" target="_blank" rel="noopener noreferrer">← Volver al campus</a>
           <a className="quiz-postlink quiz-postlink-sec" href="https://www.coachingeducativolider.com/blog" target="_blank" rel="noopener noreferrer">☕ Tomate un descanso y leé una nota</a>
           <div className="quiz-social">
             <a href="https://www.instagram.com/institutoilce/" target="_blank" rel="noopener noreferrer" title="Instagram" className="quiz-social-btn"><IconInstagram /></a>
