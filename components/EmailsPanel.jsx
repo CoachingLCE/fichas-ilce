@@ -17,12 +17,12 @@ const REINTENTABLES = new Set([
 ]);
 
 const AUTOMATIZACIONES = [
-  { evento: 'Se completa una ficha de inscripción', para: 'Al estudiante (con botón de WhatsApp)', tipo: 'Confirmación inscripción' },
-  { evento: 'Se completa una ficha de inscripción', para: 'Macarena, Alexander y Jesabel', tipo: 'Aviso equipo' },
-  { evento: 'Se crea un usuario / se da acceso a un docente', para: 'Al usuario (con su contraseña)', tipo: 'Credenciales acceso' },
-  { evento: 'El estudiante responde una actividad (Postwork)', para: 'Al estudiante (con su puntaje)', tipo: 'Resultado actividad' },
-  { evento: 'El estudiante responde una actividad (Postwork)', para: 'Al/los docente(s) del curso/edición', tipo: 'Aviso actividad docente' },
-  { evento: 'Todos los viernes (automático)', para: 'Sofía, Paula, Lourdes y Victoria', tipo: 'Resumen viernes' }
+  { evento: 'Se completa una ficha de inscripción', para: 'Al estudiante (con botón de WhatsApp)', remitente: 'Instituto ILCE', cc: '—', asunto: '¡Recibimos tu inscripción a [curso]! 🎉', tipo: 'Confirmación inscripción' },
+  { evento: 'Se completa una ficha de inscripción', para: 'Macarena, Alexander y Jesabel', remitente: 'Plataforma ILCE', cc: '—', asunto: '📥 Nueva inscripción · [nombre] · [curso]', tipo: 'Aviso equipo' },
+  { evento: 'Se crea un usuario / se da acceso a un docente', para: 'Al usuario (con su contraseña)', remitente: 'Plataforma ILCE', cc: '—', asunto: 'Tu acceso al panel de ILCE', tipo: 'Credenciales acceso' },
+  { evento: 'El estudiante responde una actividad (Postwork)', para: 'Al estudiante (con su puntaje)', remitente: 'Instituto ILCE', cc: '—', asunto: 'Resultado de tu actividad · [actividad]', tipo: 'Resultado actividad' },
+  { evento: 'El estudiante responde una actividad (Postwork)', para: 'Al/los docente(s) del curso/edición', remitente: 'Instituto ILCE', cc: '—', asunto: '📝 [estudiante] completó “[actividad]” · [puntaje]/[total]', tipo: 'Aviso actividad docente' },
+  { evento: 'Todos los viernes (automático)', para: 'Sofía, Paula, Lourdes y Victoria', remitente: 'Plataforma ILCE', cc: '—', asunto: '📊 Resumen académico · N respuestas esta semana', tipo: 'Resumen viernes' }
 ];
 
 export default function EmailsPanel({ usuario }) {
@@ -92,13 +92,15 @@ export default function EmailsPanel({ usuario }) {
         <p className="muted" style={{ fontSize: 12.5, margin: '0 0 10px' }}>Tocá un correo con 👁 para ver una vista previa de lo que recibe la persona.</p>
         <div className="tablewrap" style={{ maxHeight: 'none' }}>
           <table>
-            <thead><tr><th style={{ minWidth: 240 }}>Cuándo se envía</th><th style={{ minWidth: 220 }}>A quién</th><th style={{ minWidth: 200 }}>Tipo</th></tr></thead>
+            <thead><tr><th style={{ minWidth: 210 }}>Cuándo se envía</th><th style={{ minWidth: 190 }}>A quién</th><th style={{ minWidth: 150 }}>De / CC</th><th style={{ minWidth: 240 }}>Asunto</th><th style={{ minWidth: 180 }}>Tipo</th></tr></thead>
             <tbody>{AUTOMATIZACIONES.map((a, i) => {
               const verMas = PREVIEWABLES.has(a.tipo);
               return (
                 <tr key={i} className={verMas ? 'clickable' : ''} onClick={verMas ? () => abrirPreview(a.tipo) : undefined} style={verMas ? { cursor: 'pointer' } : undefined}>
                   <td>{a.evento}</td>
                   <td className="sec">{a.para}</td>
+                  <td className="sec">{a.remitente}{a.cc && a.cc !== '—' ? ` · cc: ${a.cc}` : ''}</td>
+                  <td className="sec">{a.asunto}</td>
                   <td><span className="tagchip">{a.tipo}</span>{verMas && <span style={{ marginLeft: 8, fontSize: 12.5, fontWeight: 700, color: 'rgb(var(--accentTeal))' }}>👁 Ver correo</span>}</td>
                 </tr>
               );
