@@ -1129,3 +1129,6 @@ tr.clickable .repx-cellbar:hover .fl{filter:brightness(1.15)}
 
 /* ── Formulario público: recuadro de introducción ── */
 .quiz-intro-box{white-space:pre-line;font-size:13.5px;line-height:1.6;color:rgb(var(--textSec));background:rgb(var(--surface2));border:1px solid rgb(var(--border));border-radius:12px;padding:14px 16px;margin-bottom:22px}
+
+/* ── Bajada descriptiva de sección (reemplaza el breadcrumb + título) ── */
+.section-lead{font-size:15px;color:rgb(var(--textSec));font-weight:500;margin:0;line-height:1.5;max-width:74ch}
