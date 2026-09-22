@@ -150,7 +150,7 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
         <div className="empty"><div className="ico">🗂️</div><h3>No encontramos fichas</h3><p>Probá con otro término o cambiá el filtro.</p><button className="btn-sm" onClick={() => { setQ(''); setChip('Todas'); }}>Limpiar filtros</button></div>
       ) : vista === 'lista' ? (
         <div className="tablewrap tablewrap-fichas"><table>
-          <thead><tr><th>Ficha</th><th>Estado</th><th>Inscripciones</th><th>Ediciones</th><th>Próxima edición</th><th>Actualizado</th><th>URL de inscripción</th><th></th></tr></thead>
+          <thead><tr><th>Ficha</th><th>Estado</th><th>Inscripciones</th><th>Próximas ediciones</th><th>Próxima edición</th><th>Actualizado</th><th>URL de inscripción</th><th></th></tr></thead>
           <tbody>{filtradas.map((d) => {
             const meta = ESTADO_META[d.estado] || ESTADO_META.Publicada;
             const insc = porCurso[d.curso] || 0;
@@ -163,7 +163,7 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
                 <td className="ins-name" style={{ color: colorCurso(d.curso) }}>{d.curso}</td>
                 <td><span className={'fstate ' + meta.cls}><span className="d" />{meta.label}</span></td>
                 <td>{insc > 0 ? <button className="linklike" onClick={() => onVerInscripciones(d.curso)}>{insc} inscriptos →</button> : <span className="sec">0</span>}</td>
-                <td className="sec">{eds.length} edición{eds.length === 1 ? '' : 'es'}</td>
+                <td className="sec">{d.onDemand ? 'On demand' : eds.length > 0 ? `${eds.length} edición${eds.length === 1 ? '' : 'es'}` : '—'}</td>
                 <td className="sec">{proxima || '—'}</td>
                 <td className="sec">{actualizado || '—'}</td>
                 <td className="col-url">
