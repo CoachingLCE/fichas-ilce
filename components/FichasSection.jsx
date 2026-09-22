@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState, forwardRef, useImperativeHandle } from 'react';
-import { APP_URL } from '../lib/constants';
+import { APP_URL, colorCurso } from '../lib/constants';
 import Constructor from './Constructor';
 
 const ESTADO_META = {
@@ -160,7 +160,7 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
             const actualizado = fmtFecha(d.actualizado);
             return (
               <tr key={d.slug}>
-                <td className="ins-name">{d.curso}</td>
+                <td className="ins-name" style={{ color: colorCurso(d.curso) }}>{d.curso}</td>
                 <td><span className={'fstate ' + meta.cls}><span className="d" />{meta.label}</span></td>
                 <td>{insc > 0 ? <button className="linklike" onClick={() => onVerInscripciones(d.curso)}>{insc} inscriptos →</button> : <span className="sec">0</span>}</td>
                 <td className="sec">{eds.length} edición{eds.length === 1 ? '' : 'es'}</td>
@@ -214,7 +214,7 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
                   </div>
                 </div>
 
-                <div className="pcard-title" title={d.curso}>{d.curso}</div>
+                <div className="pcard-title" title={d.curso} style={{ color: colorCurso(d.curso) }}>{d.curso}</div>
                 {sub && <div className="pcard-sub" title={sub}>{sub}</div>}
 
                 <div className="pcard-metrics">
