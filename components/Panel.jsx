@@ -28,9 +28,12 @@ const ALL_COLS = [
   ['inscrito', 'Inscrito'], ['estado', 'Estado'], ['fecha', 'Fecha ficha']
 ];
 
+// La columna Edición a veces trae texto ('3° edición', 'Tercera', 'Edición n° 3', '3•').
+// Nos quedamos solo con el número para que no se dupliquen ediciones que son la misma.
+function edNum(v) { const m = String(v || '').match(/\d+/); return m ? m[0] : String(v || '').trim(); }
 function normaliza(f) {
   return {
-    id: f.ID, nom: f.Nombre, ape: f.Apellido, em: f.Email, curso: f.Curso, ed: f['Edición'],
+    id: f.ID, nom: f.Nombre, ape: f.Apellido, em: f.Email, curso: f.Curso, ed: edNum(f['Edición']),
     pais: f['País'], prov: f['Provincia/Estado'], loc: f.Localidad, wa: f.WhatsApp, doc: f.Documento,
     ig: f.Instagram, prof: f['Profesión'], origen: f.Origen, mod: f.Modalidad, med: f['Medio contacto'],
     salud: f['Tema salud'], sobre: f['Sobre vos'], coment: f.Comentarios, cons: f.Consentimiento,
