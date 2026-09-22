@@ -109,7 +109,9 @@ export default function ActividadForm({ act }) {
         {esDatos ? (
           <>
             <h3 style={{ fontSize: 18, margin: '0 0 4px' }}>Antes de empezar</h3>
-            <p className="muted" style={{ fontSize: 13.5, marginTop: 0, marginBottom: 16 }}>Completá tus datos y respondé las {total} preguntas. Se corrige al enviar.</p>
+            {act.intro
+              ? <p className="quiz-intro" style={{ fontSize: 13.5, marginTop: 0, marginBottom: 16, whiteSpace: 'pre-line', color: 'rgb(var(--textSec))', lineHeight: 1.55 }}>{act.intro}</p>
+              : <p className="muted" style={{ fontSize: 13.5, marginTop: 0, marginBottom: 16 }}>Completá tus datos y respondé las {total} preguntas. Se corrige al enviar.</p>}
             <div className="quiz-field"><label>Correo <span className="req">*</span></label>
               <input className="ctrl" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tunombre@correo.com" /></div>
             <div className="quiz-field"><label>Nombre y apellido</label>
