@@ -19,9 +19,12 @@ export async function GET(req) {
   const filas = (await readSheet(TABS.RESPUESTAS_ACT)).filter((f) => f.ID && f.Fecha && new Date(f.Fecha) >= corte)
     .map((f) => ({ fecha: (f.Fecha || '').slice(0, 10), nombre: f.Nombre, email: f.Email, curso: f.Curso, edicion: f['Edición'], actividad: f.Actividad, puntaje: f['Puntuación'], total: f.Total }));
 
+  const filasForm = (await readSheet(TABS.RESPUESTAS_FORM)).filter((f) => f.ID && f.Fecha && new Date(f.Fecha) >= corte)
+    .map((f) => ({ fecha: (f.Fecha || '').slice(0, 10), nombre: f.Nombre, email: f.Email, curso: f.Curso, formulario: f.Formulario }));
+
   const desde = corte.toISOString().slice(0, 10);
   const hasta = new Date().toISOString().slice(0, 10);
   let enviado = true;
-  try { await enviarResumenActividades({ destinatarios: EQUIPO_ACADEMICO, desde, hasta, filas }); } catch { enviado = false; }
-  return NextResponse.json({ ok: true, enviado, cantidad: filas.length, desde, hasta });
+  try { await enviarResumenActividades({ destinatarios: EQUIPO_ACADEMICO, desde, hasta, filas, filasForm }); } catch { enviado = false; }
+  return NextResponse.json({ ok: true, enviado, actividades: filas.length, formularios: filasForm.length, desde, hasta });
 }

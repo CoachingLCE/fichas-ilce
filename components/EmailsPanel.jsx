@@ -22,7 +22,7 @@ const AUTOMATIZACIONES = [
   { evento: 'Se crea un usuario / se da acceso a un docente', para: 'Al usuario (con su contraseña)', remitente: 'Plataforma ILCE', cc: '—', asunto: 'Tu acceso al panel de ILCE', tipo: 'Credenciales acceso' },
   { evento: 'El estudiante responde una actividad (Postwork)', para: 'Al estudiante (con su puntaje)', remitente: 'Instituto ILCE', cc: '—', asunto: 'Resultado de tu actividad · [actividad]', tipo: 'Resultado actividad' },
   { evento: 'El estudiante responde una actividad (Postwork)', para: 'Al/los docente(s) del curso/edición', remitente: 'Instituto ILCE', cc: '—', asunto: '📝 [estudiante] completó “[actividad]” · [puntaje]/[total]', tipo: 'Aviso actividad docente' },
-  { evento: 'Todos los viernes (automático)', para: 'Sofía, Paula, Lourdes y Victoria', remitente: 'Plataforma ILCE', cc: '—', asunto: '📊 Resumen académico · N respuestas esta semana', tipo: 'Resumen viernes' }
+  { evento: 'Todos los viernes (automático) — actividades y formularios de la semana', para: 'Sofía, Paula, Lourdes, Victoria y Diego', remitente: 'Plataforma ILCE', cc: '—', asunto: '📊 Resumen semanal · N actividades y M formularios', tipo: 'Resumen viernes' }
 ];
 
 export default function EmailsPanel({ usuario }) {
