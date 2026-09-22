@@ -130,6 +130,7 @@ export default function FormularioForm({ form }) {
         {form.cursoFijo && <div className="quiz-band-sub">{form.cursoFijo}</div>}
       </div>
       <div className="quiz-body">
+        {form.intro && <div className="quiz-intro-box">{form.intro}</div>}
         {/* Correo siempre primero */}
         <div className="quiz-field">
           <label>Correo <span className="req">*</span></label>
