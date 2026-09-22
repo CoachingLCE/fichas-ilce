@@ -31,7 +31,8 @@ function Lista({ usuario, showToast }) {
     } catch { /* */ }
   }, []);
   const cambiarVista = (v) => { setVista(v); try { localStorage.setItem('ilce-formularios-vista', v); } catch { /* */ } };
-  const [conteos, setConteos] = useState(null); // { [tituloFormulario]: cantidad de respuestas }
+  const [conteos, setConteos] = useState(null); // { [nombreNormalizado]: cantidad de respuestas }
+  const normNombre = (v) => (v || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[¿?¡!.,;:]/g, '').replace(/\s+/g, ' ').trim();
   useEffect(() => { (async () => {
     try {
       const res = await fetch('/api/formularios?solicitanteEmail=' + encodeURIComponent(usuario.email));
@@ -45,11 +46,11 @@ function Lista({ usuario, showToast }) {
       const res = await fetch('/api/formularios/respuestas?solicitanteEmail=' + encodeURIComponent(usuario.email));
       const d = await res.json();
       const m = {};
-      if (d.ok) (d.respuestas || []).forEach((x) => { const k = x.formulario || ''; m[k] = (m[k] || 0) + 1; });
+      if (d.ok) (d.respuestas || []).forEach((x) => { const k = normNombre(x.formulario); m[k] = (m[k] || 0) + 1; });
       setConteos(m);
     } catch { setConteos({}); }
   })(); /* eslint-disable-next-line */ }, []);
-  const nResp = (f) => (conteos ? (conteos[f.titulo] || 0) : null);
+  const nResp = (f) => (conteos ? (conteos[normNombre(f.titulo)] || 0) : null);
   if (error) return <div className="empty"><div className="ico">⚠️</div><h3>No se pudo cargar</h3><p>{error}. Revisá que exista la pestaña “Formularios” en la Sheet.</p></div>;
   if (!forms) return <div className="spin" />;
   if (forms.length === 0) return <div className="empty"><div className="ico">📝</div><h3>No hay formularios cargados</h3><p>Pegá las definiciones en la pestaña Formularios de la Sheet.</p></div>;
