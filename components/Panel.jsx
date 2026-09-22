@@ -238,6 +238,7 @@ export default function Panel() {
       <IsologoDefs />
       {navMenu && <div className="navoverlay" onClick={() => setNavMenu(null)} />}
       <header className="topnav">
+        <div className="topnav-inner">
         <div className="topnav-brand">
           <Isologo size={32} />
         </div>
@@ -289,6 +290,7 @@ export default function Panel() {
             <span>{nombreVisibleRoles(usuario.roles)}</span>
           </div>
           <button className="btn-sm" onClick={() => { logout(); window.location.href = '/'; }}>Salir</button>
+        </div>
         </div>
       </header>
       {verComo && <div className="vercomo-banner">👁 Modo vista — estás viendo la app como <b>{verComo.nombre}</b> ({nombreVisibleRoles(verComo.roles)}), en solo lectura. <button onClick={() => setVerComo(null)}>Salir del modo vista</button></div>}
