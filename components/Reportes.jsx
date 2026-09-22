@@ -18,7 +18,7 @@ function iso(d) { return d.toISOString().slice(0, 10); }
 function hace(n) { const d = new Date(); d.setDate(d.getDate() - n); return iso(d); }
 function primerDiaMes() { const d = new Date(); d.setDate(1); return iso(d); }
 function primerDiaTrimestre() { const d = new Date(); d.setMonth(Math.floor(d.getMonth() / 3) * 3, 1); return iso(d); }
-function nombreMes(k) { const [y, m] = k.split('-'); return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString('es-AR', { month: 'short', year: '2-digit' }); }
+function nombreMes(k) { const [y, m] = (k || '').split('-'); const d = new Date(Number(y), Number(m) - 1, 1); return isNaN(d.getTime()) ? (k || '') : d.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' }); }
 function pctTone(pct, { buenoDesde = 80, regularDesde = 50 } = {}) {
   if (pct == null) return 'muted';
   return pct >= buenoDesde ? 'good' : pct >= regularDesde ? 'warn' : 'bad';
@@ -538,14 +538,14 @@ function ReportesInscripciones({ rows, irAConFiltro }) {
 
   const serieMensual = useMemo(() => {
     const m = {};
-    rows.forEach((r) => { const k = (r.fecha || '').slice(0, 7); if (k) m[k] = (m[k] || 0) + 1; });
+    rows.forEach((r) => { const k = (r.fecha || '').slice(0, 7); if (/^\d{4}-\d{2}$/.test(k)) m[k] = (m[k] || 0) + 1; });
     return Object.entries(m).sort(([a], [b]) => a.localeCompare(b)).slice(-12).map(([k, n]) => ({ label: nombreMes(k), v: n }));
   }, [rows]);
 
   const cursosConDatos = useMemo(() => [...new Set(rows.map((r) => r.curso).filter(Boolean))].sort(), [rows]);
   const porMes6 = useMemo(() => {
     const m = {};
-    rows.forEach((r) => { const k = (r.fecha || '').slice(0, 7); if (k) m[k] = (m[k] || 0) + 1; });
+    rows.forEach((r) => { const k = (r.fecha || '').slice(0, 7); if (/^\d{4}-\d{2}$/.test(k)) m[k] = (m[k] || 0) + 1; });
     return Object.entries(m).sort(([a], [b]) => a.localeCompare(b)).slice(-6);
   }, [rows]);
   const porMesYCurso = useMemo(() => porMes6.map(([k, total]) => {
@@ -881,7 +881,7 @@ function ReportesFormularios({ data, irAConFiltro }) {
 
   const serieMensual = useMemo(() => {
     const m = {};
-    data.forEach((r) => { const k = (r.fecha || '').slice(0, 7); if (k) m[k] = (m[k] || 0) + 1; });
+    data.forEach((r) => { const k = (r.fecha || '').slice(0, 7); if (/^\d{4}-\d{2}$/.test(k)) m[k] = (m[k] || 0) + 1; });
     return Object.entries(m).sort(([a], [b]) => a.localeCompare(b)).slice(-12).map(([k, n]) => ({ label: nombreMes(k), v: n }));
   }, [data]);
 
