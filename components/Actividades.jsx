@@ -1,14 +1,11 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CURSOS, APP_URL } from '../lib/constants';
+import { CURSOS, APP_URL, estiloCurso } from '../lib/constants';
 import { SelectDropdown } from './SelectDropdown';
 
 const slugify = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
-// Un color estable por curso para los pills (derivado del nombre). Evita verde/amarillo/rojo, reservados a estados.
-const CURSO_COLORES = ['#0595ad', '#96198f', '#7c3aed', '#3b82f6', '#22d3ee', '#db2777', '#0ea5e9', '#a21caf', '#0891b2', '#6366f1'];
-function colorCurso(n) { let h = 0; const t = (n || ''); for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) >>> 0; return CURSO_COLORES[h % CURSO_COLORES.length]; }
 
 // Este archivo corre en el navegador; lib/actividades.js no se puede importar acá porque
 // usa googleapis (server-only). Se duplica acá la única cuenta que hace falta del lado
@@ -398,7 +395,7 @@ function TablaActividades({ items, puedeGestionar, onEditar, onDuplicar, onDetal
         return (
           <tr key={a.slug}>
             <td className="ins-name"><button className="acts-titlelink" onClick={() => onDetalle(a)}>{a.titulo}</button></td>
-            <td>{a.curso ? <span className="cchip" style={{ color: colorCurso(a.curso), borderColor: colorCurso(a.curso), background: colorCurso(a.curso) + '22' }}>{a.curso}</span> : ''}</td>
+            <td>{a.curso ? <span className="cchip" style={estiloCurso(a.curso)}>{a.curso}</span> : ''}</td>
             <td>{a.edicion ? <span className="edchip">Ed. {a.edicion}</span> : <span className="sec">—</span>}</td>
             <td className="sec">{a.clase || '—'}</td>
             <td><span className={'fstate ' + badge.cls}><span className="d" />{efectivo}</span></td>

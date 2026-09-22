@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSession } from '../lib/useSession';
 import { tienePermisoInscripciones, tienePermisoCambiarEstado, tienePermisoExportar, tienePermisoDashboard, tienePermisoConstructor, tienePermisoAccesos, tienePermisoActividades, tienePermisoGestionActividades, tienePermisoAsignarDocentes, tienePermisoEmails, tienePermisoAuditoria, tienePermisoFormularios, puedeVerComoOtro } from '../lib/permisos';
-import { ESTADOS, normalizarEstado, nombreVisibleRoles } from '../lib/constants';
+import { ESTADOS, normalizarEstado, nombreVisibleRoles, estiloCurso } from '../lib/constants';
 import { Isologo, IsologoDefs } from './Isologo';
 import ThemeSelector from './ThemeSelector';
 import Accesos from './Accesos';
@@ -518,7 +518,7 @@ function celda(r, k) {
   if (k === 'estado') return <span className={'badge b-' + (r.estado || '').replace(/\s/g, '')}>{r.estado}</span>;
   if (k === 'pais') return r.pais ? <span className="pchip">{esArgentina(r.pais) ? '🇦🇷' : '🌎'} {r.pais}</span> : '';
   if (k === 'ed') return r.ed ? <span className="edchip">Ed. {r.ed}</span> : '';
-  if (k === 'curso') return r.curso ? <span className="cchip">{r.curso}</span> : '';
+  if (k === 'curso') return r.curso ? <span className="cchip" style={estiloCurso(r.curso)}>{r.curso}</span> : '';
   if (k === 'wa') return <span className="sec">{r.wa}</span>;
   if (k === 'fecha') return <span className="sec" title={r.fecha}>{fechaAmigable(r.fecha)}</span>;
   return r[k] || '';
