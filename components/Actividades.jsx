@@ -1,9 +1,14 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CURSOS, APP_URL } from '../lib/constants';
+import { SelectDropdown } from './SelectDropdown';
 
 const slugify = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+// Un color estable por curso para los pills (derivado del nombre). Evita verde/amarillo/rojo, reservados a estados.
+const CURSO_COLORES = ['#0595ad', '#96198f', '#7c3aed', '#3b82f6', '#22d3ee', '#db2777', '#0ea5e9', '#a21caf', '#0891b2', '#6366f1'];
+function colorCurso(n) { let h = 0; const t = (n || ''); for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) >>> 0; return CURSO_COLORES[h % CURSO_COLORES.length]; }
 
 // Este archivo corre en el navegador; lib/actividades.js no se puede importar acá porque
 // usa googleapis (server-only). Se duplica acá la única cuenta que hace falta del lado
@@ -386,15 +391,15 @@ function agruparPorCurso(lista) {
 function TablaActividades({ items, puedeGestionar, onEditar, onDuplicar, onDetalle }) {
   return (
     <div className="tablewrap"><table>
-      <thead><tr><th>Actividad</th><th>Curso</th><th>Edición</th><th>Clase</th><th>Estado</th><th>Preguntas</th><th></th></tr></thead>
+      <thead><tr><th>Actividad</th><th>Curso</th><th>Edición</th><th>Clase</th><th>Estado</th><th>Preguntas</th><th style={{ textAlign: 'right' }}>Acciones</th></tr></thead>
       <tbody>{items.map((a) => {
         const efectivo = estadoEfectivoCliente(a);
         const badge = ESTADO_ICO[efectivo] || ESTADO_ICO.Publicada;
         return (
           <tr key={a.slug}>
             <td className="ins-name"><button className="acts-titlelink" onClick={() => onDetalle(a)}>{a.titulo}</button></td>
-            <td>{a.curso ? <span className="cchip">{a.curso}</span> : ''}</td>
-            <td className="sec">{a.edicion || '—'}</td>
+            <td>{a.curso ? <span className="cchip" style={{ color: colorCurso(a.curso), borderColor: colorCurso(a.curso), background: colorCurso(a.curso) + '22' }}>{a.curso}</span> : ''}</td>
+            <td>{a.edicion ? <span className="edchip">Ed. {a.edicion}</span> : <span className="sec">—</span>}</td>
             <td className="sec">{a.clase || '—'}</td>
             <td><span className={'fstate ' + badge.cls}><span className="d" />{efectivo}</span></td>
             <td className="sec">{a.preguntas.length}</td>
@@ -579,16 +584,11 @@ function Lista({ usuario, showToast, puedeGestionar }) {
         <span className="hcount">{filtradas.length} actividad{filtradas.length === 1 ? '' : 'es'}</span>
         <span className="grow" />
         <div className="fsearch" style={{ maxWidth: 220 }}>🔎 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar…" /></div>
-        <select className="fsel" value={fCurso} onChange={(e) => setFCurso(e.target.value)}><option value="">Curso: todos</option>{cursosDisp.map((c) => <option key={c}>{c}</option>)}</select>
-        <select className="fsel" value={fEd} onChange={(e) => setFEd(e.target.value)}><option value="">Edición: todas</option>{edicionesDisp.map((ed) => <option key={ed}>{ed}</option>)}</select>
-        <select className="fsel" value={fEstado} onChange={(e) => setFEstado(e.target.value)}>
-          <option value="">Estado: todos</option>
-          {['Publicada', 'Programada', 'Borrador', 'Archivada'].map((s) => <option key={s}>{s}</option>)}
-        </select>
+        <SelectDropdown placeholder="Curso: todos" searchable value={fCurso} onChange={setFCurso} options={cursosDisp.map((c) => ({ value: c, label: c }))} />
+        <SelectDropdown placeholder="Edición: todas" searchable value={fEd} onChange={setFEd} options={edicionesDisp.map((ed) => ({ value: ed, label: 'Ed. ' + ed }))} />
+        <SelectDropdown placeholder="Estado: todos" value={fEstado} onChange={setFEstado} options={['Publicada', 'Programada', 'Borrador', 'Archivada'].map((x) => ({ value: x, label: x }))} />
         {hayFiltros && <button className="btn-sm" onClick={() => { setQ(''); setFCurso(''); setFEd(''); setFEstado(''); }}>Limpiar</button>}
-        <select className="fsel" title="Ordenar por" value={orden} onChange={(e) => cambiarOrden(e.target.value)}>
-          {ORDENES.map((o) => <option key={o.v} value={o.v}>Ordenar: {o.l}</option>)}
-        </select>
+        <SelectDropdown value={orden} onChange={cambiarOrden} options={ORDENES.map((o) => ({ value: o.v, label: 'Ordenar: ' + o.l }))} />
         <button className={'btn-sm' + (agrupar ? ' solid' : '')} onClick={toggleAgrupar} title="Agrupar por curso y edición">▤ Agrupar</button>
         <div className="vista-toggle">
           <button className={vista === 'cards' ? 'on' : ''} onClick={() => cambiarVista('cards')} title="Ver en tarjetas">▦</button>
@@ -673,8 +673,8 @@ function Respuestas({ usuario }) {
       </div>
       <div className="filters">
         <div className="fsearch" style={{ maxWidth: 260 }}>🔎 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar estudiante…" /></div>
-        <select className="fsel" value={fCurso} onChange={(e) => setFCurso(e.target.value)}><option value="">Curso: todos</option>{cursos.map((x) => <option key={x}>{x}</option>)}</select>
-        <select className="fsel" value={fEd} onChange={(e) => setFEd(e.target.value)}><option value="">Edición: todas</option>{ediciones.map((x) => <option key={x}>{x}</option>)}</select>
+        <SelectDropdown placeholder="Curso: todos" searchable value={fCurso} onChange={setFCurso} options={cursos.map((x) => ({ value: x, label: x }))} />
+        <SelectDropdown placeholder="Edición: todas" searchable value={fEd} onChange={setFEd} options={ediciones.map((x) => ({ value: x, label: 'Ed. ' + x }))} />
         <select className="fsel" value={fAct} onChange={(e) => setFAct(e.target.value)}><option value="">Actividad: todas</option>{actividades.map((x) => <option key={x}>{x}</option>)}</select>
         {(q || fCurso || fEd || fAct) && <button className="btn-sm" onClick={() => { setQ(''); setFCurso(''); setFEd(''); setFAct(''); }}>Limpiar</button>}
       </div>
