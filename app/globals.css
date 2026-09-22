@@ -310,18 +310,18 @@ tbody tr{cursor:pointer}tbody tr:hover{background:rgb(var(--surface2))}
 /* ===== Nav superior (pestañas arriba) — Lote L ===== */
 .appwrap{display:block;min-height:100vh}
 .topnav{position:sticky;top:0;z-index:40;padding:10px 0;background:rgba(12,30,50,.92);backdrop-filter:blur(8px);border-bottom:1px solid rgb(var(--border))}
-.topnav-inner{max-width:1440px;margin:0 auto;padding:0 24px;width:100%;display:flex;align-items:center;gap:14px;flex-wrap:nowrap}
+.topnav-inner{max-width:1440px;margin:0 auto;padding:0 24px;width:100%;display:flex;align-items:center;flex-wrap:wrap;column-gap:14px;row-gap:10px}
 [data-theme="light"] .topnav{background:rgba(255,255,255,.92)}
-.topnav-brand{display:flex;align-items:center;gap:10px;flex:0 0 auto}
-.topnav-tabs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1;min-width:0}
+.topnav-brand{display:flex;align-items:center;gap:10px;flex:0 0 auto;order:1}
+.topnav-tabs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;order:3;flex-basis:100%;min-width:0;padding-top:2px}
 .tnav{height:36px;display:inline-flex;align-items:center;padding:0 15px;border-radius:10px;font-size:14px;font-weight:600;
   white-space:nowrap;cursor:pointer;border:1px solid rgb(var(--border));background:rgb(var(--surface2));color:rgb(var(--textSec));transition:.15s}
 .tnav:hover{color:rgb(var(--text));border-color:rgb(var(--accentTeal))}
-.tnav.on{color:#fff;border-color:transparent;background:linear-gradient(90deg,rgb(var(--accentPurple)),rgb(var(--accentMagenta)))}
+.tnav.on{color:#e7b8e2;border-color:rgb(var(--accentMagenta) / .45);background:rgb(var(--accentMagenta) / .16)}
 /* Pestañas a las que el rol actual no tiene acceso: se ven "apagadas" y las que sí tiene acceso, más nítidas */
 .tnav.dim{opacity:.42;filter:saturate(.6)}
 .tnav.dim:hover{opacity:.75;filter:none}
-.topnav-right{display:flex;align-items:center;gap:12px;flex:0 0 auto;margin-left:auto}
+.topnav-right{display:flex;align-items:center;gap:12px;flex:0 0 auto;margin-left:auto;order:2}
 .topnav-user{line-height:1.15;text-align:right}
 .topnav-user b{display:block;font-size:13px}
 .topnav-user span{font-size:11px;color:rgb(var(--textMuted))}
