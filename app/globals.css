@@ -310,7 +310,7 @@ tbody tr{cursor:pointer}tbody tr:hover{background:rgb(var(--surface2))}
 /* ===== Nav superior (pestañas arriba) — Lote L ===== */
 .appwrap{display:block;min-height:100vh}
 .topnav{position:sticky;top:0;z-index:40;padding:10px 0;background:rgba(12,30,50,.92);backdrop-filter:blur(8px);border-bottom:1px solid rgb(var(--border))}
-.topnav-inner{max-width:1200px;margin:0 auto;padding:0 24px;width:100%;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.topnav-inner{max-width:1200px;margin:0 auto;padding:0 24px;width:100%;display:flex;align-items:center;gap:14px;flex-wrap:nowrap}
 [data-theme="light"] .topnav{background:rgba(255,255,255,.92)}
 .topnav-brand{display:flex;align-items:center;gap:10px;flex:0 0 auto}
 .topnav-tabs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1;min-width:0}
@@ -328,7 +328,7 @@ tbody tr{cursor:pointer}tbody tr:hover{background:rgb(var(--surface2))}
 .main{padding:20px 24px 60px;max-width:1200px;margin:0 auto}
 @media(max-width:820px){
   .topnav{padding:8px 0}
-  .topnav-inner{padding:0 14px;gap:8px}
+  .topnav-inner{padding:0 14px;gap:8px;flex-wrap:wrap}
   .topnav-user{display:none}
   .topnav-tabs{order:3;flex-basis:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}
   .main{padding:16px 14px 60px}
@@ -684,8 +684,8 @@ tr.clickable:hover{background:rgb(var(--surface2))}
    de la nav ("no se ve") y, al ser la última definición del archivo, ganaba la cascada. */
 
 /* ── Nav plana con grupos (modelo seguimiento-lead) ── */
-.navgroup{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
-.navgroup-label{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;color:rgb(var(--textMuted));margin:0 2px 0 8px;white-space:nowrap}
+.navgroup{display:contents}
+.navgroup-label{display:none}
 
 /* ═══════════ SISTEMA DE CHIPS UNIFICADO ═══════════ */
 /* Base compartida: forma pill, misma tipografía y borde sutil para todos */
