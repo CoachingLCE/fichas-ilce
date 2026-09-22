@@ -195,19 +195,15 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
                     <button className="pcard-menu-btn" aria-label="Más acciones" onClick={(e) => { e.stopPropagation(); setMenuAbierto(menuAbierto === d.slug ? null : d.slug); }}>•••</button>
                     {menuAbierto === d.slug && (
                       <div className="fmenu-pop" onClick={(e) => e.stopPropagation()}>
-                        {puedeEditar && <button onClick={() => { setMenuAbierto(null); onEditar(d.slug); }}>✎ Editar ficha</button>}
-                        <button onClick={() => abrirPublica(d)}>👁 Vista previa</button>
-                        {onVerInscripciones && <button onClick={() => { setMenuAbierto(null); onVerInscripciones(d.curso); }}>📋 Ver inscripciones</button>}
-                        <button onClick={() => copiarLink(d)}>{copiado === d.slug ? '✓ Copiado' : '🔗 Copiar URL'}</button>
-                        {puedeEditar && <button onClick={() => { setMenuAbierto(null); onEditar(d.slug); }}>➕ Crear edición</button>}
+                        {puedeEditar && <button onClick={() => { setMenuAbierto(null); onEditar(d.slug); }}>Crear edición</button>}
                         {puedeEditar && <>
                           <div className="sep" />
-                          {d.estado !== 'Publicada' && <button onClick={() => guardarEstado(d, 'Publicada')}>🟢 Publicar</button>}
-                          {d.estado !== 'Borrador' && <button onClick={() => guardarEstado(d, 'Borrador')}>🟡 Pasar a borrador</button>}
-                          {d.estado !== 'Cerrada' && <button onClick={() => guardarEstado(d, 'Cerrada')}>🔴 Cerrar</button>}
-                          {d.estado !== 'Archivada' && <button onClick={() => guardarEstado(d, 'Archivada')}>🗄 Archivar</button>}
+                          {d.estado !== 'Publicada' && <button onClick={() => guardarEstado(d, 'Publicada')}>Publicar</button>}
+                          {d.estado !== 'Borrador' && <button onClick={() => guardarEstado(d, 'Borrador')}>Pasar a borrador</button>}
+                          {d.estado !== 'Cerrada' && <button onClick={() => guardarEstado(d, 'Cerrada')}>Cerrar</button>}
+                          {d.estado !== 'Archivada' && <button onClick={() => guardarEstado(d, 'Archivada')}>Archivar</button>}
                           <div className="sep" />
-                          <button className="danger" onClick={() => { setMenuAbierto(null); showToast('Eliminar/duplicar cursos base llega con los cursos dinámicos.'); }}>🗑 Eliminar</button>
+                          <button className="danger" onClick={() => { setMenuAbierto(null); showToast('Eliminar/duplicar cursos base llega con los cursos dinámicos.'); }}>Eliminar</button>
                         </>}
                       </div>
                     )}
@@ -294,13 +290,12 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
                   <button className="pcard-url-copy" title="Copiar URL" onClick={(e) => { e.stopPropagation(); copiarLink(d); }}>{copiado === d.slug ? '✓' : '📋'}</button>
                 </div>
 
-                {(() => {
-                  let ap;
-                  if (d.estado === 'Borrador') ap = puedeEditar ? { l: 'Continuar editando', f: () => onEditar(d.slug) } : { l: 'Vista previa', f: () => abrirPublica(d) };
-                  else if (eds.length === 0) ap = puedeEditar ? { l: 'Agregar edición', f: () => onEditar(d.slug) } : { l: 'Vista previa', f: () => abrirPublica(d) };
-                  else ap = onVerInscripciones ? { l: 'Ver inscripciones', f: () => onVerInscripciones(d.curso) } : { l: 'Vista previa', f: () => abrirPublica(d) };
-                  return <button className="btn-sm solid pcard-cta" onClick={ap.f}>{ap.l} →</button>;
-                })()}
+                <div className="pcard-actions">
+                  {puedeEditar && <button className="pcard-act pcard-act-primary" onClick={() => onEditar(d.slug)}>✎ Editar</button>}
+                  <button className="pcard-act" onClick={() => abrirPublica(d)} title="Ver la ficha pública">Ver pública</button>
+                  {onVerInscripciones && <button className="pcard-act" onClick={() => onVerInscripciones(d.curso)} title="Ver inscripciones de este curso">Inscripciones</button>}
+                  <button className="pcard-act pcard-act-icon" title="Copiar enlace de inscripción" onClick={(e) => { e.stopPropagation(); copiarLink(d); }}>{copiado === d.slug ? '✓' : '🔗'}</button>
+                </div>
               </div>
             );
           })}
