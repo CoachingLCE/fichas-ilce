@@ -286,8 +286,9 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
                 <div className="pcard-divider" />
 
                 <div className="pcard-url">
-                  <span className="pcard-url-txt" title={url}>{url.replace(/^https?:\/\//, '')}</span>
-                  <button className="pcard-url-copy" title="Copiar URL" onClick={(e) => { e.stopPropagation(); copiarLink(d); }}>{copiado === d.slug ? '✓' : '📋'}</button>
+                  <span className="pcard-url-txt" title={url}>/inscripcion/{d.slug}</span>
+                  <button className="pcard-url-copy" title="Copiar enlace" onClick={(e) => { e.stopPropagation(); copiarLink(d); }}>{copiado === d.slug ? '✓' : '🔗'}</button>
+                  <button className="pcard-url-copy" title="Abrir enlace" onClick={(e) => { e.stopPropagation(); abrirPublica(d); }}>↗</button>
                 </div>
 
                 <div className="pcard-actions">
