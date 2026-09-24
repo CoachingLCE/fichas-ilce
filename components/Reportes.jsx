@@ -11,7 +11,36 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { ESTADOS, CURSOS } from '../lib/constants';
 import { SelectDropdown, FiltroChip } from './SelectDropdown';
 import MiniChart from './MiniChart';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, Legend } from 'recharts';
+
+// Gráfico de línea con hover (estilo Informes RRSS): un trazo limpio y, al pasar el mouse,
+// un cartelito con la etiqueta y el número. Datos: etiquetas[] + puntos[] (mismo largo).
+function GraficoLinea({ etiquetas, puntos, color = '#22d3ee', alto = 88 }) {
+  const [hover, setHover] = useState(null);
+  const ancho = 560, padY = 14;
+  const validos = puntos.filter((p) => p !== null && p !== undefined);
+  if (!validos.length) return <div style={{ height: alto, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'rgb(var(--textMuted))' }}>Sin datos</div>;
+  const max = Math.max(...validos, 1), min = Math.min(...validos, 0), rango = max - min || 1;
+  const paso = ancho / Math.max(puntos.length - 1, 1);
+  const coords = puntos.map((p, i) => (p === null || p === undefined ? null : [i * paso, alto - padY - ((p - min) / rango) * (alto - padY * 2)]));
+  const segs = []; let cur = [];
+  coords.forEach((c) => { if (c) cur.push(c); else { if (cur.length > 1) segs.push(cur); cur = []; } });
+  if (cur.length > 1) segs.push(cur);
+  const onMove = (e) => { const r = e.currentTarget.getBoundingClientRect(); if (!r.width) return; let i = Math.round(((e.clientX - r.left) / r.width) * Math.max(puntos.length - 1, 1)); i = Math.max(0, Math.min(puntos.length - 1, i)); setHover(puntos[i] === null || puntos[i] === undefined ? null : i); };
+  const fmt = (n) => (typeof n === 'number' ? n.toLocaleString('es-AR') : n);
+  return (
+    <div style={{ position: 'relative' }} onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
+      <svg viewBox={`0 0 ${ancho} ${alto}`} style={{ width: '100%', height: alto }} preserveAspectRatio="none">
+        {segs.map((sg, i) => <polyline key={i} points={sg.map(([x, y]) => `${x},${y}`).join(' ')} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />)}
+        {coords.map((c, i) => c && <circle key={i} cx={c[0]} cy={c[1]} r={hover === i ? '5' : '3'} fill={color} />)}
+      </svg>
+      {hover !== null && coords[hover] && (
+        <div style={{ position: 'absolute', pointerEvents: 'none', zIndex: 10, transform: 'translate(-50%,-100%)', marginTop: -6, left: `${(hover / Math.max(puntos.length - 1, 1)) * 100}%`, top: `${(coords[hover][1] / alto) * 100}%`, background: 'rgb(var(--surface2))', border: '1px solid rgb(var(--border))', borderRadius: 10, padding: '4px 8px', fontSize: 11, whiteSpace: 'nowrap', boxShadow: '0 6px 16px -6px rgba(0,0,0,.5)' }}>
+          <span style={{ color: 'rgb(var(--textMuted))' }}>{etiquetas && etiquetas[hover] ? etiquetas[hover] + ': ' : ''}</span><b>{fmt(puntos[hover])}</b>
+        </div>
+      )}
+    </div>
+  );
+}
 import { exportarCSV, exportarXLSX } from '../lib/exportUtils';
 
 function iso(d) { return d.toISOString().slice(0, 10); }
@@ -462,7 +491,6 @@ function ReportesResumen({ rows, irAConFiltro }) {
           const nuevas = sum(serie.total), comp = sum(serie.completadas), pend = sum(serie.pendientes);
           const tasa = nuevas ? Math.round(comp / nuevas * 100) : 0;
           const hayPend = pend > 0;
-          const dataChart = serie.total.map((p, i) => ({ dia: p.label, Nuevas: p.v, Completadas: serie.completadas[i].v, Pendientes: serie.pendientes[i].v }));
           return (<>
             <div className="evol-kpis">
               <div className="evol-kpi"><div className="ic" style={{ color: 'rgb(var(--accentTeal))' }}>{Ico.trend({})}</div><div className="n">{nuevas}</div><div className="l">Nuevas</div></div>
@@ -470,21 +498,23 @@ function ReportesResumen({ rows, irAConFiltro }) {
               <div className="evol-kpi"><div className="ic" style={{ color: 'rgb(251 191 36)' }}>{Ico.clock({})}</div><div className="n">{pend}</div><div className="l">Pendientes</div></div>
               <div className="evol-kpi"><div className="ic" style={{ color: 'rgb(74 222 128)' }}>{Ico.circleDash({})}</div><div className="n">{tasa}%</div><div className="l">Tasa de completitud</div></div>
             </div>
-            <div style={{ width: '100%', height: 300 }}>
-              <ResponsiveContainer>
-                <LineChart data={dataChart} margin={{ top: 8, right: 16, left: -10, bottom: 4 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#20304d" vertical={false} />
-                  <XAxis dataKey="dia" stroke="#6b7299" fontSize={11} tickLine={false} axisLine={{ stroke: '#20304d' }} minTickGap={26} />
-                  <YAxis stroke="#6b7299" fontSize={11} allowDecimals={false} tickLine={false} axisLine={false} width={30} />
-                  <RTooltip contentStyle={{ background: '#0f1e33', border: '1px solid #20304d', borderRadius: 10 }} itemStyle={{ color: '#e7eef6' }} labelStyle={{ color: '#e7eef6', fontWeight: 700, marginBottom: 4 }} />
-                  <Legend wrapperStyle={{ fontSize: 11, paddingTop: 6 }} iconType="plainline" />
-                  <Line type="monotone" dataKey="Nuevas" stroke="#22d3ee" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="Completadas" stroke="#4ade80" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-                  {hayPend && <Line type="monotone" dataKey="Pendientes" stroke="#fbbf24" strokeWidth={2} dot={false} strokeDasharray="4 3" />}
-                </LineChart>
-              </ResponsiveContainer>
+            <div className="evol-paneles">
+              <div className="evol-panel">
+                <div className="evol-panel-h"><span>Nuevas por día</span><b>{nuevas.toLocaleString('es-AR')}</b></div>
+                <GraficoLinea etiquetas={serie.total.map((p) => p.label)} puntos={serie.total.map((p) => p.v)} color="#22d3ee" />
+              </div>
+              <div className="evol-panel">
+                <div className="evol-panel-h"><span>Completadas por día</span><b>{comp.toLocaleString('es-AR')}</b></div>
+                <GraficoLinea etiquetas={serie.completadas.map((p) => p.label)} puntos={serie.completadas.map((p) => p.v)} color="#4ade80" />
+              </div>
+              {hayPend && (
+                <div className="evol-panel">
+                  <div className="evol-panel-h"><span>Pendientes por día</span><b>{pend.toLocaleString('es-AR')}</b></div>
+                  <GraficoLinea etiquetas={serie.pendientes.map((p) => p.label)} puntos={serie.pendientes.map((p) => p.v)} color="#fbbf24" />
+                </div>
+              )}
             </div>
-            {!hayPend && <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>Pendientes: 0 en el período — no se grafica.</div>}
+            {!hayPend && <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>Pendientes: 0 en el período.</div>}
           </>);
         })()}
       </Seccion>
