@@ -20,6 +20,8 @@ export async function GET(req) {
   }
 }
 
+const normNom = (v) => (v || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[¿?¡!.,;:]/g, '').replace(/\s+/g, ' ').trim();
+
 async function construirReporte(usuario) {
   // Definiciones (para saber las preguntas y la correcta)
   const defsRaw = await readSheet(TABS.ACTIVIDADES);
@@ -50,7 +52,7 @@ async function construirReporte(usuario) {
 
   // Agregación por actividad (por título)
   const salida = defs.map((d) => {
-    const rs = resp.filter((x) => x.actividad === d.titulo);
+    const rs = resp.filter((x) => normNom(x.actividad) === normNom(d.titulo));
     const totalResp = rs.length;
     const promedio = totalResp ? Math.round(rs.reduce((s, x) => s + (x.total ? x.puntaje / x.total : 0), 0) / totalResp * 100) : 0;
     const conTiempo = rs.filter((x) => x.dur > 0);
