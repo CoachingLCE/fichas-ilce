@@ -913,7 +913,7 @@ tr.clickable:hover{background:rgb(var(--surface2))}
   box-shadow:0 1px 2px rgba(0,0,0,.18);
 }
 [data-theme="light"] .pcard{box-shadow:0 1px 3px rgba(15,23,42,.05)}
-.pcard:hover{transform:translateY(-3px);border-color:rgb(var(--accentTeal) / .55);box-shadow:0 16px 34px -18px rgba(0,0,0,.55)}
+.pcard:hover{transform:translateY(-3px);border-color:rgb(var(--accentPurple) / .45);box-shadow:0 16px 34px -18px rgba(0,0,0,.55),0 10px 26px -14px rgba(124,58,237,.35)}
 .pcard:hover .pcard-cta{filter:brightness(1.08)}
 
 .pcard-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -1024,6 +1024,18 @@ tr.clickable:hover .repx-rowarrow{color:rgb(var(--accentTeal))}
 .repx-kpi-icchip .repx-icon{width:16px;height:16px}
 .repx-kpi-n{font-family:'Dosis';font-weight:700;font-size:27px;line-height:1;color:rgb(var(--text))}
 .repx-kpi-l{font-size:12.5px;color:rgb(var(--textSec));font-weight:600}
+
+/* Tarjetas KPI "planas" (v0.95.0) — la estructura simple de la sección HOY de
+   Cronograma (disponibilidad-zoom): caja lisa, número grande, label chica abajo.
+   A propósito más austera que .repx-kpi (sin gradiente ni icono). */
+.metrica-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.metrica{background:rgb(var(--surface2));border:1px solid rgb(var(--border));border-radius:12px;padding:14px 16px}
+.metrica-val{font-size:22px;font-weight:800;line-height:1.15;color:rgb(var(--text))}
+.metrica-val.chico{font-size:16px}
+.metrica-val.good{color:rgb(var(--good))}
+.metrica-val.warn{color:rgb(var(--warn))}
+.metrica-val.bad{color:rgb(var(--bad))}
+.metrica-lbl{font-size:11px;color:rgb(var(--textSec));margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .repx-kpi-sub{display:flex;align-items:center;gap:5px;font-size:11.5px;color:rgb(var(--textMuted));font-weight:600}
 .repx-kpi-sub.good{color:rgb(var(--good))}
 .repx-kpi-sub.bad{color:rgb(var(--bad))}
@@ -1188,14 +1200,14 @@ tr.clickable .repx-cellbar:hover .fl{filter:brightness(1.15)}
 .cta-d{font-size:12.5px;color:rgb(var(--textSec));line-height:1.4;flex:1}
 .cta-btn{margin-top:10px;display:inline-block;padding:9px 14px;border-radius:9px;font-weight:700;font-size:13px;background:rgb(var(--surface));border:1px solid rgb(var(--border));color:rgb(var(--text));text-decoration:none;width:100%;box-sizing:border-box}
 .cta-btn:hover{border-color:rgb(var(--accentTeal))}
-.cta-btn-primary{background:linear-gradient(135deg,rgb(var(--accentTeal2)),rgb(var(--accentTeal)));border-color:transparent;color:#fff}
+.cta-btn-primary{background:linear-gradient(90deg,rgb(var(--accentPurple)),rgb(var(--accentMagenta)));border-color:transparent;color:#fff}
 @media (max-width:640px){.cta-cards{grid-template-columns:1fr}}
 
 /* ── Tarjeta de ficha: acciones rápidas visibles ── */
 .pcard-actions{display:flex;gap:8px;margin-top:14px;align-items:stretch}
 .pcard-act{flex:1;min-width:0;padding:9px 8px;border-radius:9px;border:1px solid rgb(var(--border));background:rgb(var(--surface2));color:rgb(var(--text));font-weight:600;font-size:12.5px;cursor:pointer;white-space:nowrap;text-align:center;transition:border-color .12s,background .12s}
 .pcard-act:hover{border-color:rgb(var(--accentTeal))}
-.pcard-act-primary{background:linear-gradient(135deg,rgb(var(--accentTeal2)),rgb(var(--accentTeal)));border-color:transparent;color:#fff}
+.pcard-act-primary{background:linear-gradient(90deg,rgb(var(--accentPurple)),rgb(var(--accentMagenta)));border-color:transparent;color:#fff}
 .pcard-act-primary:hover{filter:brightness(1.05)}
 .pcard-act-icon{flex:0 0 auto;width:40px;font-size:14px}
 
