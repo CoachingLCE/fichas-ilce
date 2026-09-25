@@ -915,12 +915,12 @@ tr.clickable:hover{background:rgb(var(--surface2))}
 .pcard:hover .pcard-cta{filter:brightness(1.08)}
 
 .pcard-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.pcard-dot{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.4px;text-transform:uppercase}
-.pcard-dot .d{width:7px;height:7px;border-radius:50%}
-.pcard-dot.pub{color:rgb(74 222 128)} .pcard-dot.pub .d{background:rgb(74 222 128)}
-.pcard-dot.bor{color:rgb(251 191 36)} .pcard-dot.bor .d{background:rgb(251 191 36)}
-.pcard-dot.cer{color:rgb(248 113 113)} .pcard-dot.cer .d{background:rgb(248 113 113)}
-.pcard-dot.arch{color:rgb(var(--textMuted))} .pcard-dot.arch .d{background:rgb(var(--textMuted))}
+.pcard-dot{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;padding:3px 8px;border-radius:999px;white-space:nowrap;flex-shrink:0}
+.pcard-dot .d{width:6px;height:6px;border-radius:50%}
+.pcard-dot.pub{color:rgb(74 222 128);background:rgba(74,222,128,.14)} .pcard-dot.pub .d{background:rgb(74 222 128)}
+.pcard-dot.bor{color:rgb(251 191 36);background:rgba(251,191,36,.15)} .pcard-dot.bor .d{background:rgb(251 191 36)}
+.pcard-dot.cer{color:rgb(248 113 113);background:rgba(248,113,113,.14)} .pcard-dot.cer .d{background:rgb(248 113 113)}
+.pcard-dot.arch{color:rgb(var(--textMuted));background:rgb(var(--surface2))} .pcard-dot.arch .d{background:rgb(var(--textMuted))}
 
 .pcard-menu-btn{
   background:none;border:1px solid transparent;color:rgb(var(--textMuted));
@@ -929,38 +929,29 @@ tr.clickable:hover{background:rgb(var(--surface2))}
 }
 .pcard-menu-btn:hover{background:rgb(var(--surface2));color:rgb(var(--text))}
 
+/* Header en fila (calco de la tarjeta "Formaciones"): punto de color + título a la izquierda,
+   badge de estado + menú "•••" a la derecha — reemplaza al viejo .pcard-head/.pcard-metrics. */
+.pcard-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:2px}
+.pcard-dotrow{display:flex;align-items:center;gap:8px;min-width:0}
+.pcard-colordot{width:8px;height:8px;border-radius:999px;flex-shrink:0}
 .pcard-title{
-  font-family:'Dosis';font-weight:700;font-size:19px;line-height:1.2;color:rgb(var(--text));
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  font-size:15px;font-weight:700;line-height:1.2;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .pcard-sub{
   font-size:12.5px;color:rgb(var(--textSec));margin-top:-8px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 
-.pcard-metrics{display:flex;gap:26px}
-.pcard-metric{
-  background:none;border:0;padding:0;text-align:left;display:flex;flex-direction:column;gap:2px;cursor:pointer;
-}
-.pcard-metric:disabled{cursor:default}
-.pcard-metric-n{font-family:'Dosis';font-weight:700;font-size:26px;line-height:1;color:rgb(var(--accentTeal))}
-.pcard-metric:disabled .pcard-metric-n{color:rgb(var(--textMuted))}
-.pcard-metric-l{font-size:11.5px;color:rgb(var(--textMuted));font-weight:600}
-.pcard-metric:not(:disabled):hover .pcard-metric-l{color:rgb(var(--accentTeal))}
+/* Datos en líneas simples, en vez de las dos "cajas" grandes de número — la última línea
+   (pcard-datos-destacado) es siempre el dato más importante, en negrita, como el cierre de
+   la tarjeta "Formaciones". */
+.pcard-datos{display:flex;flex-direction:column;gap:4px;font-size:13px;color:rgb(var(--textSec))}
+.pcard-datos-muted{color:rgb(var(--textMuted))}
+.pcard-datos-warn{color:rgb(var(--warningText));font-weight:700}
+.pcard-datos-destacado{color:rgb(var(--text));font-weight:600}
 
-.pcard-divider{height:1px;background:rgb(var(--border) / .6)}
-
-.pcard-next{display:flex;align-items:flex-start;gap:8px}
-.pcard-next-label{font-size:10.5px;letter-spacing:.8px;text-transform:uppercase;color:rgb(var(--textMuted));font-weight:700;margin-bottom:2px}
-.pcard-next-date{font-family:'Dosis';font-weight:700;font-size:15.5px;color:rgb(var(--text))}
-.pcard-next-tag{font-family:inherit;font-weight:600;font-size:11.5px;color:rgb(var(--textMuted));text-transform:none;letter-spacing:0}
-.pcard-next-ed{font-size:12px;color:rgb(var(--textSec));margin-top:1px}
-.pcard-next-ico{font-size:13px;line-height:1.4;color:rgb(var(--warningText))}
-.pcard-next-warn .pcard-next-label{color:rgb(var(--warningText))}
-.pcard-next-neutral .pcard-next-label{color:rgb(var(--textSec))}
-.pcard-next-link{background:none;border:0;padding:0;color:rgb(var(--accentTeal));font-weight:700;font-size:12px;cursor:pointer;margin-top:2px}
-
-.pcard-url{display:flex;align-items:center;gap:8px}
+.pcard-url{display:flex;align-items:center;gap:8px;margin-top:2px}
 .pcard-url-txt{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11.5px;color:rgb(var(--textMuted))}
 .pcard-url-copy{flex:0 0 auto;background:none;border:0;color:rgb(var(--textMuted));cursor:pointer;font-size:13px;padding:2px 4px;border-radius:6px}
 .pcard-url-copy:hover{color:rgb(var(--accentTeal));background:rgb(var(--surface2))}

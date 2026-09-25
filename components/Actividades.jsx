@@ -87,7 +87,7 @@ function fmtTiempo(seg) {
 }
 const lbl = { fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 5, color: 'rgb(var(--textSec))' };
 
-export default function Actividades({ usuario, showToast, puedeGestionar, puedeDocentes }) {
+export default function Actividades({ usuario, showToast, puedeGestionar, puedeDocentes, irABuscador }) {
   const [sub, setSub] = useState('lista');
   return (
     <div>
@@ -97,8 +97,8 @@ export default function Actividades({ usuario, showToast, puedeGestionar, puedeD
         <button className={sub === 'reportes' ? 'on' : ''} onClick={() => setSub('reportes')}>Reportes</button>
         {puedeDocentes && <button className={sub === 'docentes' ? 'on' : ''} onClick={() => setSub('docentes')}>Docentes</button>}
       </div>
-      {sub === 'lista' && <Lista usuario={usuario} showToast={showToast} puedeGestionar={puedeGestionar} />}
-      {sub === 'respuestas' && <Respuestas usuario={usuario} />}
+      {sub === 'lista' && <Lista usuario={usuario} showToast={showToast} puedeGestionar={puedeGestionar} irABuscador={irABuscador} />}
+      {sub === 'respuestas' && <Respuestas usuario={usuario} irABuscador={irABuscador} />}
       {sub === 'reportes' && <Reportes usuario={usuario} />}
       {sub === 'docentes' && puedeDocentes && <Docentes usuario={usuario} showToast={showToast} />}
     </div>
@@ -500,7 +500,7 @@ function DetalleActividad({ a, puedeGestionar, showToast, onEditar, onDuplicar, 
 // ───────────────────────────────────────────────────────────────────────────
 // Listado principal
 // ───────────────────────────────────────────────────────────────────────────
-function Lista({ usuario, showToast, puedeGestionar }) {
+function Lista({ usuario, showToast, puedeGestionar, irABuscador }) {
   const [acts, setActs] = useState(null);
   const [modo, setModo] = useState(null); // null | {tipo:'editor', base} | {tipo:'detalle', act}
   const [q, setQ] = useState('');
@@ -580,7 +580,10 @@ function Lista({ usuario, showToast, puedeGestionar }) {
       <div className="sechead">
         <span className="hcount">{filtradas.length} actividad{filtradas.length === 1 ? '' : 'es'}</span>
         <span className="grow" />
-        <div className="fsearch" style={{ maxWidth: 220 }}>🔎 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar…" /></div>
+        {/* El buscador de texto libre queda solo en la pestaña "Buscador" (busca en toda la
+            app: fichas, inscripciones, actividades y formularios) — acá quedan los filtros
+            propios de esta lista (Curso/Edición/Estado), que el buscador global no cubre. */}
+        {irABuscador && <button className="btn-sm" onClick={irABuscador}>🔎 Buscar</button>}
         <SelectDropdown placeholder="Curso: todos" searchable value={fCurso} onChange={setFCurso} options={cursosDisp.map((c) => ({ value: c, label: c }))} />
         <SelectDropdown placeholder="Edición: todas" searchable value={fEd} onChange={setFEd} options={edicionesDisp.map((ed) => ({ value: ed, label: 'Ed. ' + ed }))} />
         <SelectDropdown placeholder="Estado: todos" value={fEstado} onChange={setFEstado} options={['Publicada', 'Programada', 'Borrador', 'Archivada'].map((x) => ({ value: x, label: x }))} />
@@ -630,7 +633,7 @@ function Lista({ usuario, showToast, puedeGestionar }) {
   );
 }
 
-function Respuestas({ usuario }) {
+function Respuestas({ usuario, irABuscador }) {
   const [data, setData] = useState(null);
   const [q, setQ] = useState('');
   const [fCurso, setFCurso] = useState(''); const [fEd, setFEd] = useState(''); const [fAct, setFAct] = useState('');
@@ -669,7 +672,7 @@ function Respuestas({ usuario }) {
         <div className="minikpi"><div className="n" style={{ color: '#d879d1' }}>{promedio}%</div><div className="l">Promedio</div></div>
       </div>
       <div className="filters">
-        <div className="fsearch" style={{ maxWidth: 260 }}>🔎 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar estudiante…" /></div>
+        {irABuscador && <button className="btn-sm" onClick={irABuscador}>🔎 Buscar</button>}
         <SelectDropdown placeholder="Curso: todos" searchable value={fCurso} onChange={setFCurso} options={cursos.map((x) => ({ value: x, label: x }))} />
         <SelectDropdown placeholder="Edición: todas" searchable value={fEd} onChange={setFEd} options={ediciones.map((x) => ({ value: x, label: 'Ed. ' + x }))} />
         <select className="fsel" value={fAct} onChange={(e) => setFAct(e.target.value)}><option value="">Actividad: todas</option>{actividades.map((x) => <option key={x}>{x}</option>)}</select>

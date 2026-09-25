@@ -110,6 +110,13 @@ export default function Panel() {
   }, [usuario, cargandoSesion]);
 
   function showToast(m) { setToast(m); clearTimeout(showToast._t); showToast._t = setTimeout(() => setToast(''), 2400); }
+  // "+ Crear nueva ficha de inscripción" ahora es visible en las dos sub-pestañas de Fichas.
+  // Si se aprieta desde "Fichas completadas", primero hay que cambiar a "fichas" (recién ahí
+  // FichasSection se monta y su ref queda disponible) y abrir el Constructor apenas monte.
+  const [abrirConstructorAlEntrar, setAbrirConstructorAlEntrar] = useState(false);
+  useEffect(() => {
+    if (tab === 'fichas' && abrirConstructorAlEntrar) { fichasRef.current?.abrirConstructor(); setAbrirConstructorAlEntrar(false); }
+  }, [tab, abrirConstructorAlEntrar]);
   function editarFicha(slug) { setConstructorSlug(slug); setTab('constructor'); }
   function verInscripcionesDe(curso) { setFCurso(curso); setTab('inscripciones'); }
   // Un solo punto de entrada para "apretar un número/chip del Dashboard y ver de qué fichas
@@ -249,13 +256,13 @@ export default function Panel() {
               pestaña ("Fichas"), con sub-pestañas adentro — antes competían visualmente
               como si fueran dos módulos del mismo nivel. */}
           <button className={'tnav' + (tab === 'fichas' || tab === 'inscripciones' ? ' on' : '')} onClick={() => setTab('fichas')}>Fichas</button>
+          <button className={'tnav' + (tab === 'actividades' ? ' on' : '') + (tienePermisoActividades(usuario) ? '' : ' dim')} onClick={() => setTab('actividades')}>Actividades</button>
+          <button className={'tnav' + (tab === 'formularios' ? ' on' : '') + (tienePermisoFormularios(usuario) ? '' : ' dim')} onClick={() => setTab('formularios')}>Formularios</button>
           <button className={'tnav' + (tab === 'dashboard' ? ' on' : '') + (tienePermisoDashboard(usuario) ? '' : ' dim')} onClick={() => setTab('dashboard')}>Dashboard</button>
           <button className={'tnav' + (tab === 'reportes' ? ' on' : '') + (tienePermisoDashboard(usuario) ? '' : ' dim')} onClick={() => setTab('reportes')}>Reportes</button>
           <div className="navgroup">
             <span className="navgroup-label">Gestión</span>
             <button className={'tnav' + (tab === 'emails' ? ' on' : '') + (tienePermisoEmails(usuario) ? '' : ' dim')} onClick={() => setTab('emails')}>Emails</button>
-            <button className={'tnav' + (tab === 'actividades' ? ' on' : '') + (tienePermisoActividades(usuario) ? '' : ' dim')} onClick={() => setTab('actividades')}>Actividades</button>
-            <button className={'tnav' + (tab === 'formularios' ? ' on' : '') + (tienePermisoFormularios(usuario) ? '' : ' dim')} onClick={() => setTab('formularios')}>Formularios</button>
             <button className={'tnav' + (tab === 'equipo' ? ' on' : '') + (tienePermisoAsignarDocentes(usuario) ? '' : ' dim')} onClick={() => setTab('equipo')}>Equipo Docente</button>
             {/* El Constructor de fichas ya no es una pestaña aparte: se abre desde "Fichas de
                 inscripción" (✎ Editar / + Cargar edición en cada ficha), para que todo lo de fichas
@@ -312,8 +319,15 @@ export default function Panel() {
           <div className="subtabs-pill" style={{ alignItems: 'center' }}>
             <button className={tab === 'fichas' ? 'on' : ''} onClick={() => setTab('fichas')}>📋 Fichas de inscripción</button>
             <button className={tab === 'inscripciones' ? 'on' : ''} onClick={() => setTab('inscripciones')}>✅ Fichas completadas</button>
-            {tab === 'fichas' && tienePermisoConstructor(usuario) && (
-              <button className="btn-sm solid" style={{ marginLeft: 4 }} onClick={() => fichasRef.current?.abrirConstructor()}>+ Crear nueva ficha de inscripción</button>
+            {/* Antes solo aparecía en la sub-pestaña "Fichas de inscripción" y desaparecía en
+                "Fichas completadas" — ahora queda siempre visible en las dos; si to todavía no
+                está en "fichas" primero cambia de pestaña y recién ahí abre el Constructor
+                (necesita que FichasSection ya esté montado para poder usar su ref). */}
+            {tienePermisoConstructor(usuario) && (
+              <button className="btn-sm solid" style={{ marginLeft: 4 }} onClick={() => {
+                if (tab !== 'fichas') { setAbrirConstructorAlEntrar(true); setTab('fichas'); }
+                else fichasRef.current?.abrirConstructor();
+              }}>+ Crear nueva ficha de inscripción</button>
             )}
           </div>
         )}
@@ -417,7 +431,7 @@ export default function Panel() {
           : <AccesoDenegado seccion="Reportes" />)}
 
         {tab === 'emails' && (tienePermisoEmails(usuario) ? <EmailsPanel usuario={usuario} /> : <AccesoDenegado seccion="Emails" />)}
-        {tab === 'actividades' && (tienePermisoActividades(usuario) ? <Actividades usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} puedeDocentes={tienePermisoAsignarDocentes(usuario)} /> : <AccesoDenegado seccion="Actividades" />)}
+        {tab === 'actividades' && (tienePermisoActividades(usuario) ? <Actividades usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} puedeDocentes={tienePermisoAsignarDocentes(usuario)} irABuscador={() => setTab('buscador')} /> : <AccesoDenegado seccion="Actividades" />)}
         {tab === 'formularios' && (tienePermisoFormularios(usuario) ? <Formularios usuario={usuario} showToast={showToast} /> : <AccesoDenegado seccion="Formularios" />)}
         {tab === 'equipo' && (tienePermisoAsignarDocentes(usuario) ? <Equipo usuario={usuario} /> : <AccesoDenegado seccion="Equipo Docente" />)}
         {tab === 'accesos' && (tienePermisoAccesos(usuario) ? <Accesos usuario={usuario} /> : <AccesoDenegado seccion="Accesos" />)}

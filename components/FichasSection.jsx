@@ -200,102 +200,68 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
             const subDefault = `Ficha de inscripción — ${d.curso}`;
             const sub = (d.titulo && d.titulo.trim() && d.titulo.trim() !== subDefault && d.titulo.trim() !== d.curso) ? d.titulo.trim() : null;
             return (
-              <div className="pcard" key={d.slug}>
-                <div className="pcard-head">
-                  <span className={'pcard-dot ' + meta.cls}><span className="d" />{meta.label}</span>
-                  <div className="fmenu">
-                    <button className="pcard-menu-btn" aria-label="Más acciones" onClick={(e) => { e.stopPropagation(); setMenuAbierto(menuAbierto === d.slug ? null : d.slug); }}>•••</button>
-                    {menuAbierto === d.slug && (
-                      <div className="fmenu-pop" onClick={(e) => e.stopPropagation()}>
-                        {puedeEditar && <button onClick={() => { setMenuAbierto(null); onEditar(d.slug); }}>Crear edición</button>}
-                        {puedeEditar && <>
-                          <div className="sep" />
-                          {d.estado !== 'Publicada' && <button onClick={() => guardarEstado(d, 'Publicada')}>Publicar</button>}
-                          {d.estado !== 'Borrador' && <button onClick={() => guardarEstado(d, 'Borrador')}>Pasar a borrador</button>}
-                          {d.estado !== 'Cerrada' && <button onClick={() => guardarEstado(d, 'Cerrada')}>Cerrar</button>}
-                          {d.estado !== 'Archivada' && <button onClick={() => guardarEstado(d, 'Archivada')}>Archivar</button>}
-                          <div className="sep" />
-                          <button className="danger" onClick={() => { setMenuAbierto(null); showToast('Eliminar/duplicar cursos base llega con los cursos dinámicos.'); }}>Eliminar</button>
-                        </>}
-                      </div>
-                    )}
+              <div className="pcard" key={d.slug} style={{ borderLeft: `4px solid ${colorCurso(d.curso)}66` }}>
+                <div className="pcard-top">
+                  <div className="pcard-dotrow">
+                    <span className="pcard-colordot" style={{ background: colorCurso(d.curso) }} />
+                    <span className="pcard-title" title={d.curso} style={{ color: colorCurso(d.curso) }}>{d.curso}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 'none' }}>
+                    <span className={'pcard-dot ' + meta.cls}><span className="d" />{meta.label}</span>
+                    <div className="fmenu">
+                      <button className="pcard-menu-btn" aria-label="Más acciones" onClick={(e) => { e.stopPropagation(); setMenuAbierto(menuAbierto === d.slug ? null : d.slug); }}>•••</button>
+                      {menuAbierto === d.slug && (
+                        <div className="fmenu-pop" onClick={(e) => e.stopPropagation()}>
+                          {puedeEditar && <button onClick={() => { setMenuAbierto(null); onEditar(d.slug); }}>Crear edición</button>}
+                          {puedeEditar && <>
+                            <div className="sep" />
+                            {d.estado !== 'Publicada' && <button onClick={() => guardarEstado(d, 'Publicada')}>Publicar</button>}
+                            {d.estado !== 'Borrador' && <button onClick={() => guardarEstado(d, 'Borrador')}>Pasar a borrador</button>}
+                            {d.estado !== 'Cerrada' && <button onClick={() => guardarEstado(d, 'Cerrada')}>Cerrar</button>}
+                            {d.estado !== 'Archivada' && <button onClick={() => guardarEstado(d, 'Archivada')}>Archivar</button>}
+                            <div className="sep" />
+                            <button className="danger" onClick={() => { setMenuAbierto(null); showToast('Eliminar/duplicar cursos base llega con los cursos dinámicos.'); }}>Eliminar</button>
+                          </>}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                <div className="pcard-title" title={d.curso} style={{ color: colorCurso(d.curso) }}>{d.curso}</div>
                 {sub && <div className="pcard-sub" title={sub}>{sub}</div>}
 
-                <div className="pcard-metrics">
-                  <button type="button" className="pcard-metric" disabled={insc === 0} onClick={() => insc > 0 && onVerInscripciones(d.curso)}>
-                    <span className="pcard-metric-n">{insc || '—'}</span>
-                    <span className="pcard-metric-l">Inscriptos{insc > 0 ? ' →' : ''}</span>
-                  </button>
-                  <button type="button" className="pcard-metric" disabled={eds.length === 0 || d.onDemand} onClick={() => eds.length > 0 && onEditar(d.slug)}>
-                    {d.onDemand
-                      ? <span className="pcard-metric-n" style={{ fontSize: 17 }}>On demand</span>
-                      : eds.length > 0
-                        ? <span className="pcard-metric-n">{eds.length}</span>
-                        : <span className="pcard-metric-n" style={{ fontSize: 12.5, fontWeight: 600, color: 'rgb(var(--textMuted))', lineHeight: 1.25 }}>Aún no hay nada cargado</span>}
-                    <span className="pcard-metric-l">Próximas ediciones{eds.length > 0 && !d.onDemand ? ' →' : ''}</span>
-                  </button>
-                </div>
-
-                <div className="pcard-divider" />
-
-                {(() => {
-                  if (d.onDemand) {
-                    return (
-                      <div className="pcard-next pcard-next-neutral">
-                        <div>
-                          <div className="pcard-next-label">Modalidad on demand</div>
-                          <div className="pcard-next-date" style={{ color: 'rgb(var(--textSec))' }}>Disponible siempre, sin ediciones programadas.</div>
-                        </div>
-                      </div>
-                    );
-                  }
-                  if (eds.length === 0) {
-                    if (d.estado === 'Publicada') {
+                {/* Datos en líneas simples (calco de la tarjeta "Formaciones" de disponibilidad-zoom)
+                    en vez de dos "metric boxes" grandes — la última línea, en negrita, es siempre
+                    el dato más importante: la próxima edición si hay una fecha real. */}
+                <div className="pcard-datos">
+                  <span>{insc > 0 ? <button type="button" className="linklike" onClick={() => onVerInscripciones(d.curso)}>{insc} inscriptos →</button> : <span className="pcard-datos-muted">0 inscriptos</span>}</span>
+                  {(() => {
+                    if (d.onDemand) return <span className="pcard-datos-muted">Modalidad on demand — disponible siempre, sin ediciones programadas.</span>;
+                    if (eds.length === 0) {
+                      if (d.estado === 'Publicada') {
+                        return (
+                          <span className="pcard-datos-warn">⚠ Sin próxima edición{puedeEditar && <> — <button type="button" className="linklike" onClick={() => onEditar(d.slug)}>agregar edición</button></>}</span>
+                        );
+                      }
                       return (
-                        <div className="pcard-next pcard-next-warn">
-                          <span className="pcard-next-ico">⚠</span>
-                          <div>
-                            <div className="pcard-next-label">Sin próxima edición</div>
-                            {puedeEditar && <button className="pcard-next-link" onClick={() => onEditar(d.slug)}>Agregar edición</button>}
-                          </div>
-                        </div>
+                        <span className="pcard-datos-muted">Sin ediciones cargadas{puedeEditar && <> — <button type="button" className="linklike" onClick={() => onEditar(d.slug)}>agregar edición</button></>}</span>
+                      );
+                    }
+                    return <span className="pcard-datos-muted">{eds.length} edición{eds.length === 1 ? '' : 'es'} cargada{eds.length === 1 ? '' : 's'}</span>;
+                  })()}
+                  {(() => {
+                    if (d.onDemand || eds.length === 0) return null;
+                    const det = proximaEdicionDetalle(eds);
+                    if (!det) {
+                      return (
+                        <span className="pcard-datos-warn">⚠ Sin fecha definida{puedeEditar && <> — <button type="button" className="linklike" onClick={() => onEditar(d.slug)}>gestionar edición</button></>}</span>
                       );
                     }
                     return (
-                      <div className="pcard-next pcard-next-neutral">
-                        <div>
-                          <div className="pcard-next-label">Sin ediciones cargadas</div>
-                          {puedeEditar && <button className="pcard-next-link" onClick={() => onEditar(d.slug)}>+ Agregar edición</button>}
-                        </div>
-                      </div>
+                      <span className="pcard-datos-destacado">{det.pasada ? 'Última edición' : 'Próxima edición'}: {det.fecha}{det.numero ? ` (${det.numero})` : ''}{det.pasada ? ' · pasada' : ''}</span>
                     );
-                  }
-                  const det = proximaEdicionDetalle(eds);
-                  if (!det) {
-                    return (
-                      <div className="pcard-next pcard-next-warn">
-                        <span className="pcard-next-ico">⚠</span>
-                        <div>
-                          <div className="pcard-next-label">Sin fecha definida</div>
-                          {puedeEditar && <button className="pcard-next-link" onClick={() => onEditar(d.slug)}>Gestionar edición</button>}
-                        </div>
-                      </div>
-                    );
-                  }
-                  return (
-                    <div className="pcard-next">
-                      <div className="pcard-next-label">{det.pasada ? 'Última edición' : 'Próxima edición'}</div>
-                      <div className="pcard-next-date">{det.fecha}{det.pasada && <span className="pcard-next-tag"> · pasada</span>}</div>
-                      {det.numero && <div className="pcard-next-ed">{det.numero}</div>}
-                    </div>
-                  );
-                })()}
-
-                <div className="pcard-divider" />
+                  })()}
+                </div>
 
                 <div className="pcard-url">
                   <span className="pcard-url-txt" title={url}>/inscripcion/{d.slug}</span>
