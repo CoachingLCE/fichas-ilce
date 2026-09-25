@@ -216,6 +216,12 @@ tbody tr{cursor:pointer}tbody tr:hover{background:rgb(var(--surface2))}
 .fbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
 .fsearch{display:flex;align-items:center;gap:8px;background:rgb(var(--surface2));border:1px solid rgb(var(--border));border-radius:10px;padding:8px 12px;min-width:240px;flex:1;max-width:360px}
 .fsearch input{background:none;border:0;outline:none;color:rgb(var(--text));width:100%;font-size:14px}
+/* Vista Lista de Fichas — avatar de color por curso + URL como "chip" de código, para que
+   la fila tenga la misma jerarquía visual que las tarjetas Premium (Reportes, Formaciones). */
+.curso-cell{display:flex;align-items:center;gap:10px}
+.curso-avatar{width:28px;height:28px;border-radius:9px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:800}
+.url-chip{background:rgb(var(--surface));border:1px solid rgb(var(--border));border-radius:9px;padding:5px 6px 5px 10px}
+.url-chip .url-txt{font-family:ui-monospace,'Cascadia Code',monospace}
 .fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px}
 .fcard{background:rgb(var(--surface));border:1px solid rgb(var(--border));border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px;transition:.18s;position:relative}
 .fcard:hover{border-color:rgb(var(--accentTeal));box-shadow:0 12px 30px -18px rgba(0,0,0,.6);transform:translateY(-2px)}
@@ -256,6 +262,14 @@ tbody tr{cursor:pointer}tbody tr:hover{background:rgb(var(--surface2))}
 .subtabs button{background:none;border:0;border-bottom:2px solid transparent;color:rgb(var(--textSec));font-weight:700;font-size:14px;padding:10px 4px;margin-bottom:-1px;cursor:pointer;transition:.15s}
 .subtabs button:hover{color:rgb(var(--text))}
 .subtabs button.on{color:rgb(var(--text));border-bottom-color:rgb(var(--accentMagenta))}
+
+/* Sub-navegación en píldoras (Fichas de inscripción / Fichas completadas) — mismo lenguaje
+   visual que los botones de navegación de disponibilidad-zoom: cada opción es su propia
+   píldora con ícono, la activa en degradado violeta→magenta en vez de un simple subrayado. */
+.subtabs-pill{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.subtabs-pill button{display:inline-flex;align-items:center;gap:7px;background:rgb(var(--surface2));border:1px solid rgb(var(--border));color:rgb(var(--textSec));font-weight:700;font-size:13.5px;padding:9px 16px;border-radius:12px;cursor:pointer;transition:.15s}
+.subtabs-pill button:hover{color:rgb(var(--text));border-color:rgb(var(--accentTeal))}
+.subtabs-pill button.on{background:linear-gradient(90deg,rgb(var(--accentPurple)),rgb(var(--accentMagenta)));color:#fff;border-color:transparent;box-shadow:0 6px 16px -6px rgba(124,58,237,.55)}
 .sechead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
 .sechead .htitle{font-family:'Dosis';font-weight:700;font-size:16px}
 .sechead .hcount{font-size:13px;color:rgb(var(--textMuted))}
@@ -700,9 +714,12 @@ tr.clickable:hover{background:rgb(var(--surface2))}
   cursor:pointer;transition:background .13s,color .13s,border-color .13s;
 }
 .pill:hover,.fchip:hover{color:rgb(var(--text));background:rgb(var(--surface2));border-color:rgb(var(--border))}
-.pill.on,.fchip.on{background:rgb(var(--accentPurple) / .15);color:rgb(var(--accentPurple));border-color:rgb(var(--accentPurple) / .35)}
+/* Activo: mismo degradado violeta→magenta con texto blanco que usa disponibilidad-zoom —
+   acá antes había una segunda versión de baja opacidad que, al ser la última definición
+   del archivo, le ganaba la cascada a la de arriba y dejaba los chips activos "apagados". */
+.pill.on,.fchip.on{background:linear-gradient(90deg,rgb(var(--accentPurple)),rgb(var(--accentMagenta)));color:#fff;border-color:transparent}
 .fchip .cnt{font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;background:rgb(var(--surface2));color:rgb(var(--textMuted))}
-.fchip.on .cnt{background:rgb(var(--accentPurple) / .2);color:rgb(var(--accentPurple))}
+.fchip.on .cnt{background:rgba(255,255,255,.2);color:#fff}
 
 /* ESTADO — badge coloreado por estado, fondo suave */
 .badge{padding:3px 10px;border:1px solid transparent;display:inline-flex;align-items:center;font-weight:700}
@@ -1125,6 +1142,13 @@ tr.clickable .repx-cellbar:hover .fl{filter:brightness(1.15)}
 .escala-b{width:46px;height:46px;border-radius:12px;border:1.5px solid rgb(var(--border));background:rgb(var(--surface2));color:rgb(var(--text));font-weight:700;font-size:16px;cursor:pointer;transition:border-color .12s,transform .12s,background .12s}
 .escala-b:hover{border-color:rgb(var(--accentTeal));transform:translateY(-1px)}
 .escala-b.on{background:linear-gradient(135deg,rgb(var(--accentTeal2)),rgb(var(--accentTeal)));border-color:transparent;color:#fff;box-shadow:0 6px 16px -6px rgba(5,149,173,.7)}
+/* Escala de intensidad 1→5: más claro cerca del 1, más oscuro cerca del 5 — mismo tono
+   (familia teal de marca), en vez de un único color fijo sin importar qué número se elija. */
+.escala-b.on-1{background:#bfe9f0;border-color:transparent;color:#04212c;box-shadow:none}
+.escala-b.on-2{background:#7fd0de;border-color:transparent;color:#04212c;box-shadow:none}
+.escala-b.on-3{background:#3fb6cb;border-color:transparent;color:#04212c;box-shadow:0 6px 16px -6px rgba(5,149,173,.5)}
+.escala-b.on-4{background:rgb(var(--accentTeal));border-color:transparent;color:#fff;box-shadow:0 6px 16px -6px rgba(5,149,173,.6)}
+.escala-b.on-5{background:rgb(var(--accentTeal2));border-color:transparent;color:#fff;box-shadow:0 6px 16px -6px rgba(3,115,139,.7)}
 .quiz-submit{flex:1;min-height:48px;font-size:16px;font-weight:700}
 @media (max-width:640px){ .escala-b{width:44px;height:44px} }
 

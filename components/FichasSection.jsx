@@ -10,6 +10,13 @@ const ESTADO_META = {
   Archivada: { cls: 'arch', label: 'Archivada', dot: '⚪' }
 };
 const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+// Iniciales para el avatar de color de cada curso en la vista Lista \u2014 dos letras de las
+// palabras "importantes" del nombre (se saltea "de/la/el/los/para", etc.), en may\u00fascula.
+const STOP_INICIALES = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'para', 'y']);
+function inicialesCurso(nombre) {
+  const palabras = (nombre || '').split(/\s+/).filter((p) => p && !STOP_INICIALES.has(p.toLowerCase()));
+  return (palabras.slice(0, 2).map((p) => p[0]).join('') || (nombre || '?')[0] || '?').toUpperCase();
+}
 
 const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerInscripciones, showToast, puedeEditar }, ref) {
   // El Constructor de fichas vive DENTRO de "Fichas de inscripción": editar o cargar una
@@ -160,14 +167,19 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
             const actualizado = fmtFecha(d.actualizado);
             return (
               <tr key={d.slug}>
-                <td className="ins-name" style={{ color: colorCurso(d.curso) }}>{d.curso}</td>
+                <td className="ins-name">
+                  <div className="curso-cell">
+                    <span className="curso-avatar" style={{ background: colorCurso(d.curso) + '22', color: colorCurso(d.curso) }}>{inicialesCurso(d.curso)}</span>
+                    <span style={{ color: colorCurso(d.curso) }}>{d.curso}</span>
+                  </div>
+                </td>
                 <td><span className={'fstate ' + meta.cls}><span className="d" />{meta.label}</span></td>
                 <td>{insc > 0 ? <button className="linklike" onClick={() => onVerInscripciones(d.curso)}>{insc} inscriptos →</button> : <span className="sec">0</span>}</td>
                 <td className="sec">{d.onDemand ? 'On demand' : eds.length > 0 ? `${eds.length} edición${eds.length === 1 ? '' : 'es'}` : '—'}</td>
                 <td className="sec">{proxima || '—'}</td>
                 <td className="sec">{actualizado || '—'}</td>
                 <td className="col-url">
-                  <div className="url-cell">
+                  <div className="url-cell url-chip">
                     <span className="url-txt" title={url}>{url.replace(/^https?:\/\//, '')}</span>
                     <button className="url-copy" title="Copiar URL" onClick={(e) => { e.stopPropagation(); copiarLink(d); }}>{copiado === d.slug ? '✓' : '📋'}</button>
                   </div>
@@ -294,7 +306,7 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
                 <div className="pcard-actions">
                   {puedeEditar && <button className="pcard-act pcard-act-primary" onClick={() => onEditar(d.slug)}>✎ Editar</button>}
                   <button className="pcard-act" onClick={() => abrirPublica(d)} title="Ver la ficha pública">Ver pública</button>
-                  {onVerInscripciones && <button className="pcard-act" onClick={() => onVerInscripciones(d.curso)} title="Ver inscripciones de este curso">Inscripciones</button>}
+                  {onVerInscripciones && <button className="pcard-act" onClick={() => onVerInscripciones(d.curso)} title="Ver inscripciones de este curso">Fichas completadas</button>}
                   <button className="pcard-act pcard-act-icon" title="Copiar enlace de inscripción" onClick={(e) => { e.stopPropagation(); copiarLink(d); }}>{copiado === d.slug ? '✓' : '🔗'}</button>
                 </div>
               </div>

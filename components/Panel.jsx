@@ -298,15 +298,22 @@ export default function Panel() {
       <div className="main">
         <div className="topbar">
           <div>{(() => { const DESC = { fichas: 'Aquí encontrás las fichas de inscripción de cada curso: sus ediciones y las páginas públicas donde se anotan los estudiantes.', inscripciones: 'Aquí encontrás todas las inscripciones cargadas. Buscalas, filtralas y cambiá su estado.', dashboard: 'Aquí tenés un resumen del estado general de las inscripciones.', reportes: 'Aquí encontrás las métricas y el análisis de inscripciones, actividades y cursos.', emails: 'Aquí están los correos automáticos que envía el sistema y sus plantillas.', actividades: 'Aquí encontrás las actividades y postworks de cada curso, con sus preguntas y respuestas.', formularios: 'Aquí encontrás los formularios públicos (encuestas, inscripciones y trámites) y sus respuestas.', equipo: 'Aquí encontrás al equipo docente y su asignación a cursos y ediciones.', constructor: 'Aquí armás y editás las fichas de inscripción de cada curso.', herramientas: 'Herramientas internas del sistema.', accesos: 'Aquí gestionás quién entra al sistema y con qué permisos.', auditoria: 'Aquí encontrás el historial de acciones realizadas en el sistema.', buscador: 'Aquí buscás inscripciones en todos los cursos a la vez.' }; return <p className="section-lead">{DESC[tab] || ''}</p>; })()}</div>
-          {tab === 'inscripciones' && <div className="search">🔎 <input id="ins-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, apellido, email, DNI, WhatsApp, edición…" /></div>}
+          {/* El buscador de texto libre vive en un solo lugar: la pestaña Buscador (🔎 arriba a
+              la derecha). Antes había un segundo cuadro de búsqueda acá mismo, duplicando esa
+              función — se saca para que quede un único buscador en toda la app. Si "q" ya viene
+              cargado (por ejemplo, al llegar acá desde un resultado del Buscador), se muestra
+              como un filtro activo más, con su propio botón para sacarlo. */}
+          {tab === 'inscripciones' && (
+            <button className="btn-sm" onClick={() => setTab('buscador')}>🔎 Buscar</button>
+          )}
         </div>
 
         {(tab === 'fichas' || tab === 'inscripciones') && (
-          <div className="subtabs" style={{ marginBottom: 18, display: 'flex', alignItems: 'center' }}>
-            <button className={tab === 'fichas' ? 'on' : ''} onClick={() => setTab('fichas')}>Fichas de inscripción</button>
-            <button className={tab === 'inscripciones' ? 'on' : ''} onClick={() => setTab('inscripciones')}>Fichas completadas</button>
+          <div className="subtabs-pill" style={{ alignItems: 'center' }}>
+            <button className={tab === 'fichas' ? 'on' : ''} onClick={() => setTab('fichas')}>📋 Fichas de inscripción</button>
+            <button className={tab === 'inscripciones' ? 'on' : ''} onClick={() => setTab('inscripciones')}>✅ Fichas completadas</button>
             {tab === 'fichas' && tienePermisoConstructor(usuario) && (
-              <button className="btn-sm solid" style={{ marginLeft: 12 }} onClick={() => fichasRef.current?.abrirConstructor()}>Crear nueva ficha de inscripción</button>
+              <button className="btn-sm solid" style={{ marginLeft: 4 }} onClick={() => fichasRef.current?.abrirConstructor()}>+ Crear nueva ficha de inscripción</button>
             )}
           </div>
         )}
@@ -372,9 +379,10 @@ export default function Panel() {
               <button className="btn-sm" onClick={() => setColModal(true)}>▦ Columnas</button>
               {puedeExportar && <><button className="btn-sm" onClick={exportCSV}>⬇ CSV</button><button className="btn-sm solid" onClick={exportXLSX}>⬇ Excel</button></>}
             </div>
-            {(fCurso || fEd || fPais || fEstado || fDesde || fHasta) && (
+            {(q || fCurso || fEd || fPais || fEstado || fDesde || fHasta) && (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
-                {(() => { const n = [fEstado, fCurso, fEd, fPais, (fDesde || fHasta)].filter(Boolean).length; return <span style={{ fontSize: 12.5, color: 'rgb(var(--textMuted))', fontWeight: 700 }}>{n} {n === 1 ? 'filtro activo' : 'filtros activos'}</span>; })()}
+                {(() => { const n = [q, fEstado, fCurso, fEd, fPais, (fDesde || fHasta)].filter(Boolean).length; return <span style={{ fontSize: 12.5, color: 'rgb(var(--textMuted))', fontWeight: 700 }}>{n} {n === 1 ? 'filtro activo' : 'filtros activos'}</span>; })()}
+                {q && <FiltroChip label={`Buscando: "${q}"`} onClear={() => setQ('')} />}
                 {fEstado && <FiltroChip label={`Estado: ${fEstado}`} onClear={() => setFEstado('')} />}
                 {fCurso && <FiltroChip label={`Curso: ${fCurso}`} onClear={() => setFCurso('')} />}
                 {fEd && <FiltroChip label={`Edición: ${fEd}`} onClear={() => setFEd('')} />}

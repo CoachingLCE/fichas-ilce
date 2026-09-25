@@ -75,7 +75,7 @@ export default function FormularioForm({ form }) {
           <label>{c.label}{c.required && <span className="req"> *</span>}</label>
           <div className="escala">
             {[1, 2, 3, 4, 5].map((n) => (
-              <button key={n} type="button" className={'escala-b' + (Number(val[c.key]) === n ? ' on' : '')} onClick={() => set(c.key, n)}>{n}</button>
+              <button key={n} type="button" className={'escala-b' + (Number(val[c.key]) === n ? ` on on-${n}` : '')} onClick={() => set(c.key, n)}>{n}</button>
             ))}
           </div>
         </div>
