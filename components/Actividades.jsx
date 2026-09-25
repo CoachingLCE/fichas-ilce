@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CURSOS, APP_URL, estiloCurso } from '../lib/constants';
+import { CURSOS, APP_URL, estiloCurso, colorCurso } from '../lib/constants';
 import { SelectDropdown } from './SelectDropdown';
 
 const slugify = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -414,33 +414,39 @@ function TablaActividades({ items, puedeGestionar, onEditar, onDuplicar, onDetal
 
 function GridActividades({ items, puedeGestionar, onEditar, onDuplicar, onDetalle, showToast }) {
   return (
-    <div className="fgrid">
+    <div className="pcard-wrap">
+      <div className="pcard-grid">
       {items.map((a) => {
         const efectivo = estadoEfectivoCliente(a);
         const badge = ESTADO_ICO[efectivo] || ESTADO_ICO.Publicada;
+        const color = colorCurso(a.curso);
+        const sub = `${a.curso}${a.edicion ? ` · Ed. ${a.edicion}` : ''}${a.clase ? ` · Clase ${a.clase}` : ''}`;
         return (
-          <div className="fcard" key={a.slug}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span className={'fstate ' + badge.cls}><span className="d" />{efectivo}</span>
-              <span className="tagchip">{a.preguntas.length} preguntas</span>
+          <div className="pcard" key={a.slug} style={{ borderLeft: `4px solid ${color}66` }}>
+            <div className="pcard-top">
+              <div className="pcard-dotrow">
+                <span className="pcard-colordot" style={{ background: color }} />
+                <button className="acts-titlelink pcard-title" style={{ background: 'none', border: 0, textAlign: 'left', cursor: 'pointer', color: 'inherit' }} title={a.titulo} onClick={() => onDetalle(a)}>{a.titulo}</button>
+              </div>
+              <span className={'pcard-dot ' + badge.cls}><span className="d" />{efectivo}</span>
             </div>
-            <div>
-              <button className="acts-titlelink ftitle" style={{ fontSize: 18 }} onClick={() => onDetalle(a)}>{a.titulo}</button>
-              <div className="fsub">{a.curso}{a.edicion ? ` · Ed. ${a.edicion}` : ''}{a.clase ? ` · Clase ${a.clase}` : ''}</div>
+            <div className="pcard-sub" title={sub}>{sub}</div>
+            <div className="pcard-datos">
+              <span className="pcard-datos-destacado">{a.preguntas.length} pregunta{a.preguntas.length === 1 ? '' : 's'}</span>
             </div>
-            <div>
-              <div className="acard-link-label">Enlace de actividad</div>
-              <div className="flink"><span className="u">/actividad/{a.slug}</span>
-                <button onClick={() => { navigator.clipboard?.writeText(`${APP_URL}/actividad/${a.slug}`); showToast('✓ Enlace copiado'); }}>Copiar</button></div>
+            <div className="pcard-url">
+              <span className="pcard-url-txt">/actividad/{a.slug}</span>
+              <button className="pcard-url-copy" onClick={() => { navigator.clipboard?.writeText(`${APP_URL}/actividad/${a.slug}`); showToast('✓ Enlace copiado'); }} title="Copiar enlace">Copiar</button>
             </div>
-            <div className="factions">
-              <a className="btn-sm" href={`${APP_URL}/actividad/${a.slug}`} target="_blank" rel="noreferrer">👁 Ver</a>
-              {puedeGestionar && <button className="btn-sm" onClick={() => onDuplicar(a)}>⧉ Duplicar</button>}
-              {puedeGestionar && <button className="btn-sm solid" onClick={() => onEditar(a)}>✎ Editar</button>}
+            <div className="pcard-actions">
+              <a className="pcard-act pcard-act-icon" href={`${APP_URL}/actividad/${a.slug}`} target="_blank" rel="noreferrer" title="Ver actividad">👁</a>
+              {puedeGestionar && <button className="pcard-act" onClick={() => onDuplicar(a)}>⧉ Duplicar</button>}
+              {puedeGestionar && <button className="pcard-act pcard-act-primary" onClick={() => onEditar(a)}>✎ Editar</button>}
             </div>
           </div>
         );
       })}
+      </div>
     </div>
   );
 }
