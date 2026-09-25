@@ -56,6 +56,7 @@ function esValorValido(v) {
 
 export default function Panel() {
   const fichasRef = useRef(null);
+  const actividadesRef = useRef(null);
   const { usuario: usuarioReal, cargando: cargandoSesion, logout } = useSession();
   const [verComo, setVerComo] = useState(null); // persona que se está "viendo como" (solo Admin)
   const [personas, setPersonas] = useState([]);
@@ -113,13 +114,31 @@ export default function Panel() {
   }, [usuario, cargandoSesion]);
 
   function showToast(m) { setToast(m); clearTimeout(showToast._t); showToast._t = setTimeout(() => setToast(''), 2400); }
-  // "+ Crear nueva ficha de inscripción" ahora es visible en las dos sub-pestañas de Fichas.
-  // Si se aprieta desde "Fichas completadas", primero hay que cambiar a "fichas" (recién ahí
-  // FichasSection se monta y su ref queda disponible) y abrir el Constructor apenas monte.
-  const [abrirConstructorAlEntrar, setAbrirConstructorAlEntrar] = useState(false);
+  // Punto de entrada único: el botón "+ Crear" (topbar) abre un selector — Inscripción /
+  // Actividad / Formulario — y dependiendo de lo elegido dispara el alta correspondiente.
+  // Antes cada sección tenía su propio botón de alta suelto (p. ej. "+ Crear nueva ficha de
+  // inscripción" en Fichas); ese botón se saca de ahí porque ahora vive acá (pedido de Diego).
+  // Si el alta elegida no es la pestaña activa, primero hay que cambiar de pestaña (recién ahí
+  // se monta esa sección y su ref queda disponible) y disparar la acción apenas monte.
+  const [crearAbierto, setCrearAbierto] = useState(false);
+  const [accionAlEntrar, setAccionAlEntrar] = useState(null); // null | 'ficha' | 'actividad'
   useEffect(() => {
-    if (tab === 'fichas' && abrirConstructorAlEntrar) { fichasRef.current?.abrirConstructor(); setAbrirConstructorAlEntrar(false); }
-  }, [tab, abrirConstructorAlEntrar]);
+    if (tab === 'fichas' && accionAlEntrar === 'ficha') { fichasRef.current?.abrirConstructor(); setAccionAlEntrar(null); }
+    if (tab === 'actividades' && accionAlEntrar === 'actividad') { actividadesRef.current?.nueva(); setAccionAlEntrar(null); }
+  }, [tab, accionAlEntrar]);
+  function elegirCrear(tipo) {
+    setCrearAbierto(false);
+    if (tipo === 'inscripcion') {
+      if (tab !== 'fichas') { setAccionAlEntrar('ficha'); setTab('fichas'); }
+      else fichasRef.current?.abrirConstructor();
+    } else if (tipo === 'actividad') {
+      if (tab !== 'actividades') { setAccionAlEntrar('actividad'); setTab('actividades'); }
+      else actividadesRef.current?.nueva();
+    } else if (tipo === 'formulario') {
+      setTab('formularios');
+      showToast('Los formularios se cargan pegando la definición en la pestaña "Formularios" de la Sheet — el alta desde acá todavía no existe.');
+    }
+  }
   function editarFicha(slug) { setConstructorSlug(slug); setTab('constructor'); }
   function verInscripcionesDe(curso) { setFCurso(curso); setTab('inscripciones'); }
   // Un solo punto de entrada para "apretar un número/chip del Dashboard y ver de qué fichas
@@ -315,25 +334,40 @@ export default function Panel() {
               función — se saca para que quede un único buscador en toda la app. Si "q" ya viene
               cargado (por ejemplo, al llegar acá desde un resultado del Buscador), se muestra
               como un filtro activo más, con su propio botón para sacarlo. */}
-          {tab === 'inscripciones' && (
-            <button className="btn-sm" onClick={() => setTab('buscador')}>🔎 Buscar</button>
-          )}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flex: 'none' }}>
+            {tab === 'inscripciones' && (
+              <button className="btn-sm" onClick={() => setTab('buscador')}>🔎 Buscar</button>
+            )}
+            {(tienePermisoConstructor(usuario) || tienePermisoGestionActividades(usuario) || tienePermisoFormularios(usuario)) && (
+              <button className="btn btn-primary" style={{ flex: 'none', padding: '9px 16px' }} onClick={() => setCrearAbierto(true)}>+ Crear</button>
+            )}
+          </div>
         </div>
 
         {(tab === 'fichas' || tab === 'inscripciones') && (
           <div className="subtabs-pill" style={{ alignItems: 'center' }}>
             <button className={tab === 'fichas' ? 'on' : ''} onClick={() => setTab('fichas')}>📋 Fichas de inscripción</button>
             <button className={tab === 'inscripciones' ? 'on' : ''} onClick={() => setTab('inscripciones')}>✅ Fichas completadas</button>
-            {/* Antes solo aparecía en la sub-pestaña "Fichas de inscripción" y desaparecía en
-                "Fichas completadas" — ahora queda siempre visible en las dos; si to todavía no
-                está en "fichas" primero cambia de pestaña y recién ahí abre el Constructor
-                (necesita que FichasSection ya esté montado para poder usar su ref). */}
-            {tienePermisoConstructor(usuario) && (
-              <button className="btn-sm solid" style={{ marginLeft: 4 }} onClick={() => {
-                if (tab !== 'fichas') { setAbrirConstructorAlEntrar(true); setTab('fichas'); }
-                else fichasRef.current?.abrirConstructor();
-              }}>+ Crear nueva ficha de inscripción</button>
-            )}
+          </div>
+        )}
+
+        {crearAbierto && (
+          <div className="mwrap on" onClick={() => setCrearAbierto(false)}>
+            <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 380 }}>
+              <h3 style={{ marginTop: 0 }}>¿Qué querés crear?</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
+                {tienePermisoConstructor(usuario) && (
+                  <button className="btn-sm solid" style={{ justifyContent: 'flex-start', padding: '12px 16px' }} onClick={() => elegirCrear('inscripcion')}>📋 Inscripción</button>
+                )}
+                {tienePermisoGestionActividades(usuario) && (
+                  <button className="btn-sm solid" style={{ justifyContent: 'flex-start', padding: '12px 16px' }} onClick={() => elegirCrear('actividad')}>📝 Actividad</button>
+                )}
+                {tienePermisoFormularios(usuario) && (
+                  <button className="btn-sm solid" style={{ justifyContent: 'flex-start', padding: '12px 16px' }} onClick={() => elegirCrear('formulario')}>🗒️ Formulario</button>
+                )}
+              </div>
+              <button className="btn-sm" style={{ marginTop: 16, width: '100%', justifyContent: 'center' }} onClick={() => setCrearAbierto(false)}>Cancelar</button>
+            </div>
           </div>
         )}
 
@@ -431,7 +465,7 @@ export default function Panel() {
           : <AccesoDenegado seccion="Reportes" />)}
 
         {tab === 'emails' && (tienePermisoEmails(usuario) ? <EmailsPanel usuario={usuario} /> : <AccesoDenegado seccion="Emails" />)}
-        {tab === 'actividades' && (tienePermisoActividades(usuario) ? <Actividades usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} puedeDocentes={tienePermisoAsignarDocentes(usuario)} irABuscador={() => setTab('buscador')} /> : <AccesoDenegado seccion="Actividades" />)}
+        {tab === 'actividades' && (tienePermisoActividades(usuario) ? <Actividades ref={actividadesRef} usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} irABuscador={() => setTab('buscador')} /> : <AccesoDenegado seccion="Actividades" />)}
         {tab === 'formularios' && (tienePermisoFormularios(usuario) ? <Formularios usuario={usuario} showToast={showToast} /> : <AccesoDenegado seccion="Formularios" />)}
         {tab === 'equipo' && (tienePermisoAsignarDocentes(usuario) ? <Equipo usuario={usuario} /> : <AccesoDenegado seccion="Equipo Docente" />)}
         {tab === 'accesos' && (tienePermisoAccesos(usuario) ? <Accesos usuario={usuario} /> : <AccesoDenegado seccion="Accesos" />)}

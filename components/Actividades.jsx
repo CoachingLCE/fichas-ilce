@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { CURSOS, APP_URL, estiloCurso, colorCurso, inicialesCurso } from '../lib/constants';
 import { SelectDropdown } from './SelectDropdown';
 
@@ -87,23 +87,33 @@ function fmtTiempo(seg) {
 }
 const lbl = { fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 5, color: 'rgb(var(--textSec))' };
 
-export default function Actividades({ usuario, showToast, puedeGestionar, puedeDocentes, irABuscador }) {
+// El alta/baja de acceso de docentes se gestiona en una única pantalla, "Equipo Docente"
+// (ver Equipo.jsx); antes había una pestaña "Docentes" duplicada acá adentro con el mismo
+// alcance, lo que generaba dos lugares distintos para lo mismo — se saca (pedido de Diego).
+const Actividades = forwardRef(function Actividades({ usuario, showToast, puedeGestionar, irABuscador }, ref) {
   const [sub, setSub] = useState('lista');
+  const listaRef = useRef(null);
+  const [abrirNuevaAlEntrar, setAbrirNuevaAlEntrar] = useState(false);
+  useEffect(() => {
+    if (sub === 'lista' && abrirNuevaAlEntrar) { listaRef.current?.nueva(); setAbrirNuevaAlEntrar(false); }
+  }, [sub, abrirNuevaAlEntrar]);
+  useImperativeHandle(ref, () => ({
+    nueva: () => { setSub('lista'); setAbrirNuevaAlEntrar(true); }
+  }));
   return (
     <div>
       <div className="subtabs">
         <button className={sub === 'lista' ? 'on' : ''} onClick={() => setSub('lista')}>Actividades</button>
         <button className={sub === 'respuestas' ? 'on' : ''} onClick={() => setSub('respuestas')}>Respuestas</button>
         <button className={sub === 'reportes' ? 'on' : ''} onClick={() => setSub('reportes')}>Reportes</button>
-        {puedeDocentes && <button className={sub === 'docentes' ? 'on' : ''} onClick={() => setSub('docentes')}>Docentes</button>}
       </div>
-      {sub === 'lista' && <Lista usuario={usuario} showToast={showToast} puedeGestionar={puedeGestionar} irABuscador={irABuscador} />}
+      {sub === 'lista' && <Lista ref={listaRef} usuario={usuario} showToast={showToast} puedeGestionar={puedeGestionar} irABuscador={irABuscador} />}
       {sub === 'respuestas' && <Respuestas usuario={usuario} irABuscador={irABuscador} />}
       {sub === 'reportes' && <Reportes usuario={usuario} />}
-      {sub === 'docentes' && puedeDocentes && <Docentes usuario={usuario} showToast={showToast} />}
     </div>
   );
-}
+});
+export default Actividades;
 
 // Distintas formas de ordenar el listado de actividades (Diego pidió variantes,
 // sobre todo poder ver por clase dentro de un mismo curso).
@@ -562,7 +572,7 @@ function DetalleActividad({ a, puedeGestionar, showToast, onEditar, onDuplicar, 
 // ───────────────────────────────────────────────────────────────────────────
 // Listado principal
 // ───────────────────────────────────────────────────────────────────────────
-function Lista({ usuario, showToast, puedeGestionar, irABuscador }) {
+const Lista = forwardRef(function Lista({ usuario, showToast, puedeGestionar, irABuscador }, ref) {
   const [acts, setActs] = useState(null);
   const [modo, setModo] = useState(null); // null | {tipo:'editor', base} | {tipo:'detalle', act}
   const [q, setQ] = useState('');
@@ -593,6 +603,7 @@ function Lista({ usuario, showToast, puedeGestionar, irABuscador }) {
   function nueva() {
     setModo({ tipo: 'editor', base: { slug: '', curso: CURSOS[0].nombre, titulo: '', clase: '', edicion: '', fechaDisponible: '', mostrarResultado: true, estado: 'Publicada', preguntas: [nuevaPreg()], _nuevo: true } });
   }
+  useImperativeHandle(ref, () => ({ nueva }));
   function editar(a) { setModo({ tipo: 'editor', base: { ...a, _nuevo: false } }); }
   function duplicar(a) {
     const claseTxt = String(a.clase || '').trim();
@@ -712,7 +723,7 @@ function Lista({ usuario, showToast, puedeGestionar, irABuscador }) {
       )}
     </div>
   );
-}
+});
 
 function Respuestas({ usuario, irABuscador }) {
   const [data, setData] = useState(null);
@@ -784,80 +795,3 @@ function Respuestas({ usuario, irABuscador }) {
   );
 }
 
-function Docentes({ usuario, showToast }) {
-  const [docs, setDocs] = useState(null);
-  const [email, setEmail] = useState(''); const [nombre, setNombre] = useState('');
-  const [curso, setCurso] = useState(CURSOS[0].nombre); const [edicion, setEdicion] = useState('');
-  const [confirmar, setConfirmar] = useState(null);
-  useEffect(() => { cargar(); /* eslint-disable-next-line */ }, []);
-  async function cargar() {
-    const res = await fetch('/api/docentes?solicitanteEmail=' + encodeURIComponent(usuario.email));
-    const d = await res.json(); setDocs(d.ok ? d.docentes : []);
-  }
-  async function agregar(e) {
-    e.preventDefault();
-    if (!email || !curso) { showToast('Completá email y curso'); return; }
-    const res = await fetch('/api/docentes', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ solicitanteEmail: usuario.email, email, nombre, curso, edicion }) });
-    const d = await res.json();
-    if (d.ok) {
-      showToast(d.accesoCreado
-        ? (d.emailEnviado ? '✓ Docente asignado y acceso enviado por mail' : '✓ Docente asignado (no se pudo enviar el mail)')
-        : '✓ Docente asignado');
-      setEmail(''); setNombre(''); setEdicion(''); cargar();
-    } else showToast(d.error || 'No se pudo asignar');
-  }
-  async function quitar() {
-    const res = await fetch('/api/docentes', { method: 'DELETE', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ solicitanteEmail: usuario.email, rowIndex: confirmar._rowIndex }) });
-    const d = await res.json();
-    if (d.ok) { showToast('✓ Acceso quitado'); setConfirmar(null); cargar(); }
-    else { showToast(d.error || 'No se pudo quitar'); setConfirmar(null); }
-  }
-  if (!docs) return <div className="spin" />;
-  return (
-    <div style={{ maxWidth: 780 }}>
-      <div className="panel">
-        <h3>Docentes con acceso a respuestas</h3>
-        <p className="muted" style={{ fontSize: 12.5, marginTop: -8 }}>Al asignar un docente se le crea el acceso (rol Docente) y se le envía la contraseña por mail automáticamente. Cada docente ve solo las respuestas de los cursos/ediciones que le asignes. Sin edición = todas las ediciones de ese curso.</p>
-        {docs.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Todavía no asignaste docentes.</p> : (
-          <div style={{ marginTop: 6 }}>
-            {docs.map((d) => (
-              <div key={d._rowIndex} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 0', borderBottom: '1px solid rgb(var(--border))', flexWrap: 'wrap' }}>
-                <div style={{ flex: 1, minWidth: 160 }}>
-                  <div style={{ fontWeight: 700 }}>{d.nombre || d.email}</div>
-                  {d.nombre && <div className="muted" style={{ fontSize: 12 }}>{d.email}</div>}
-                </div>
-                <span className="tagchip">{d.curso}</span>
-                <span className="tagchip">{d.edicion ? `Ed. ${d.edicion}` : 'Todas las ediciones'}</span>
-                <button className="btn-sm" style={{ color: 'rgb(248 113 113)', borderColor: 'rgba(248,113,113,.3)' }} onClick={() => setConfirmar(d)}>🗑 Quitar</button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-      <div className="panel">
-        <h3>Asignar docente</h3>
-        <form onSubmit={agregar} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <div><label style={lbl}>Email del docente</label><input className="ctrl" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="docente@..." /></div>
-          <div><label style={lbl}>Nombre</label><input className="ctrl" value={nombre} onChange={(e) => setNombre(e.target.value)} /></div>
-          <div><label style={lbl}>Curso</label><select className="fsel" style={{ width: '100%' }} value={curso} onChange={(e) => setCurso(e.target.value)}>{CURSOS.map((c) => <option key={c.slug}>{c.nombre}</option>)}</select></div>
-          <div><label style={lbl}>Edición (opcional)</label><input className="ctrl" value={edicion} onChange={(e) => setEdicion(e.target.value)} placeholder="Ej: 15 (vacío = todas)" /></div>
-          <div style={{ gridColumn: 'span 2' }}><button className="btn btn-primary" style={{ flex: 'none', padding: '10px 20px' }}>+ Asignar acceso</button></div>
-        </form>
-      </div>
-      {confirmar && (
-        <div className="mwrap on">
-          <div className="modal">
-            <p style={{ fontWeight: 700, marginTop: 0 }}>¿Quitar el acceso de este docente?</p>
-            <p style={{ color: 'rgb(var(--textSec))', fontSize: 14 }}>{confirmar.nombre || confirmar.email} · {confirmar.curso}{confirmar.edicion ? ` · Ed. ${confirmar.edicion}` : ''}. Dejará de ver esas respuestas.</p>
-            <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-              <button className="btn-sm" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setConfirmar(null)}>Cancelar</button>
-              <button className="btn-sm" style={{ flex: 1, justifyContent: 'center', background: 'rgb(248 113 113)', color: '#fff', borderColor: 'transparent' }} onClick={quitar}>Quitar acceso</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
