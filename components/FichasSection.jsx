@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState, forwardRef, useImperativeHandle } from 'react';
-import { APP_URL, colorCurso } from '../lib/constants';
+import { APP_URL, colorCurso, inicialesCurso } from '../lib/constants';
 import Constructor from './Constructor';
 
 const ESTADO_META = {
@@ -10,15 +10,8 @@ const ESTADO_META = {
   Archivada: { cls: 'arch', label: 'Archivada', dot: '⚪' }
 };
 const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-// Iniciales para el avatar de color de cada curso en la vista Lista \u2014 dos letras de las
-// palabras "importantes" del nombre (se saltea "de/la/el/los/para", etc.), en may\u00fascula.
-const STOP_INICIALES = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'para', 'y']);
-function inicialesCurso(nombre) {
-  const palabras = (nombre || '').split(/\s+/).filter((p) => p && !STOP_INICIALES.has(p.toLowerCase()));
-  return (palabras.slice(0, 2).map((p) => p[0]).join('') || (nombre || '?')[0] || '?').toUpperCase();
-}
 
-const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerInscripciones, showToast, puedeEditar }, ref) {
+const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerInscripciones, showToast, puedeEditar, irABuscador }, ref) {
   // El Constructor de fichas vive DENTRO de "Fichas de inscripción": editar o cargar una
   // edición abre el wizard acá mismo (no navega a una pestaña aparte).
   const [construyendo, setConstruyendo] = useState(null); // slug de la ficha que se está armando, o null
@@ -138,8 +131,9 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
         ))}
       </div>
       <div className="fbar">
-        <div className="fsearch">🔎 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, edición, URL o estado…" /></div>
-        {q && <button className="btn-sm" onClick={() => setQ('')}>Limpiar</button>}
+        {/* El buscador de texto libre queda solo en la pestaña "Buscador" (busca en toda la
+            app), igual que en Actividades — acá ya quedan los chips de estado de arriba. */}
+        {irABuscador && <button className="btn-sm" onClick={irABuscador}>🔎 Buscar</button>}
         <span style={{ flex: 1 }} />
         <select className="fsel" value={orden} onChange={(e) => setOrden(e.target.value)}>
           <option value="nombre">Ordenar: Nombre</option>

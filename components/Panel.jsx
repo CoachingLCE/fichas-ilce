@@ -62,11 +62,14 @@ export default function Panel() {
   const usuario = verComo || usuarioReal;
   // El tab activo se refleja en la URL (?tab=...) para que el link de cada página sea
   // compartible y funcione el botón "atrás" del navegador — antes quedaba siempre en /panel.
-  const TABS_VALIDOS = ['fichas', 'inscripciones', 'dashboard', 'reportes', 'emails', 'actividades', 'formularios', 'equipo', 'accesos', 'auditoria', 'buscador'];
+  const TABS_VALIDOS = ['fichas', 'inscripciones', 'reportes', 'emails', 'actividades', 'formularios', 'equipo', 'accesos', 'auditoria', 'buscador'];
+  // El Dashboard se fusionó dentro de Reportes (v0.89.0) — un link viejo con ?tab=dashboard
+  // manda directo a Reportes en vez de caer en "fichas" como si esa pestaña no existiera.
+  const tabDeUrl = (t) => (t === 'dashboard' ? 'reportes' : TABS_VALIDOS.includes(t) ? t : 'fichas');
   const [tab, setTab] = useState(() => {
     if (typeof window === 'undefined') return 'fichas';
     const t = new URLSearchParams(window.location.search).get('tab');
-    return TABS_VALIDOS.includes(t) ? t : 'fichas';
+    return tabDeUrl(t);
   });
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -78,7 +81,7 @@ export default function Panel() {
   useEffect(() => {
     function onPop() {
       const t = new URLSearchParams(window.location.search).get('tab');
-      if (TABS_VALIDOS.includes(t)) setTab(t);
+      if (t) setTab(tabDeUrl(t));
     }
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
@@ -258,7 +261,9 @@ export default function Panel() {
           <button className={'tnav' + (tab === 'fichas' || tab === 'inscripciones' ? ' on' : '')} onClick={() => setTab('fichas')}>Fichas</button>
           <button className={'tnav' + (tab === 'actividades' ? ' on' : '') + (tienePermisoActividades(usuario) ? '' : ' dim')} onClick={() => setTab('actividades')}>Actividades</button>
           <button className={'tnav' + (tab === 'formularios' ? ' on' : '') + (tienePermisoFormularios(usuario) ? '' : ' dim')} onClick={() => setTab('formularios')}>Formularios</button>
-          <button className={'tnav' + (tab === 'dashboard' ? ' on' : '') + (tienePermisoDashboard(usuario) ? '' : ' dim')} onClick={() => setTab('dashboard')}>Dashboard</button>
+          {/* El Dashboard se fusionó dentro de Reportes (v0.89.0): todo lo que mostraba
+              (KPIs, Atención, Evolución, Por curso/estado/edición/país/origen) ahora vive
+              en la pestaña "Reportes" → "Resumen", así que la pestaña aparte se saca. */}
           <button className={'tnav' + (tab === 'reportes' ? ' on' : '') + (tienePermisoDashboard(usuario) ? '' : ' dim')} onClick={() => setTab('reportes')}>Reportes</button>
           <div className="navgroup">
             <span className="navgroup-label">Gestión</span>
@@ -304,7 +309,7 @@ export default function Panel() {
 
       <div className="main">
         <div className="topbar">
-          <div>{(() => { const DESC = { fichas: 'Aquí encontrás las fichas de inscripción de cada curso: sus ediciones y las páginas públicas donde se anotan los estudiantes.', inscripciones: 'Aquí encontrás todas las inscripciones cargadas. Buscalas, filtralas y cambiá su estado.', dashboard: 'Aquí tenés un resumen del estado general de las inscripciones.', reportes: 'Aquí encontrás las métricas y el análisis de inscripciones, actividades y cursos.', emails: 'Aquí están los correos automáticos que envía el sistema y sus plantillas.', actividades: 'Aquí encontrás las actividades y postworks de cada curso, con sus preguntas y respuestas.', formularios: 'Aquí encontrás los formularios públicos (encuestas, inscripciones y trámites) y sus respuestas.', equipo: 'Aquí encontrás al equipo docente y su asignación a cursos y ediciones.', constructor: 'Aquí armás y editás las fichas de inscripción de cada curso.', herramientas: 'Herramientas internas del sistema.', accesos: 'Aquí gestionás quién entra al sistema y con qué permisos.', auditoria: 'Aquí encontrás el historial de acciones realizadas en el sistema.', buscador: 'Aquí buscás inscripciones en todos los cursos a la vez.' }; return <p className="section-lead">{DESC[tab] || ''}</p>; })()}</div>
+          <div>{(() => { const DESC = { fichas: 'Aquí encontrás las fichas de inscripción de cada curso: sus ediciones y las páginas públicas donde se anotan los estudiantes.', inscripciones: 'Aquí encontrás todas las inscripciones cargadas. Buscalas, filtralas y cambiá su estado.', reportes: 'Aquí encontrás el resumen general y las métricas y el análisis de inscripciones, actividades y cursos.', emails: 'Aquí están los correos automáticos que envía el sistema y sus plantillas.', actividades: 'Aquí encontrás las actividades y postworks de cada curso, con sus preguntas y respuestas.', formularios: 'Aquí encontrás los formularios públicos (encuestas, inscripciones y trámites) y sus respuestas.', equipo: 'Aquí encontrás al equipo docente y su asignación a cursos y ediciones.', constructor: 'Aquí armás y editás las fichas de inscripción de cada curso.', herramientas: 'Herramientas internas del sistema.', accesos: 'Aquí gestionás quién entra al sistema y con qué permisos.', auditoria: 'Aquí encontrás el historial de acciones realizadas en el sistema.', buscador: 'Aquí buscás inscripciones en todos los cursos a la vez.' }; return <p className="section-lead">{DESC[tab] || ''}</p>; })()}</div>
           {/* El buscador de texto libre vive en un solo lugar: la pestaña Buscador (🔎 arriba a
               la derecha). Antes había un segundo cuadro de búsqueda acá mismo, duplicando esa
               función — se saca para que quede un único buscador en toda la app. Si "q" ya viene
@@ -335,7 +340,7 @@ export default function Panel() {
         <PausaSemanal />
 
         {tab === 'buscador' && <Buscador usuario={usuario} irA={(t) => setTab(t)} setQInscripciones={setQ} />}
-        {tab === 'fichas' && <FichasSection ref={fichasRef} usuario={usuario} rows={rows} onEditar={editarFicha} onVerInscripciones={verInscripcionesDe} showToast={showToast} puedeEditar={tienePermisoConstructor(usuario)} />}
+        {tab === 'fichas' && <FichasSection ref={fichasRef} usuario={usuario} rows={rows} onEditar={editarFicha} onVerInscripciones={verInscripcionesDe} showToast={showToast} puedeEditar={tienePermisoConstructor(usuario)} irABuscador={() => setTab('buscador')} />}
         {tab === 'herramientas' && <Herramientas />}
         {error && <div className="note" style={{ borderLeftColor: 'rgb(248 113 113)' }}>{error}</div>}
         {rows === null && !error && tab !== 'herramientas' && <div className="spin" />}
@@ -420,11 +425,6 @@ export default function Panel() {
             </div>
           </>
         )}
-
-        {tab === 'dashboard' && (tienePermisoDashboard(usuario)
-          ? (rows && <Dashboard rows={filtradas} allRows={rows}
-              filtros={{ fEstado, setFEstado, fCurso, setFCurso, fEd, setFEd, fPais, setFPais, fDesde, setFDesde, fHasta, setFHasta, limpiar, cursos, ediciones, paises, irA: (estado) => irAConFiltro('estado', estado), irAConFiltro }} />)
-          : <AccesoDenegado seccion="Dashboard" />)}
 
         {tab === 'reportes' && (tienePermisoDashboard(usuario)
           ? <Reportes usuario={usuario} rows={rows} puedeActividades={tienePermisoActividades(usuario)} puedeFormularios={tienePermisoFormularios(usuario)} puedeExportar={puedeExportar} irAConFiltro={irAConFiltro} onActualizar={cargar} />
@@ -549,171 +549,6 @@ function fmtFecha(iso) {
   if (!iso) return '';
   const d = new Date(iso);
   return isNaN(d) ? iso : d.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-}
-
-/* ===================== DASHBOARD ===================== */
-function Dashboard({ rows, allRows, filtros }) {
-  const F = filtros;
-  const universo = allRows || rows;
-  const est = (k) => rows.filter((r) => r.estado === k).length;
-  const iso = (d) => d.toISOString().slice(0, 10);
-  const hoyISO = iso(new Date());
-  const hace = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return iso(d); };
-
-  // KPIs: cada número mide una sola cosa. Antes "Completadas %" sumaba Completada + En
-  // revisión + Inscrito sobre el total, así que con estos datos siempre daba ~100% aunque
-  // "Completada" (75 fichas) fuera apenas un 6% — inconsistente con el número de al lado.
-  // Ahora "Completadas" es el conteo real de estado Completada, y el % se llama "Avance" y
-  // mide cuántas fichas llegaron a Inscripto (el estado final del proceso).
-  const inscritos = est('Inscrito');
-  const completadasN = est('Completada');
-  const revisionN = est('En revisión');
-  const avance = rows.length ? Math.round(inscritos / rows.length * 100) : 0;
-
-  const group = (fn) => { const m = {}; rows.forEach((r) => { const k = fn(r) || '—'; m[k] = (m[k] || 0) + 1; }); return m; };
-  const top = (map, n) => Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, n);
-  // onPick (opcional): al apretar una barra/chip, filtra Fichas completadas por ese valor
-  // puntual — así se puede ver de qué fichas se trata en vez de quedarse solo con el número.
-  // disabledKeys: valores que no corresponden a un filtro real (p. ej. "Sin datos" agrupa
-  // varios valores sucios distintos, no uno solo) y por eso no son clickeables.
-  const minibars = (map, n = 6, onPick, disabledKeys) => {
-    const arr = top(map, n); const max = Math.max(1, ...arr.map((a) => a[1]));
-    return arr.map(([k, v]) => {
-      const clickeable = onPick && !(disabledKeys && disabledKeys.has(k));
-      const contenido = (<><span className="lb" title={k}>{k}</span><span className="tr"><span className="fl" style={{ width: (v / max * 100) + '%' }} /></span><span className="vv">{v}</span></>);
-      return clickeable
-        ? <button type="button" className="minibar minibar-click" key={k} onClick={() => onPick(k)}>{contenido}</button>
-        : <div className="minibar" key={k}>{contenido}</div>;
-    });
-  };
-  const cloud = (map, n = 8, onPick, disabledKeys) => (
-    <div className="tagcloud">{top(map, n).map(([k, v]) => (
-      (onPick && !(disabledKeys && disabledKeys.has(k)))
-        ? <button type="button" className="tc" key={k} onClick={() => onPick(k)}>{k} <b>{v}</b></button>
-        : <span className="tc" key={k}>{k} <b>{v}</b></span>
-    ))}</div>
-  );
-
-  // País/Origen a veces traen valores que no son un país ni un canal real ("SI", "True", el
-  // nombre de un estado). Para los gráficos los agrupamos aparte en vez de mostrarlos como si
-  // fueran datos válidos — la fila cruda en "Fichas completadas" sigue mostrando el valor tal
-  // cual está en la planilla, para que se pueda ubicar y corregir.
-  const paisAgrupado = (r) => (esValorValido(r.pais) ? r.pais.trim() : 'Sin datos');
-  const origenAgrupado = (r) => (esValorValido(r.origen) ? r.origen.trim() : 'Sin informar');
-
-  const periodoActivo = (() => {
-    if (!F.fDesde && !F.fHasta) return 'todo';
-    if (F.fDesde === hoyISO && F.fHasta === hoyISO) return 'hoy';
-    if (F.fDesde === hace(7) && F.fHasta === hoyISO) return '7';
-    const d = new Date();
-    if (F.fDesde === iso(new Date(d.getFullYear(), d.getMonth(), 1)) && F.fHasta === hoyISO) return 'mes';
-    if (F.fDesde === hace(90) && F.fHasta === hoyISO) return '90';
-    return '';
-  })();
-  function periodo(tipo) {
-    if (tipo === 'todo') { F.setFDesde(''); F.setFHasta(''); return; }
-    if (tipo === 'hoy') { F.setFDesde(hoyISO); F.setFHasta(hoyISO); return; }
-    if (tipo === '7') { F.setFDesde(hace(7)); F.setFHasta(hoyISO); return; }
-    if (tipo === 'mes') { const d = new Date(); F.setFDesde(iso(new Date(d.getFullYear(), d.getMonth(), 1))); F.setFHasta(hoyISO); return; }
-    if (tipo === '90') { F.setFDesde(hace(90)); F.setFHasta(hoyISO); return; }
-  }
-
-  const activos = [];
-  if (F.fCurso) activos.push(['Curso: ' + F.fCurso, () => F.setFCurso('')]);
-  if (F.fEd) activos.push(['Edición: ' + F.fEd, () => F.setFEd('')]);
-  if (F.fPais) activos.push(['País: ' + F.fPais, () => F.setFPais('')]);
-  if (F.fEstado) activos.push(['Estado: ' + F.fEstado, () => F.setFEstado('')]);
-  if (F.fDesde || F.fHasta) activos.push([`Fecha: ${F.fDesde || '…'} → ${F.fHasta || '…'}`, () => { F.setFDesde(''); F.setFHasta(''); }]);
-
-  // ⚠ Atención: lo que conviene mirar primero. Solo aparece lo que realmente aplica — si no
-  // hay nada pendiente, en revisión ni con datos sucios, el panel entero no se muestra.
-  const sinPaisValido = rows.filter((r) => !esValorValido(r.pais)).length;
-  const sinOrigenValido = rows.filter((r) => !esValorValido(r.origen)).length;
-  const sinDatosLimpios = Math.max(sinPaisValido, sinOrigenValido);
-  const UMBRAL_MUESTRA = 8; // cursos con muy pocas fichas no dan un % representativo
-  const cursosBajos = F.cursos
-    .map((c) => { const deC = rows.filter((r) => r.curso === c); return { curso: c, total: deC.length, pct: deC.length ? Math.round(deC.filter((r) => r.estado === 'Inscrito').length / deC.length * 100) : 0 }; })
-    .filter((c) => c.total >= UMBRAL_MUESTRA && c.pct < 70)
-    .sort((a, b) => a.pct - b.pct)
-    .slice(0, 2);
-  const atencion = [];
-  if (revisionN > 0) atencion.push({ texto: `${revisionN} ficha${revisionN === 1 ? '' : 's'} pendiente${revisionN === 1 ? '' : 's'} de revisión`, onVer: () => F.irA('En revisión') });
-  cursosBajos.forEach((c) => atencion.push({ texto: `${c.curso}: ${c.pct}% de avance sobre ${c.total} fichas (el más bajo)`, onVer: () => F.setFCurso(c.curso) }));
-  if (sinDatosLimpios > 0) atencion.push({ texto: `${sinDatosLimpios} ficha${sinDatosLimpios === 1 ? '' : 's'} con País y/u Origen sin un dato válido — conviene revisarlas en la planilla`, onVer: null });
-
-  // Evolución: últimas 8 semanas de fichas (según los filtros activos), para ver de un
-  // vistazo si el ritmo de inscripción sube o baja, sin tener que ir a Reportes.
-  const semanas = [];
-  for (let i = 7; i >= 0; i--) {
-    const fin = hace(i * 7); const ini = hace(i * 7 + 6);
-    semanas.push({ label: i === 0 ? 'Esta sem.' : `-${i}sem`, rango: `${ini} → ${fin}`, n: rows.filter((r) => (r.fecha || '') >= ini && (r.fecha || '') <= fin).length });
-  }
-  const maxSem = Math.max(1, ...semanas.map((s) => s.n));
-
-  return (
-    <>
-      <div className="fdrop-row">
-        <SelectDropdown label="Período" value={periodoActivo} onChange={periodo} hidePlaceholderOption options={[
-          { value: 'todo', label: 'Todo' }, { value: 'hoy', label: 'Hoy' }, { value: '7', label: '7 días' },
-          { value: 'mes', label: 'Este mes' }, { value: '90', label: '90 días' }
-        ]} />
-        <SelectDropdown label="Edición" value={F.fEd} onChange={F.setFEd} placeholder="Todas las ediciones" searchable options={F.ediciones.map((x) => ({ value: x, label: 'Ed. ' + x }))} />
-        <SelectDropdown label="Curso" value={F.fCurso} onChange={F.setFCurso} placeholder="Todos los cursos" searchable options={F.cursos.map((x) => ({ value: x, label: x }))} />
-        <SelectDropdown label="Estado" value={F.fEstado} onChange={F.setFEstado} placeholder="Todos" options={ESTADOS.filter((e) => universo.some((r) => r.estado === e)).map((e) => ({ value: e, label: e }))} />
-        <SelectDropdown label="País" value={F.fPais} onChange={F.setFPais} placeholder="Todos" searchable options={F.paises.map((x) => ({ value: x, label: x }))} />
-        {activos.length > 0 && <button className="btn-sm" onClick={F.limpiar} style={{ alignSelf: 'flex-end' }}>Limpiar filtros</button>}
-      </div>
-      {activos.length > 0 && (
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '2px 0 14px' }}>
-          {activos.map(([lbl, clear], i) => (
-            <span className="chipfilt" key={i}>🟣 {lbl}<button onClick={clear} aria-label="Quitar">×</button></span>
-          ))}
-        </div>
-      )}
-
-      <div className="dash-kpis">
-        <div className="dash-kpi click" onClick={() => F.irA('')}><div className="n" style={{ color: 'rgb(var(--accentTeal))' }}>{rows.length}</div><div className="l">Inscripciones</div></div>
-        <div className="dash-kpi click" onClick={() => F.irA('Inscrito')}><div className="n" style={{ color: 'rgb(74 222 128)' }}>{inscritos}</div><div className="l">Inscriptos</div></div>
-        <div className="dash-kpi click" onClick={() => F.irA('Completada')}><div className="n">{completadasN}</div><div className="l">Completadas</div></div>
-        <div className="dash-kpi click" onClick={() => F.irA('En revisión')}><div className="n" style={{ color: '#d879d1' }}>{revisionN}</div><div className="l">En revisión</div></div>
-        <div className="dash-kpi"><div className="n" style={{ color: 'rgb(74 222 128)' }}>{avance}%</div><div className="l">Avance (inscriptos)</div></div>
-      </div>
-
-      {atencion.length > 0 && (
-        <div className="dash-atencion">
-          <h3>⚠ Atención</h3>
-          {atencion.map((a, i) => (
-            <div className="dash-atencion-item" key={i}>
-              <span>{a.texto}</span>
-              {a.onVer && <button className="btn-sm" onClick={a.onVer}>Ver →</button>}
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div className="dash-grid dash-grid-2">
-        <div className="dash-panel dash-panel-lg">
-          <h3>Evolución (últimas 8 semanas)</h3>
-          <div className="dash-evol">
-            {semanas.map((s) => (
-              <div className="dash-evol-col" key={s.label} title={`${s.rango}: ${s.n}`}>
-                <div className="dash-evol-bar" style={{ height: (s.n / maxSem * 100) + '%' }} />
-                <div className="dash-evol-n">{s.n}</div>
-                <div className="dash-evol-lb">{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="dash-panel dash-panel-lg"><h3>Por estado</h3>{minibars(group((r) => r.estado), 8, (k) => F.irAConFiltro('estado', k))}</div>
-
-        <div className="dash-panel dash-panel-lg"><h3>Por curso</h3>{minibars(group((r) => r.curso), 8, (k) => F.irAConFiltro('curso', k))}</div>
-        <div className="dash-panel dash-panel-lg"><h3>Por edición</h3>{cloud(group((r) => r.ed), 10, (k) => F.irAConFiltro('ed', k))}</div>
-
-        <div className="dash-panel dash-panel-lg"><h3>Origen de inscripciones</h3>{minibars(group(origenAgrupado), 8)}</div>
-        <div className="dash-panel dash-panel-lg"><h3>Por país</h3>{cloud(group(paisAgrupado), 10, (k) => F.irAConFiltro('pais', k), new Set(['Sin datos']))}</div>
-      </div>
-    </>
-  );
 }
 
 /* ===================== CONSTRUCTOR (v1) ===================== */
