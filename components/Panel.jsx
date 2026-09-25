@@ -272,6 +272,11 @@ export default function Panel() {
           <Isologo size={32} />
         </div>
         <nav className="topnav-tabs">
+          {/* "+ Crear" va primero, antes que Fichas — es el punto de entrada único para dar de
+              alta una Inscripción, Actividad o Formulario (ver el selector más abajo). */}
+          {(tienePermisoConstructor(usuario) || tienePermisoGestionActividades(usuario) || tienePermisoFormularios(usuario)) && (
+            <button className="btn btn-primary" style={{ flex: 'none', height: 36, padding: '0 16px', marginRight: 4 }} onClick={() => setCrearAbierto(true)}>+ Crear</button>
+          )}
           {/* Pestañas atenuadas cuando el rol de la persona no tiene acceso a esa sección
               (igual siguen siendo clickeables: si entran ven el cartel de Acceso denegado). */}
           {/* "Fichas de inscripción" y "Fichas completadas" quedan unificadas bajo una sola
@@ -334,14 +339,9 @@ export default function Panel() {
               función — se saca para que quede un único buscador en toda la app. Si "q" ya viene
               cargado (por ejemplo, al llegar acá desde un resultado del Buscador), se muestra
               como un filtro activo más, con su propio botón para sacarlo. */}
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flex: 'none' }}>
-            {tab === 'inscripciones' && (
-              <button className="btn-sm" onClick={() => setTab('buscador')}>🔎 Buscar</button>
-            )}
-            {(tienePermisoConstructor(usuario) || tienePermisoGestionActividades(usuario) || tienePermisoFormularios(usuario)) && (
-              <button className="btn btn-primary" style={{ flex: 'none', padding: '9px 16px' }} onClick={() => setCrearAbierto(true)}>+ Crear</button>
-            )}
-          </div>
+          {tab === 'inscripciones' && (
+            <button className="btn-sm" onClick={() => setTab('buscador')}>🔎 Buscar</button>
+          )}
         </div>
 
         {(tab === 'fichas' || tab === 'inscripciones') && (

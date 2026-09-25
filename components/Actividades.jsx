@@ -506,12 +506,12 @@ function GridActividades({ items, puedeGestionar, onEditar, onDuplicar, onDetall
 // ───────────────────────────────────────────────────────────────────────────
 // Ficha de detalle de una actividad (solo lectura + acciones)
 // ───────────────────────────────────────────────────────────────────────────
-function DetalleActividad({ a, puedeGestionar, showToast, onEditar, onDuplicar, onVolver }) {
+function DetalleActividad({ a, puedeGestionar, showToast, onEditar, onDuplicar, onVolver, onGuardarCampo }) {
   const efectivo = estadoEfectivoCliente(a);
   const badge = ESTADO_ICO[efectivo] || ESTADO_ICO.Publicada;
   const color = colorCurso(a.curso);
   return (
-    <div style={{ maxWidth: 780 }}>
+    <div style={{ maxWidth: 780, margin: '0 auto' }}>
       <div className="panel" style={{ borderLeft: `4px solid ${color}66` }}>
         <div className="sechead">
           <button className="btn-sm" onClick={onVolver}>← Volver</button>
@@ -539,8 +539,26 @@ function DetalleActividad({ a, puedeGestionar, showToast, onEditar, onDuplicar, 
         <div className="wiz-grupo-lbl">Configuración</div>
         <div className="detalle-meta">
           <div><div className="k">Curso</div><div className="v">{a.curso}</div></div>
-          <div><div className="k">Edición</div><div className="v">{a.edicion || 'Se la pide al estudiante'}</div></div>
-          <div><div className="k">Clase</div><div className="v">{a.clase || '—'}</div></div>
+          <div>
+            <div className="k">Edición</div>
+            <div className="v">
+              <CeldaEditable
+                valor={a.edicion} placeholder="N° o Todas" puedeEditar={puedeGestionar}
+                onGuardar={(v) => onGuardarCampo(a, { edicion: v })}
+                render={(v) => v ? (v.toLowerCase() === 'todas' ? 'Todas' : `Ed. ${v}`) : 'Se la pide al estudiante'}
+              />
+            </div>
+          </div>
+          <div>
+            <div className="k">Clase</div>
+            <div className="v">
+              <CeldaEditable
+                valor={a.clase} placeholder="N°" puedeEditar={puedeGestionar}
+                onGuardar={(v) => onGuardarCampo(a, { clase: v })}
+                render={(v) => v || '—'}
+              />
+            </div>
+          </div>
           <div><div className="k">Estado</div><div className="v">{a.estado}</div></div>
           <div><div className="k">Fecha de disponibilidad</div><div className="v">{a.fechaDisponible || 'Inmediata'}</div></div>
           <div><div className="k">Muestra resultado</div><div className="v">{a.mostrarResultado === false ? 'No' : 'Sí'}</div></div>
@@ -647,7 +665,7 @@ const Lista = forwardRef(function Lista({ usuario, showToast, puedeGestionar, ir
   }
   if (modo?.tipo === 'detalle') {
     const actual = acts.find((x) => x.slug === modo.act.slug) || modo.act;
-    return <DetalleActividad a={actual} puedeGestionar={puedeGestionar} showToast={showToast} onEditar={editar} onDuplicar={duplicar} onVolver={cerrarModo} />;
+    return <DetalleActividad a={actual} puedeGestionar={puedeGestionar} showToast={showToast} onEditar={editar} onDuplicar={duplicar} onVolver={cerrarModo} onGuardarCampo={guardarCampo} />;
   }
 
   const qq = (q || '').trim().toLowerCase();
