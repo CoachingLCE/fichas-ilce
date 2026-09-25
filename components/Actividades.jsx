@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CURSOS, APP_URL, estiloCurso, colorCurso } from '../lib/constants';
+import { CURSOS, APP_URL, estiloCurso, colorCurso, inicialesCurso } from '../lib/constants';
 import { SelectDropdown } from './SelectDropdown';
 
 const slugify = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -385,7 +385,38 @@ function agruparPorCurso(lista) {
 // ───────────────────────────────────────────────────────────────────────────
 // Tabla / Tarjetas (usadas tal cual estén agrupadas o no)
 // ───────────────────────────────────────────────────────────────────────────
-function TablaActividades({ items, puedeGestionar, onEditar, onDuplicar, onDetalle }) {
+// Celda de tabla que se convierte en un <input> al hacer click (para Edición/Clase),
+// en vez de tener que abrir "✎ Editar" para tocar un solo dato suelto.
+function CeldaEditable({ valor, placeholder, onGuardar, render, puedeEditar }) {
+  const [editando, setEditando] = useState(false);
+  const [val, setVal] = useState(valor || '');
+  const ref = useRef(null);
+  useEffect(() => { if (editando) { ref.current?.focus(); ref.current?.select(); } }, [editando]);
+  useEffect(() => { setVal(valor || ''); }, [valor]);
+  function confirmar() {
+    setEditando(false);
+    const limpio = val.trim();
+    if (limpio !== (valor || '')) onGuardar(limpio);
+  }
+  if (!puedeEditar) return render ? render(valor) : (valor || <span className="sec">—</span>);
+  if (editando) {
+    return (
+      <input
+        ref={ref} className="celda-edit-input" value={val} placeholder={placeholder}
+        onChange={(e) => setVal(e.target.value)}
+        onBlur={confirmar}
+        onKeyDown={(e) => { if (e.key === 'Enter') confirmar(); if (e.key === 'Escape') { setVal(valor || ''); setEditando(false); } }}
+      />
+    );
+  }
+  return (
+    <button type="button" className="celda-edit-btn" onClick={() => setEditando(true)} title="Click para editar">
+      {render ? render(valor) : (valor || <span className="sec">—</span>)}
+    </button>
+  );
+}
+
+function TablaActividades({ items, puedeGestionar, onEditar, onDuplicar, onDetalle, onGuardarCampo }) {
   return (
     <div className="tablewrap"><table>
       <thead><tr><th>Actividad</th><th>Curso</th><th>Edición</th><th>Clase</th><th>Estado</th><th>Preguntas</th><th style={{ textAlign: 'right' }}>Acciones</th></tr></thead>
@@ -396,8 +427,19 @@ function TablaActividades({ items, puedeGestionar, onEditar, onDuplicar, onDetal
           <tr key={a.slug}>
             <td className="ins-name"><button className="acts-titlelink" onClick={() => onDetalle(a)}>{a.titulo}</button></td>
             <td>{a.curso ? <span className="cchip" style={estiloCurso(a.curso)}>{a.curso}</span> : ''}</td>
-            <td>{a.edicion ? <span className="edchip">Ed. {a.edicion}</span> : <span className="sec">—</span>}</td>
-            <td className="sec">{a.clase || '—'}</td>
+            <td>
+              <CeldaEditable
+                valor={a.edicion} placeholder="N° o Todas" puedeEditar={puedeGestionar}
+                onGuardar={(v) => onGuardarCampo(a, { edicion: v })}
+                render={(v) => v ? <span className="edchip">{v.toLowerCase() === 'todas' ? 'Todas' : `Ed. ${v}`}</span> : <span className="sec">—</span>}
+              />
+            </td>
+            <td className="sec">
+              <CeldaEditable
+                valor={a.clase} placeholder="N°" puedeEditar={puedeGestionar}
+                onGuardar={(v) => onGuardarCampo(a, { clase: v })}
+              />
+            </td>
             <td><span className={'fstate ' + badge.cls}><span className="d" />{efectivo}</span></td>
             <td className="sec">{a.preguntas.length}</td>
             <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
@@ -457,9 +499,10 @@ function GridActividades({ items, puedeGestionar, onEditar, onDuplicar, onDetall
 function DetalleActividad({ a, puedeGestionar, showToast, onEditar, onDuplicar, onVolver }) {
   const efectivo = estadoEfectivoCliente(a);
   const badge = ESTADO_ICO[efectivo] || ESTADO_ICO.Publicada;
+  const color = colorCurso(a.curso);
   return (
     <div style={{ maxWidth: 780 }}>
-      <div className="panel">
+      <div className="panel" style={{ borderLeft: `4px solid ${color}66` }}>
         <div className="sechead">
           <button className="btn-sm" onClick={onVolver}>← Volver</button>
           <span className="grow" />
@@ -468,13 +511,18 @@ function DetalleActividad({ a, puedeGestionar, showToast, onEditar, onDuplicar, 
           {puedeGestionar && <button className="btn-sm" onClick={() => onDuplicar(a)}>⧉ Duplicar</button>}
           {puedeGestionar && <button className="btn-sm solid" onClick={() => onEditar(a)}>✎ Editar</button>}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10 }}>
+          <span className="curso-avatar" style={{ background: color + '22', color, width: 42, height: 42, borderRadius: 12, fontSize: 15, flex: '0 0 auto' }}>{inicialesCurso(a.curso)}</span>
+          <div style={{ minWidth: 0 }}>
+            <div className="htitle" style={{ fontSize: 20, lineHeight: 1.2 }}>{a.titulo}</div>
+            <div style={{ fontSize: 13, color, fontWeight: 600 }}>{a.curso}{a.edicion ? ` · Edición ${a.edicion}` : ''}</div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
           <span className={'fstate ' + badge.cls}><span className="d" />{efectivo}</span>
           <span className="tagchip">{a.preguntas.length} pregunta{a.preguntas.length === 1 ? '' : 's'}</span>
           {a.clase && <span className="tagchip">Clase {a.clase}</span>}
         </div>
-        <div className="htitle" style={{ fontSize: 21, marginTop: 10 }}>{a.titulo}</div>
-        <div className="muted" style={{ fontSize: 13 }}>{a.curso}{a.edicion ? ` · Edición ${a.edicion}` : ''}</div>
       </div>
 
       <div className="panel">
@@ -494,8 +542,16 @@ function DetalleActividad({ a, puedeGestionar, showToast, onEditar, onDuplicar, 
         <div className="wiz-grupo-lbl">Preguntas</div>
         {a.preguntas.map((p, i) => (
           <div className="detalle-preg" key={i}>
-            <b style={{ fontSize: 13.5 }}>{i + 1}. {p.pregunta}</b>
-            {(p.opciones || []).map((op, j) => <div key={j} className={'detalle-op' + (Number(p.correcta) === j ? ' ok' : '')}>{Number(p.correcta) === j ? '✓ ' : ''}{op}</div>)}
+            <div className="detalle-preg-head">
+              <span className="detalle-preg-num">{i + 1}</span>
+              <b style={{ fontSize: 13.5 }}>{p.pregunta}</b>
+            </div>
+            {(p.opciones || []).map((op, j) => (
+              <div key={j} className={'detalle-op' + (Number(p.correcta) === j ? ' ok' : '')}>
+                {Number(p.correcta) === j && <span className="detalle-op-check">✓</span>}
+                {op}
+              </div>
+            ))}
           </div>
         ))}
       </div>
@@ -553,6 +609,25 @@ function Lista({ usuario, showToast, puedeGestionar, irABuscador }) {
   function verDetalle(a) { setModo({ tipo: 'detalle', act: a }); }
   function cerrarModo() { setModo(null); }
   function guardado() { setModo(null); cargar(); }
+
+  // Edición rápida de Edición/Clase directo desde la tabla (sin abrir el editor completo).
+  // "Edición" acepta también la palabra "Todas" (la actividad no está atada a una edición puntual).
+  async function guardarCampo(a, patch) {
+    setActs((prev) => prev.map((x) => (x.slug === a.slug ? { ...x, ...patch } : x)));
+    try {
+      const res = await fetch('/api/actividades', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          solicitanteEmail: usuario.email, slug: a.slug, curso: a.curso, titulo: a.titulo,
+          clase: a.clase, estado: a.estado, edicion: a.edicion, fechaDisponible: a.fechaDisponible,
+          mostrarResultado: a.mostrarResultado !== false, preguntas: a.preguntas, ...patch
+        })
+      });
+      const data = await res.json();
+      if (data.ok) showToast('✓ Guardado');
+      else { showToast(data.error || 'No se pudo guardar'); cargar(); }
+    } catch { showToast('Error de conexión'); cargar(); }
+  }
 
   if (!acts) return <div className="spin" />;
 
@@ -623,7 +698,7 @@ function Lista({ usuario, showToast, puedeGestionar, irABuscador }) {
                 <div key={sg.edicion || '_sin'}>
                   <div className="acts-subgrupo-lbl">{sg.edicion ? `Edición ${sg.edicion}` : 'Sin edición asignada'}</div>
                   {vista === 'lista'
-                    ? <TablaActividades items={sg.items} puedeGestionar={puedeGestionar} onEditar={editar} onDuplicar={duplicar} onDetalle={verDetalle} />
+                    ? <TablaActividades items={sg.items} puedeGestionar={puedeGestionar} onEditar={editar} onDuplicar={duplicar} onDetalle={verDetalle} onGuardarCampo={guardarCampo} />
                     : <GridActividades items={sg.items} puedeGestionar={puedeGestionar} onEditar={editar} onDuplicar={duplicar} onDetalle={verDetalle} showToast={showToast} />}
                 </div>
               ))}
@@ -631,7 +706,7 @@ function Lista({ usuario, showToast, puedeGestionar, irABuscador }) {
           </details>
         ))
       ) : vista === 'lista' ? (
-        <TablaActividades items={filtradas} puedeGestionar={puedeGestionar} onEditar={editar} onDuplicar={duplicar} onDetalle={verDetalle} />
+        <TablaActividades items={filtradas} puedeGestionar={puedeGestionar} onEditar={editar} onDuplicar={duplicar} onDetalle={verDetalle} onGuardarCampo={guardarCampo} />
       ) : (
         <GridActividades items={filtradas} puedeGestionar={puedeGestionar} onEditar={editar} onDuplicar={duplicar} onDetalle={verDetalle} showToast={showToast} />
       )}

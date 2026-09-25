@@ -21,6 +21,15 @@ function guardarVisto(item) {
 }
 
 const ICONO_TIPO = { 'Inscripción': '📋', 'Ficha': '📝', 'Actividad': '🧩', 'Formulario': '🗒️' };
+const COLOR_TIPO = { 'Inscripción': 'var(--accentTeal)', 'Ficha': 'var(--accentPurple)', 'Actividad': 'var(--accentMagenta)', 'Formulario': 'var(--accentTeal2)' };
+function IconoTipo({ tipo, size = 20 }) {
+  const c = COLOR_TIPO[tipo] || 'var(--textMuted)';
+  return (
+    <span className="busc-icochip" style={{ width: size + 14, height: size + 14, background: `rgb(${c} / .14)`, color: `rgb(${c})`, fontSize: size - 3 }}>
+      {ICONO_TIPO[tipo] || '•'}
+    </span>
+  );
+}
 
 function Resaltado({ texto, q }) {
   if (!texto || !q) return texto || '';
@@ -66,8 +75,10 @@ export default function Buscador({ usuario, irA, setQInscripciones }) {
 
   return (
     <div style={{ maxWidth: 760 }}>
-      <div className="fsearch" style={{ maxWidth: 'none', marginBottom: 18 }}>
-        🔎 <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar fichas, inscripciones, actividades, formularios…" />
+      <div className="busc-hero">
+        <span className="busc-hero-ico">🔎</span>
+        <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar fichas, inscripciones, actividades, formularios…" />
+        {q && <button className="busc-hero-clear" onClick={() => setQ('')} title="Limpiar">✕</button>}
       </div>
 
       {q.trim().length < 2 ? (
@@ -89,10 +100,11 @@ export default function Buscador({ usuario, irA, setQInscripciones }) {
             ) : (
               <div style={{ display: 'grid', gap: 8 }}>
                 {vistos.map((v, i) => (
-                  <div key={v.tipo + v.id + i} className="panel" style={{ padding: '10px 14px', cursor: 'pointer' }}
+                  <div key={v.tipo + v.id + i} className="busc-card"
+                    style={{ borderLeft: `3px solid rgb(${COLOR_TIPO[v.tipo] || 'var(--border)'} / .6)` }}
                     onClick={() => abrir({ ...v, tab: v.tipo === 'Inscripción' ? 'inscripciones' : v.tipo === 'Ficha' ? 'fichas' : v.tipo === 'Actividad' ? 'actividades' : 'formularios' })}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: 18 }}>{ICONO_TIPO[v.tipo] || '•'}</span>
+                      <IconoTipo tipo={v.tipo} size={16} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 700, fontSize: 13.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.titulo}</div>
                         <div className="muted" style={{ fontSize: 11.5 }}>{v.tipo}{v.sub ? ` · ${v.sub}` : ''}</div>
@@ -111,9 +123,10 @@ export default function Buscador({ usuario, irA, setQInscripciones }) {
       ) : (
         <div style={{ display: 'grid', gap: 8 }}>
           {resultados.map((r, i) => (
-            <div key={r.tipo + r.id + i} className="panel" style={{ padding: '12px 14px', cursor: 'pointer' }} onClick={() => abrir(r)}>
+            <div key={r.tipo + r.id + i} className="busc-card"
+              style={{ borderLeft: `3px solid rgb(${COLOR_TIPO[r.tipo] || 'var(--border)'} / .7)` }} onClick={() => abrir(r)}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: 20 }}>{ICONO_TIPO[r.tipo] || '•'}</span>
+                <IconoTipo tipo={r.tipo} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 700, fontSize: 14 }}><Resaltado texto={r.titulo} q={q} /></div>
                   <div className="muted" style={{ fontSize: 12 }}>{r.sub}{r.extra ? ` · ${r.extra}` : ''}</div>

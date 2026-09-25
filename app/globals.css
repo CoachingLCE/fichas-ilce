@@ -2,49 +2,50 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Tokens de marca ILCE — mismos nombres que en las otras apps, afinados al manual de identidad */
+/* Tokens de marca ILCE — misma paleta que la app de Cronograma (disponibilidad-zoom),
+   para que las dos apps se vean como una sola familia (v0.94.0). */
 :root, [data-theme="dark"] {
-  --bg: 6 20 36;            /* navy profundo, familia #01233f */
-  --surface: 12 30 50;
-  --surface2: 16 38 62;
-  --border: 30 58 88;
+  --bg: 11 14 26;            /* #0b0e1a */
+  --surface: 18 22 42;
+  --surface2: 24 29 53;
+  --border: 38 44 74;
   --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px; /* escala de spacing unica */
-  --text: 236 241 248;
-  --textSec: 150 170 196;
-  --textMuted: 104 126 156;
-  --accentTeal: 5 149 173;      /* #0595ad */
-  --accentTeal2: 3 115 139;     /* #03738b */
-  --accentPurple: 74 18 139;    /* #4a128b */
-  --accentMagenta: 150 25 143;  /* #96198f */
+  --text: 238 240 248;
+  --textSec: 154 161 194;
+  --textMuted: 107 114 153;
+  --accentTeal: 34 211 238;     /* #22d3ee */
+  --accentTeal2: 8 145 178;     /* #0891b2 */
+  --accentPurple: 124 58 237;   /* #7c3aed */
+  --accentMagenta: 192 38 211;  /* #c026d3 */
   /* Grammar de estado (Reportes y afines): un solo significado por color, nunca decorativo.
      Mismos valores que ya se usaban sueltos (rgb(74 222 128) etc.) — acá quedan centralizados. */
   --good: 74 222 128;
   --goodBg: 15 46 34;
   --warn: 251 191 36;
   --warningText: 251 191 36;
-  --warningBg: 51 40 10;
+  --warningBg: 51 33 8;
   --bad: 248 113 113;
   --badBg: 51 20 20;
 }
 [data-theme="light"] {
-  --bg: 245 248 251;
+  --bg: 248 250 252;
   --surface: 255 255 255;
-  --surface2: 239 244 249;
-  --border: 221 230 240;
-  --text: 10 30 48;
-  --textSec: 74 96 120;
-  --textMuted: 140 158 178;
-  --accentTeal: 3 115 139;
-  --accentTeal2: 6 95 116;
-  --accentPurple: 74 18 139;
-  --accentMagenta: 150 25 143;
-  --good: 74 222 128;
-  --goodBg: 15 46 34;
-  --warn: 251 191 36;
-  --warningText: 251 191 36;
-  --warningBg: 51 40 10;
-  --bad: 248 113 113;
-  --badBg: 51 20 20;
+  --surface2: 241 245 249;
+  --border: 226 232 240;
+  --text: 15 23 42;
+  --textSec: 71 85 105;
+  --textMuted: 148 163 184;
+  --accentTeal: 8 145 178;      /* #0891b2 */
+  --accentTeal2: 14 116 144;    /* #0e7490 */
+  --accentPurple: 124 58 237;
+  --accentMagenta: 162 28 175;
+  --good: 21 128 61;
+  --goodBg: 220 252 231;
+  --warn: 161 98 7;
+  --warningText: 161 98 7;
+  --warningBg: 254 243 199;
+  --bad: 185 28 28;
+  --badBg: 254 226 226;
 }
 
 * { box-sizing: border-box; }
@@ -1111,9 +1112,33 @@ tr.clickable .repx-cellbar:hover .fl{filter:brightness(1.15)}
 .acts-titlelink{background:none;border:0;padding:0;font:inherit;color:inherit;text-align:left;cursor:pointer;display:block;width:100%}
 .acts-titlelink:hover{color:rgb(var(--accentTeal));text-decoration:underline}
 
-.detalle-preg{border:1px solid rgb(var(--border));border-radius:12px;padding:12px 14px;margin-bottom:10px;background:rgb(var(--surface))}
-.detalle-op{padding:6px 10px;border-radius:8px;font-size:13.5px;margin-top:4px;color:rgb(var(--textSec))}
+.detalle-preg{border:1px solid rgb(var(--border));border-radius:12px;padding:14px 16px;margin-bottom:10px;background:rgb(var(--surface));transition:border-color .15s}
+.detalle-preg:hover{border-color:rgb(var(--accentTeal) / .4)}
+.detalle-preg-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px}
+.detalle-preg-num{flex:0 0 auto;width:22px;height:22px;border-radius:999px;background:rgb(var(--surface2));color:rgb(var(--textSec));font-size:11.5px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.detalle-op{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;font-size:13.5px;margin-top:4px;color:rgb(var(--textSec))}
 .detalle-op.ok{background:rgba(74,222,128,.12);color:rgb(74 222 128);font-weight:700}
+.detalle-op-check{flex:0 0 auto;width:16px;height:16px;border-radius:999px;background:rgb(74 222 128);color:#06240f;font-size:10px;font-weight:900;display:flex;align-items:center;justify-content:center}
+
+/* ============================================================
+   BUSCADOR GLOBAL — rediseño premium (barra "hero" + tarjetas con acento
+   de color por tipo, en vez del <input> simple y los .panel planos)
+   ============================================================ */
+.busc-hero{display:flex;align-items:center;gap:10px;background:rgb(var(--surface));border:1px solid rgb(var(--border));border-radius:16px;padding:14px 18px;margin-bottom:22px;transition:border-color .15s,box-shadow .15s}
+.busc-hero:focus-within{border-color:rgb(var(--accentTeal) / .55);box-shadow:0 0 0 3px rgb(var(--accentTeal) / .12)}
+.busc-hero-ico{font-size:18px;flex:0 0 auto}
+.busc-hero input{flex:1;min-width:0;background:none;border:0;outline:0;font-size:16px;color:rgb(var(--text))}
+.busc-hero input::placeholder{color:rgb(var(--textMuted))}
+.busc-hero-clear{flex:0 0 auto;background:rgb(var(--surface2));border:1px solid rgb(var(--border));color:rgb(var(--textMuted));border-radius:999px;width:22px;height:22px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center}
+.busc-hero-clear:hover{color:rgb(var(--text));border-color:rgb(var(--accentTeal))}
+.busc-icochip{border-radius:11px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.busc-card{background:rgb(var(--surface));border:1px solid rgb(var(--border));border-radius:12px;padding:12px 14px;cursor:pointer;transition:transform .12s,border-color .12s,box-shadow .12s}
+.busc-card:hover{transform:translateY(-2px);border-color:rgb(var(--accentTeal) / .4);box-shadow:0 12px 26px -16px rgba(0,0,0,.5)}
+
+/* Celda de tabla editable con un click (Actividades → Edición/Clase) */
+.celda-edit-btn{background:none;border:1px dashed transparent;border-radius:7px;padding:3px 7px;margin:-3px -7px;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.celda-edit-btn:hover{border-color:rgb(var(--accentTeal) / .5);background:rgb(var(--surface2))}
+.celda-edit-input{background:rgb(var(--surface2));border:1px solid rgb(var(--accentTeal));border-radius:7px;padding:3px 7px;font:inherit;color:rgb(var(--text));width:100px}
 .detalle-meta{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-top:4px}
 .detalle-meta .k{font-size:11px;color:rgb(var(--textMuted));text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
 .detalle-meta .v{font-size:14px;font-weight:600}

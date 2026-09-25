@@ -7,15 +7,32 @@
 // vez de repetir la misma lista dos veces), embudo partido en Proceso/Salidas con tasa de
 // finalización, tarjetas de "Resumen del período" con datos reales, e íconos lineales en vez
 // de emoji. Ninguna fórmula ni endpoint cambia.
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
-import { ESTADOS, CURSOS } from '../lib/constants';
+import { Fragment, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { ESTADOS, CURSOS, colorCurso, inicialesCurso } from '../lib/constants';
 import { SelectDropdown, FiltroChip } from './SelectDropdown';
 import MiniChart from './MiniChart';
 
-// Gráfico de línea con hover (estilo Informes RRSS): un trazo limpio y, al pasar el mouse,
-// un cartelito con la etiqueta y el número. Datos: etiquetas[] + puntos[] (mismo largo).
+// Curva suave (Catmull-Rom -> Bézier) en vez de una polyline recta entre cada punto — mismo
+// dato, trazo continuo en vez de quebrado. "cerrar" agrega el tramo de vuelta a la base del
+// gráfico para poder rellenarlo con el degradado.
+function pathSuave(pts, alto, cerrar) {
+  if (pts.length < 2) return '';
+  let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+    const c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = p1[1] + (p2[1] - p0[1]) / 6;
+    const c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6;
+    d += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+  }
+  if (cerrar) d += ` L${pts[pts.length - 1][0].toFixed(1)},${alto} L${pts[0][0].toFixed(1)},${alto} Z`;
+  return d;
+}
+
+// Gráfico de línea con hover (estilo Informes RRSS): curva suave con relleno degradado y,
+// al pasar el mouse, un cartelito con la etiqueta y el número. Datos: etiquetas[] + puntos[].
 function GraficoLinea({ etiquetas, puntos, color = '#22d3ee', alto = 88 }) {
   const [hover, setHover] = useState(null);
+  const gid = useId().replace(/:/g, '');
   const ancho = 560, padY = 14;
   const validos = puntos.filter((p) => p !== null && p !== undefined);
   if (!validos.length) return <div style={{ height: alto, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'rgb(var(--textMuted))' }}>Sin datos</div>;
@@ -30,7 +47,14 @@ function GraficoLinea({ etiquetas, puntos, color = '#22d3ee', alto = 88 }) {
   return (
     <div style={{ position: 'relative' }} onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
       <svg viewBox={`0 0 ${ancho} ${alto}`} style={{ width: '100%', height: alto }} preserveAspectRatio="none">
-        {segs.map((sg, i) => <polyline key={i} points={sg.map(([x, y]) => `${x},${y}`).join(' ')} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />)}
+        <defs>
+          <linearGradient id={`glf-${gid}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity=".28" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {segs.map((sg, i) => <path key={'f' + i} d={pathSuave(sg, alto, true)} fill={`url(#glf-${gid})`} stroke="none" />)}
+        {segs.map((sg, i) => <path key={'l' + i} d={pathSuave(sg, alto, false)} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />)}
         {coords.map((c, i) => c && <circle key={i} cx={c[0]} cy={c[1]} r={hover === i ? '5' : '3'} fill={color} />)}
       </svg>
       {hover !== null && coords[hover] && (
@@ -52,6 +76,18 @@ function pctTone(pct, { buenoDesde = 80, regularDesde = 50 } = {}) {
   if (pct == null) return 'muted';
   return pct >= buenoDesde ? 'good' : pct >= regularDesde ? 'warn' : 'bad';
 }
+
+// País/Origen a veces traen valores que no son un país ni un canal real ("SI", "True", el
+// nombre de un estado). Se agrupan aparte en vez de mostrarse como si fueran datos válidos
+// (esto venía del Dashboard, fusionado acá — ver v0.89.0).
+const VALORES_BASURA_CAMPO = new Set(['si', 'no', 'true', 'false', ...ESTADOS.map((e) => e.toLowerCase())]);
+function esValorValido(v) {
+  const s = (v || '').toString().trim();
+  if (!s || s === '-') return false;
+  return !VALORES_BASURA_CAMPO.has(s.toLowerCase());
+}
+const paisAgrupado = (r) => (esValorValido(r.pais) ? r.pais.trim() : 'Sin datos');
+const origenAgrupado = (r) => (esValorValido(r.origen) ? r.origen.trim() : 'Sin informar');
 
 /* ============================ Íconos lineales (sin librerías, sin emoji) ============================ */
 const svgBase = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' };
@@ -82,7 +118,7 @@ const Ico = {
 function RepKpi({ icon, n, label, sub, subTone, onClick }) {
   const cuerpo = (
     <>
-      <div className="repx-kpi-top">{icon}</div>
+      <div className="repx-kpi-top"><span className="repx-kpi-icchip">{icon}</span></div>
       <div className="repx-kpi-n">{n}</div>
       <div className="repx-kpi-l">{label}</div>
       {sub != null && <div className={'repx-kpi-sub' + (subTone ? ' ' + subTone : '')}>{sub}</div>}
@@ -447,9 +483,28 @@ function ReportesResumen({ rows, irAConFiltro }) {
   const maxCurso = Math.max(1, ...porCursoDetalle.map((c) => c.total));
   const cursoTop = porCursoDetalle[0];
 
+  // Fusionado del Dashboard (v0.89.0): País, Origen y Edición no tenían panel propio en
+  // Reportes — se suman acá con el mismo criterio que ya usaba el Dashboard (agrupar valores
+  // "sucios" aparte en vez de mostrarlos como si fueran un país u origen real).
+  const agrupar = (fn) => { const m = {}; rows.forEach((r) => { const k = fn(r) || '—'; m[k] = (m[k] || 0) + 1; }); return m; };
+  const top = (map, n) => Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, n);
+  const porPais = useMemo(() => top(agrupar(paisAgrupado), 10), [rows]);
+  const porOrigen = useMemo(() => top(agrupar(origenAgrupado), 8), [rows]);
+  const porEdicion = useMemo(() => top(agrupar((r) => r.ed ? 'Ed. ' + r.ed : null), 10), [rows]);
+  const maxPais = Math.max(1, ...porPais.map(([, v]) => v));
+  const maxOrigen = Math.max(1, ...porOrigen.map(([, v]) => v));
+  const maxEdicion = Math.max(1, ...porEdicion.map(([, v]) => v));
+  const sinPaisValido = rows.filter((r) => !esValorValido(r.pais)).length;
+  const sinOrigenValido = rows.filter((r) => !esValorValido(r.origen)).length;
+  const sinDatosLimpios = Math.max(sinPaisValido, sinOrigenValido);
+  const UMBRAL_MUESTRA = 8; // cursos con muy pocas fichas no dan un % representativo
+  const cursoBajo = porCursoDetalle.filter((c) => c.total >= UMBRAL_MUESTRA).sort((a, b) => a.pct - b.pct)[0];
+
   // "Resumen del período": frases con datos ya calculados arriba — nada inventado.
   const insights = [];
   if (cursoTop) insights.push({ tone: '', ico: 'trend', txt: <><b>{cursoTop.curso}</b> concentra el mayor número de fichas ({cursoTop.total}, {cursoTop.pct}% completadas).</> });
+  if (cursoBajo && cursoBajo.pct < 70 && cursoBajo.curso !== cursoTop?.curso) insights.push({ tone: 'warn', ico: 'clock', txt: <><b>{cursoBajo.curso}</b>: {cursoBajo.pct}% de completadas sobre {cursoBajo.total} fichas (el más bajo).</> });
+  if (sinDatosLimpios > 0) insights.push({ tone: 'warn', ico: 'alert', txt: <>{sinDatosLimpios} ficha{sinDatosLimpios === 1 ? '' : 's'} con País y/u Origen sin un dato válido — conviene revisarlas en la planilla.</> });
   insights.push({ tone: pctCompletadas >= 80 ? 'good' : pctCompletadas >= 50 ? 'warn' : 'bad', ico: 'check', txt: <>La tasa de finalización general es del <b>{pctCompletadas}%</b> ({completadas} de {rows.length} fichas).</> });
   if (nuevos30 > 0 || nuevos30prev > 0) {
     insights.push({
@@ -526,7 +581,7 @@ function ReportesResumen({ rows, irAConFiltro }) {
               <thead><tr><th>Curso</th><th>Fichas</th><th>Completadas</th><th>Pendientes</th><th>En revisión</th><th>% completado</th><th /></tr></thead>
               <tbody>{porCursoDetalle.map((c) => (
                 <tr key={c.curso} className="clickable" style={{ cursor: irAConFiltro ? 'pointer' : undefined }} onClick={() => irAConFiltro && irAConFiltro('curso', c.curso)}>
-                  <td><b>{c.curso}</b></td>
+                  <td><div className="curso-cell"><span className="curso-avatar" style={{ background: colorCurso(c.curso) + '22', color: colorCurso(c.curso) }}>{inicialesCurso(c.curso)}</span><b style={{ color: colorCurso(c.curso) }}>{c.curso}</b></div></td>
                   <td><CellBar n={c.total} max={maxCurso} /></td>
                   <td className="sec">{c.completadas}</td>
                   <td className="sec">{c.pendientes}</td>
@@ -539,6 +594,28 @@ function ReportesResumen({ rows, irAConFiltro }) {
           </div>
         )}
       </Seccion>
+
+      <Seccion titulo="Por país" sub="De dónde son las fichas — clickeá una fila para verla en Fichas completadas.">
+        {porPais.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : (
+          <div>{porPais.map(([k, v]) => (
+            <Barra key={k} label={k} n={v} max={maxPais} claseFill={k === 'Sin datos' ? 'm' : ''} onClick={k !== 'Sin datos' && irAConFiltro ? () => irAConFiltro('pais', k) : undefined} />
+          ))}</div>
+        )}
+      </Seccion>
+
+      <Seccion titulo="Origen de inscripciones" sub="Por qué canal llegó cada ficha.">
+        {porOrigen.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : (
+          <div>{porOrigen.map(([k, v]) => <Barra key={k} label={k} n={v} max={maxOrigen} claseFill={k === 'Sin informar' ? 'm' : ''} />)}</div>
+        )}
+      </Seccion>
+
+      <Expandible titulo="Por edición">
+        {porEdicion.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : (
+          <div>{porEdicion.map(([k, v]) => (
+            <Barra key={k} label={k} n={v} max={maxEdicion} onClick={irAConFiltro ? () => irAConFiltro('ed', k.replace(/^Ed\.\s*/, '')) : undefined} />
+          ))}</div>
+        )}
+      </Expandible>
     </div>
   );
 }
@@ -630,7 +707,7 @@ function ReportesInscripciones({ rows, irAConFiltro }) {
               <thead><tr><th>Curso</th><th>Fichas</th><th>Completadas</th><th>% completado</th><th /></tr></thead>
               <tbody>{porCursoDetalle.map((c) => (
                 <tr key={c.curso} className="clickable" style={{ cursor: irAConFiltro ? 'pointer' : undefined }} onClick={() => irAConFiltro && irAConFiltro('curso', c.curso)}>
-                  <td><b>{c.curso}</b></td>
+                  <td><div className="curso-cell"><span className="curso-avatar" style={{ background: colorCurso(c.curso) + '22', color: colorCurso(c.curso) }}>{inicialesCurso(c.curso)}</span><b style={{ color: colorCurso(c.curso) }}>{c.curso}</b></div></td>
                   <td><CellBar n={c.total} max={maxCurso} /></td>
                   <td className="sec">{c.completadas}</td>
                   <td><Pct v={c.pct} /></td>

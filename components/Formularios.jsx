@@ -83,24 +83,28 @@ function Lista({ usuario, showToast }) {
           ))}</tbody>
         </table></div>
       ) : (
-        <div className="fgrid">
+        <div className="pcard-wrap">
+        <div className="pcard-grid">
           {forms.map((f) => (
-            <div className="fcard" key={f.slug}>
-              <div className="fcard-top">
-                <span className={'fstate ' + (f.estado === 'Publicada' ? 'pub' : 'bor')}><span className="d" />{f.estado}</span>
+            <div className="pcard" key={f.slug}>
+              <div className="pcard-top">
+                <span className={'pcard-dot ' + (f.estado === 'Publicada' ? 'pub' : 'bor')}><span className="d" />{f.estado}</span>
                 <span className="tagchip">{f.tipo || 'Formulario'}</span>
               </div>
-              <div className="ftitle" style={{ fontSize: 18 }}>{f.titulo}</div>
-              <div className="fsub">{f.campos.length} campos{nResp(f) !== null ? ` · ${nResp(f)} respuesta${nResp(f) === 1 ? '' : 's'}` : ''}</div>
-              <div className="fspacer" />
-              <div><div className="acard-link-label">Enlace</div>
-                <div className="flink"><span className="u">/formulario/{f.slug}</span>
-                  <button onClick={() => { navigator.clipboard?.writeText(`${APP_URL}/formulario/${f.slug}`); showToast('✓ Enlace copiado'); }}>Copiar</button></div></div>
-              <div className="factions">
-                <a className="btn-sm solid" style={{ flex: 1, justifyContent: 'center' }} href={`${APP_URL}/formulario/${f.slug}`} target="_blank" rel="noreferrer">👁 Abrir</a>
+              <div className="pcard-title" title={f.titulo} style={{ fontSize: 16.5, whiteSpace: 'normal', lineHeight: 1.25 }}>{f.titulo}</div>
+              <div className="pcard-datos">
+                <span>{f.campos.length} campos{nResp(f) !== null ? ` · ${nResp(f)} respuesta${nResp(f) === 1 ? '' : 's'}` : ''}</span>
+              </div>
+              <div className="pcard-url">
+                <span className="pcard-url-txt">/formulario/{f.slug}</span>
+                <button className="pcard-url-copy" onClick={() => { navigator.clipboard?.writeText(`${APP_URL}/formulario/${f.slug}`); showToast('✓ Enlace copiado'); }} title="Copiar enlace">Copiar</button>
+              </div>
+              <div className="pcard-actions">
+                <a className="pcard-act pcard-act-primary" style={{ flex: 1, justifyContent: 'center' }} href={`${APP_URL}/formulario/${f.slug}`} target="_blank" rel="noreferrer">👁 Abrir</a>
               </div>
             </div>
           ))}
+        </div>
         </div>
       )}
     </div>
