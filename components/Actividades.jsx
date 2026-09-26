@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useMemo, useRef, useState, forwardRef, useImperativeHandle } from 'react';
-import { CURSOS, APP_URL, estiloCurso, colorCurso, inicialesCurso } from '../lib/constants';
+import { CURSOS, APP_URL, colorCurso, inicialesCurso } from '../lib/constants';
 import { SelectDropdown } from './SelectDropdown';
 
 const slugify = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -36,7 +36,9 @@ function Reportes({ usuario }) {
   return (
     <div>
       {conResp.map((a) => {
-        const peor = [...a.preguntas].filter((p) => p.respondidas > 0).sort((x, y) => x.pct - y.pct).slice(0, 3);
+        // Las preguntas abiertas no tienen "% de acierto" (no se autocorrigen) — quedan
+        // afuera del ranking de "más se erran", que solo tiene sentido para las cerradas.
+        const peor = [...a.preguntas].filter((p) => p.tipo !== 'abierta' && p.respondidas > 0).sort((x, y) => x.pct - y.pct).slice(0, 3);
         const open = abierto === a.slug;
         return (
           <div className="panel" key={a.slug}>
@@ -90,8 +92,10 @@ const lbl = { fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 5, 
 // El alta/baja de acceso de docentes se gestiona en una única pantalla, "Equipo Docente"
 // (ver Equipo.jsx); antes había una pestaña "Docentes" duplicada acá adentro con el mismo
 // alcance, lo que generaba dos lugares distintos para lo mismo — se saca (pedido de Diego).
-const Actividades = forwardRef(function Actividades({ usuario, showToast, puedeGestionar, irABuscador }, ref) {
-  const [sub, setSub] = useState('lista');
+const Actividades = forwardRef(function Actividades({ usuario, showToast, puedeGestionar, irABuscador, subInicial }, ref) {
+  // "subInicial" lo usa Panel.jsx para abrir directo en "Respuestas" cuando se entra desde
+  // la pestaña "Respuestas" (en vez de siempre arrancar en "Actividades").
+  const [sub, setSub] = useState(subInicial || 'lista');
   const listaRef = useRef(null);
   const [abrirNuevaAlEntrar, setAbrirNuevaAlEntrar] = useState(false);
   useEffect(() => {
@@ -139,9 +143,13 @@ function ordenarActividades(lista, orden) {
 // ───────────────────────────────────────────────────────────────────────────
 // Asistente de creación/edición (wizard de 4 pasos)
 // ───────────────────────────────────────────────────────────────────────────
+// "Respuesta abierta" (pedido de Diego): el estudiante escribe libremente, no hay opción
+// correcta para marcar — por eso no entra en el puntaje automático (ver corregir() en
+// lib/actividades.js) y queda para que alguien la lea a mano en "Respuestas".
 const PREG_TIPOS = [
   { v: 'multiple', l: 'Opción múltiple' },
-  { v: 'vf', l: 'Verdadero / Falso' }
+  { v: 'vf', l: 'Verdadero / Falso' },
+  { v: 'abierta', l: 'Respuesta abierta' }
 ];
 function nuevaPreg() { return { pregunta: '', tipo: 'multiple', opciones: ['', '', ''], correcta: 0 }; }
 const PASOS = [
@@ -155,6 +163,7 @@ function validarPreguntas(e) {
   if (!e.preguntas.length) return 'Agregá al menos una pregunta.';
   for (const p of e.preguntas) {
     if (!(p.pregunta || '').trim()) return 'Hay una pregunta sin texto.';
+    if (p.tipo === 'abierta') continue; // sin opciones ni correcta — el estudiante escribe libre
     const ops = (p.opciones || []).filter((o) => (o || '').trim());
     if (ops.length < 2) return `«${(p.pregunta || '').slice(0, 40)}» necesita al menos 2 opciones.`;
     if (!(p.opciones[p.correcta] || '').trim()) return `«${(p.pregunta || '').slice(0, 40)}» necesita marcar cuál es la respuesta correcta.`;
@@ -175,6 +184,7 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar }) {
 
   function cambiarTipo(i, tipo) {
     if (tipo === 'vf') setPreg(i, { tipo, opciones: ['Verdadero', 'Falso'], correcta: preguntas[i].correcta <= 1 ? preguntas[i].correcta : 0 });
+    else if (tipo === 'abierta') setPreg(i, { tipo, opciones: [], correcta: undefined });
     else setPreg(i, { tipo, opciones: ['', '', ''], correcta: 0 });
   }
   function agregarPreg() { set({ preguntas: [...preguntas, nuevaPreg()] }); }
@@ -260,6 +270,11 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar }) {
 
       {paso === 1 && (
         <div className="wiz-panel">
+          {/* Pedido de Diego: que se vea de entrada cuántas preguntas hay y de qué tipo,
+              mientras se van agregando (no solo al final, en "Revisar"). */}
+          <p className="muted" style={{ fontSize: 12.5, marginTop: 0, marginBottom: 14 }}>
+            {preguntas.length} pregunta{preguntas.length === 1 ? '' : 's'} · {preguntas.filter((p) => p.tipo !== 'abierta').length} cerrada{preguntas.filter((p) => p.tipo !== 'abierta').length === 1 ? '' : 's'} (se autocorrige) · {preguntas.filter((p) => p.tipo === 'abierta').length} abierta{preguntas.filter((p) => p.tipo === 'abierta').length === 1 ? '' : 's'} (se revisa a mano)
+          </p>
           {preguntas.map((p, i) => (
             <div className="preg-card" key={i}
               onDragOver={(ev) => ev.preventDefault()}
@@ -277,6 +292,9 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar }) {
                 <button className="btn-sm" style={{ color: 'rgb(248 113 113)' }} onClick={() => eliminarPreg(i)} title="Eliminar" disabled={preguntas.length <= 1}>🗑</button>
               </div>
               <input className="ctrl" value={p.pregunta} onChange={(ev) => setPreg(i, { pregunta: ev.target.value })} placeholder="Texto de la pregunta" />
+              {p.tipo === 'abierta' ? (
+                <p className="muted" style={{ fontSize: 12, margin: '10px 0 0' }}>El estudiante va a escribir su respuesta libremente — no se autocorrige, queda para revisar a mano en "Respuestas".</p>
+              ) : (<>
               <p className="muted" style={{ fontSize: 12, margin: '10px 0 6px' }}>Marcá la opción correcta ✓</p>
               {p.tipo === 'vf' ? (
                 p.opciones.map((op, j) => (
@@ -294,6 +312,7 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar }) {
                   </div>
                 ))}
                 <button className="btn-sm" onClick={() => setPreg(i, { opciones: [...p.opciones, ''] })}>+ Opción</button>
+              </>)}
               </>)}
             </div>
           ))}
@@ -327,14 +346,16 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar }) {
               <div><div className="k">Edición</div><div className="v">{e.edicion || '—'}</div></div>
               <div><div className="k">Clase</div><div className="v">{e.clase || '—'}</div></div>
               <div><div className="k">Estado</div><div className="v">{e.estado}</div></div>
-              <div><div className="k">Preguntas</div><div className="v">{preguntas.length}</div></div>
+              <div><div className="k">Preguntas</div><div className="v">{preguntas.length} ({preguntas.filter((p) => p.tipo !== 'abierta').length} cerrada{preguntas.filter((p) => p.tipo !== 'abierta').length === 1 ? '' : 's'} · {preguntas.filter((p) => p.tipo === 'abierta').length} abierta{preguntas.filter((p) => p.tipo === 'abierta').length === 1 ? '' : 's'})</div></div>
               <div><div className="k">Muestra resultado</div><div className="v">{e.mostrarResultado !== false ? 'Sí' : 'No'}</div></div>
             </div>
             <div className="wiz-grupo-lbl">Preguntas</div>
             {preguntas.map((p, i) => (
               <div className="detalle-preg" key={i}>
                 <b style={{ fontSize: 13.5 }}>{i + 1}. {p.pregunta || <span className="muted">(sin texto)</span>}</b>
-                {p.opciones.map((op, j) => <div key={j} className={'detalle-op' + (p.correcta === j ? ' ok' : '')}>{p.correcta === j ? '✓ ' : ''}{op || <span className="muted">(vacía)</span>}</div>)}
+                {p.tipo === 'abierta'
+                  ? <div className="detalle-op muted">✎ Respuesta abierta — el estudiante escribe libremente</div>
+                  : p.opciones.map((op, j) => <div key={j} className={'detalle-op' + (p.correcta === j ? ' ok' : '')}>{p.correcta === j ? '✓ ' : ''}{op || <span className="muted">(vacía)</span>}</div>)}
               </div>
             ))}
           </div>
@@ -426,6 +447,19 @@ function CeldaEditable({ valor, placeholder, onGuardar, render, puedeEditar }) {
   );
 }
 
+// Pedido de Diego: el nombre del curso en la tabla de Actividades tiene que verse como en
+// disponibilidad-zoom (punto de color + texto de ese mismo color), no como un chip/pill con
+// fondo — mismos colores por curso ya unificados en colorCurso (lib/constants.js).
+function CursoConPunto({ curso }) {
+  const color = colorCurso(curso);
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
+      <span style={{ color }}>{curso}</span>
+    </span>
+  );
+}
+
 function TablaActividades({ items, puedeGestionar, onEditar, onDuplicar, onDetalle, onGuardarCampo }) {
   return (
     <div className="tablewrap"><table>
@@ -436,7 +470,7 @@ function TablaActividades({ items, puedeGestionar, onEditar, onDuplicar, onDetal
         return (
           <tr key={a.slug}>
             <td className="ins-name"><button className="acts-titlelink" onClick={() => onDetalle(a)}>{a.titulo}</button></td>
-            <td>{a.curso ? <span className="cchip" style={estiloCurso(a.curso)}>{a.curso}</span> : ''}</td>
+            <td>{a.curso ? <CursoConPunto curso={a.curso} /> : ''}</td>
             <td>
               <CeldaEditable
                 valor={a.edicion} placeholder="N° o Todas" puedeEditar={puedeGestionar}
@@ -743,10 +777,34 @@ const Lista = forwardRef(function Lista({ usuario, showToast, puedeGestionar, ir
   );
 });
 
+// Pedido de Diego: poder leer las respuestas de desarrollo (abiertas) — antes esta pantalla
+// solo mostraba el puntaje total, sin ninguna forma de ver lo que escribió cada estudiante.
+function ModalRespuestaDetalle({ x, onCerrar }) {
+  const abiertas = (x.detalle || []).filter((d) => d.tipo === 'abierta');
+  return (
+    <div className="mwrap on" onClick={onCerrar}>
+      <div className="modal" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
+        <h3 style={{ marginTop: 0 }}>{x.actividad}</h3>
+        <p className="muted" style={{ fontSize: 12.5, marginTop: -6 }}>{x.nombre || x.email} · {x.curso}{x.edicion ? ` · Ed. ${x.edicion}` : ''} · {x.puntaje}/{x.total} en las cerradas</p>
+        {abiertas.length === 0 ? (
+          <p className="muted">Esta actividad no tiene preguntas de respuesta abierta.</p>
+        ) : abiertas.map((d, i) => (
+          <div key={i} className="detalle-preg">
+            <b style={{ fontSize: 13.5 }}>{d.pregunta}</b>
+            <div className="detalle-op" style={{ whiteSpace: 'pre-wrap' }}>{d.respuesta ? String(d.respuesta) : <span className="muted">(sin responder)</span>}</div>
+          </div>
+        ))}
+        <button className="btn-sm" style={{ marginTop: 14 }} onClick={onCerrar}>Cerrar</button>
+      </div>
+    </div>
+  );
+}
+
 function Respuestas({ usuario, irABuscador }) {
   const [data, setData] = useState(null);
   const [q, setQ] = useState('');
   const [fCurso, setFCurso] = useState(''); const [fEd, setFEd] = useState(''); const [fAct, setFAct] = useState('');
+  const [detalleAbierto, setDetalleAbierto] = useState(null);
   useEffect(() => { (async () => {
     const res = await fetch('/api/actividades/respuestas?solicitanteEmail=' + encodeURIComponent(usuario.email));
     const d = await res.json(); setData(d.ok ? d : { respuestas: [] });
@@ -793,9 +851,11 @@ function Respuestas({ usuario, irABuscador }) {
         <div className="tablewrap"><table>
           <thead><tr>
             <th style={{ minWidth: 92 }}>Fecha</th><th style={{ minWidth: 150 }}>Estudiante</th><th style={{ minWidth: 180 }}>Email</th>
-            <th style={{ minWidth: 130 }}>Curso</th><th style={{ minWidth: 78 }}>Edición</th><th style={{ minWidth: 160 }}>Actividad</th><th style={{ minWidth: 90 }}>Tiempo</th><th style={{ minWidth: 80, textAlign: 'right' }}>Puntaje</th>
+            <th style={{ minWidth: 130 }}>Curso</th><th style={{ minWidth: 78 }}>Edición</th><th style={{ minWidth: 160 }}>Actividad</th><th style={{ minWidth: 90 }}>Tiempo</th><th style={{ minWidth: 80, textAlign: 'right' }}>Puntaje</th><th style={{ minWidth: 70 }}></th>
           </tr></thead>
-          <tbody>{filtradas.map((x) => (
+          <tbody>{filtradas.map((x) => {
+            const abiertas = (x.detalle || []).filter((d) => d.tipo === 'abierta');
+            return (
             <tr key={x.id}>
               <td className="sec">{(x.fecha || '').slice(0, 10)}</td>
               <td><b>{x.nombre || '—'}</b></td>
@@ -805,10 +865,13 @@ function Respuestas({ usuario, irABuscador }) {
               <td>{x.actividad}</td>
               <td className="sec">{fmtTiempo(x.duracion)}</td>
               <td style={{ textAlign: 'right' }}><b>{x.puntaje}/{x.total}</b></td>
+              <td>{abiertas.length > 0 && <button className="btn-sm" onClick={() => setDetalleAbierto(x)} title="Ver respuestas abiertas">✎ Ver ({abiertas.length})</button>}</td>
             </tr>
-          ))}</tbody>
+            );
+          })}</tbody>
         </table></div>
       )}
+      {detalleAbierto && <ModalRespuestaDetalle x={detalleAbierto} onCerrar={() => setDetalleAbierto(null)} />}
     </>
   );
 }

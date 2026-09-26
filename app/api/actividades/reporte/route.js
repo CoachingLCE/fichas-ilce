@@ -62,9 +62,11 @@ async function construirReporte(usuario) {
       let respondidas = 0, aciertos = 0;
       rs.forEach((x) => {
         const elegido = x.r ? x.r[i] : undefined;
-        if (elegido != null && elegido !== '') { respondidas++; if (Number(elegido) === Number(p.correcta)) aciertos++; }
+        if (elegido != null && elegido !== '') { respondidas++; if (p.tipo !== 'abierta' && Number(elegido) === Number(p.correcta)) aciertos++; }
       });
-      return { pregunta: p.pregunta, respondidas, aciertos, pct: respondidas ? Math.round(aciertos / respondidas * 100) : 0 };
+      // Las 'abierta' no tienen "acierto" (no se autocorrigen) — pct queda null para que la
+      // UI no las muestre con una barra de % ni las meta en el ranking de "más se erran".
+      return { pregunta: p.pregunta, tipo: p.tipo || 'multiple', respondidas, aciertos, pct: p.tipo === 'abierta' ? null : (respondidas ? Math.round(aciertos / respondidas * 100) : 0) };
     });
     return { slug: d.slug, titulo: d.titulo, curso: d.curso, totalResp, promedio, tiempoProm, preguntas };
   }).filter((a) => a.totalResp > 0 || true); // incluimos todas, aunque tengan 0 respuestas

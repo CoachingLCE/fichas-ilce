@@ -54,6 +54,23 @@ function esValorValido(v) {
   return !VALORES_BASURA_CAMPO.has(s.toLowerCase());
 }
 
+// Selector de dos opciones que se usa tanto en "Actividades y formularios" como en
+// "Respuestas" — cada una es la misma idea (elegir entre Actividades o Formularios), así
+// que el selector se armó una sola vez en vez de duplicar el markup en los dos lugares.
+function SelectorDoble({ opciones }) {
+  if (opciones.length === 0) return null;
+  return (
+    <div className="empty" style={{ textAlign: 'center', padding: '48px 20px' }}>
+      <p style={{ fontSize: 15, fontWeight: 700, marginBottom: 18 }}>¿Qué querés abrir?</p>
+      <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
+        {opciones.map((o) => (
+          <button key={o.key} className="btn btn-primary" style={{ padding: '14px 28px' }} onClick={o.onClick}>{o.icono} {o.label}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Panel() {
   const fichasRef = useRef(null);
   const actividadesRef = useRef(null);
@@ -63,10 +80,16 @@ export default function Panel() {
   const usuario = verComo || usuarioReal;
   // El tab activo se refleja en la URL (?tab=...) para que el link de cada página sea
   // compartible y funcione el botón "atrás" del navegador — antes quedaba siempre en /panel.
-  const TABS_VALIDOS = ['fichas', 'inscripciones', 'reportes', 'emails', 'actividades', 'formularios', 'equipo', 'accesos', 'auditoria', 'buscador'];
+  const TABS_VALIDOS = ['fichas', 'inscripciones', 'reportes', 'emails', 'actividadesyformularios', 'respuestas', 'equipo', 'accesos', 'auditoria', 'buscador'];
   // El Dashboard se fusionó dentro de Reportes (v0.89.0) — un link viejo con ?tab=dashboard
   // manda directo a Reportes en vez de caer en "fichas" como si esa pestaña no existiera.
-  const tabDeUrl = (t) => (t === 'dashboard' ? 'reportes' : TABS_VALIDOS.includes(t) ? t : 'fichas');
+  // "Actividades" y "Formularios" se unificaron en una sola pestaña "Actividades y
+  // formularios" (v0.99.0) — un link viejo con ?tab=actividades o ?tab=formularios cae ahí.
+  const tabDeUrl = (t) => (
+    t === 'dashboard' ? 'reportes'
+    : (t === 'actividades' || t === 'formularios') ? 'actividadesyformularios'
+    : TABS_VALIDOS.includes(t) ? t : 'fichas'
+  );
   const [tab, setTab] = useState(() => {
     if (typeof window === 'undefined') return 'fichas';
     const t = new URLSearchParams(window.location.search).get('tab');
@@ -121,21 +144,46 @@ export default function Panel() {
   // Si el alta elegida no es la pestaña activa, primero hay que cambiar de pestaña (recién ahí
   // se monta esa sección y su ref queda disponible) y disparar la acción apenas monte.
   const [crearAbierto, setCrearAbierto] = useState(false);
+  // Pedido de Diego: la barra de navegación de arriba (.topnav) ya era "flotante" (sticky),
+  // pero ahora además se oculta al bajar en la página y reaparece apenas se sube un poco —
+  // mismo patrón que ya tiene disponibilidad-zoom en otras pantallas. No se oculta cerca del
+  // tope (primeros 80px), para que no "parpadee" al hacer un scroll chiquito.
+  const [navOculto, setNavOculto] = useState(false);
+  useEffect(() => {
+    let ultimoY = window.scrollY;
+    function onScroll() {
+      const y = window.scrollY;
+      if (y < 80) { setNavOculto(false); ultimoY = y; return; }
+      if (y > ultimoY + 4) setNavOculto(true);
+      else if (y < ultimoY - 4) setNavOculto(false);
+      ultimoY = y;
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
   const [accionAlEntrar, setAccionAlEntrar] = useState(null); // null | 'ficha' | 'actividad'
+  // "Actividades y formularios" agrupa las dos gestiones bajo una sola pestaña: al entrar
+  // se ve un selector, y esto guarda cuál de las dos se eligió ("actividades" | "formularios").
+  // "Respuestas" es la misma idea pero para ver las respuestas ya cargadas de cada una.
+  // null = todavía no se eligió nada, se ve el selector.
+  const [vistaAyF, setVistaAyF] = useState(null);
+  const [vistaResp, setVistaResp] = useState(null);
   useEffect(() => {
     if (tab === 'fichas' && accionAlEntrar === 'ficha') { fichasRef.current?.abrirConstructor(); setAccionAlEntrar(null); }
-    if (tab === 'actividades' && accionAlEntrar === 'actividad') { actividadesRef.current?.nueva(); setAccionAlEntrar(null); }
-  }, [tab, accionAlEntrar]);
+    if (tab === 'actividadesyformularios' && vistaAyF === 'actividades' && accionAlEntrar === 'actividad') { actividadesRef.current?.nueva(); setAccionAlEntrar(null); }
+  }, [tab, vistaAyF, accionAlEntrar]);
   function elegirCrear(tipo) {
     setCrearAbierto(false);
     if (tipo === 'inscripcion') {
       if (tab !== 'fichas') { setAccionAlEntrar('ficha'); setTab('fichas'); }
       else fichasRef.current?.abrirConstructor();
     } else if (tipo === 'actividad') {
-      if (tab !== 'actividades') { setAccionAlEntrar('actividad'); setTab('actividades'); }
-      else actividadesRef.current?.nueva();
+      if (tab !== 'actividadesyformularios' || vistaAyF !== 'actividades') {
+        setAccionAlEntrar('actividad'); setVistaAyF('actividades'); setTab('actividadesyformularios');
+      } else actividadesRef.current?.nueva();
     } else if (tipo === 'formulario') {
-      setTab('formularios');
+      setVistaAyF('formularios');
+      setTab('actividadesyformularios');
       showToast('Los formularios se cargan pegando la definición en la pestaña "Formularios" de la Sheet — el alta desde acá todavía no existe.');
     }
   }
@@ -266,7 +314,7 @@ export default function Panel() {
     <div className="appwrap">
       <IsologoDefs />
       {navMenu && <div className="navoverlay" onClick={() => setNavMenu(null)} />}
-      <header className="topnav">
+      <header className={'topnav' + (navOculto ? ' topnav-oculto' : '')}>
         <div className="topnav-inner">
         <div className="topnav-brand">
           <Isologo size={32} />
@@ -283,8 +331,8 @@ export default function Panel() {
               pestaña ("Fichas"), con sub-pestañas adentro — antes competían visualmente
               como si fueran dos módulos del mismo nivel. */}
           <button className={'tnav' + (tab === 'fichas' || tab === 'inscripciones' ? ' on' : '')} onClick={() => setTab('fichas')}>Fichas</button>
-          <button className={'tnav' + (tab === 'actividades' ? ' on' : '') + (tienePermisoActividades(usuario) ? '' : ' dim')} onClick={() => setTab('actividades')}>Actividades</button>
-          <button className={'tnav' + (tab === 'formularios' ? ' on' : '') + (tienePermisoFormularios(usuario) ? '' : ' dim')} onClick={() => setTab('formularios')}>Formularios</button>
+          <button className={'tnav' + (tab === 'actividadesyformularios' ? ' on' : '') + ((tienePermisoActividades(usuario) || tienePermisoFormularios(usuario)) ? '' : ' dim')} onClick={() => { setTab('actividadesyformularios'); setVistaAyF(null); }}>Actividades y formularios</button>
+          <button className={'tnav' + (tab === 'respuestas' ? ' on' : '') + ((tienePermisoActividades(usuario) || tienePermisoFormularios(usuario)) ? '' : ' dim')} onClick={() => { setTab('respuestas'); setVistaResp(null); }}>Respuestas</button>
           {/* El Dashboard se fusionó dentro de Reportes (v0.89.0): todo lo que mostraba
               (KPIs, Atención, Evolución, Por curso/estado/edición/país/origen) ahora vive
               en la pestaña "Reportes" → "Resumen", así que la pestaña aparte se saca. */}
@@ -333,7 +381,7 @@ export default function Panel() {
 
       <div className="main">
         <div className="topbar">
-          <div>{(() => { const DESC = { fichas: 'Aquí encontrás las fichas de inscripción de cada curso: sus ediciones y las páginas públicas donde se anotan los estudiantes.', inscripciones: 'Aquí encontrás todas las inscripciones cargadas. Buscalas, filtralas y cambiá su estado.', reportes: 'Aquí encontrás el resumen general y las métricas y el análisis de inscripciones, actividades y cursos.', emails: 'Aquí están los correos automáticos que envía el sistema y sus plantillas.', actividades: 'Aquí encontrás las actividades y postworks de cada curso, con sus preguntas y respuestas.', formularios: 'Aquí encontrás los formularios públicos (encuestas, inscripciones y trámites) y sus respuestas.', equipo: 'Aquí encontrás al equipo docente y su asignación a cursos y ediciones.', constructor: 'Aquí armás y editás las fichas de inscripción de cada curso.', herramientas: 'Herramientas internas del sistema.', accesos: 'Aquí gestionás quién entra al sistema y con qué permisos.', auditoria: 'Aquí encontrás el historial de acciones realizadas en el sistema.', buscador: 'Aquí buscás inscripciones en todos los cursos a la vez.' }; return <p className="section-lead">{DESC[tab] || ''}</p>; })()}</div>
+          <div>{(() => { const DESC = { fichas: 'Aquí encontrás las fichas de inscripción de cada curso: sus ediciones y las páginas públicas donde se anotan los estudiantes.', inscripciones: 'Aquí encontrás todas las inscripciones cargadas. Buscalas, filtralas y cambiá su estado.', reportes: 'Aquí encontrás el resumen general y las métricas y el análisis de inscripciones, actividades y cursos.', emails: 'Aquí están los correos automáticos que envía el sistema y sus plantillas.', actividadesyformularios: 'Aquí gestionás las actividades y postworks de cada curso, y los formularios públicos (encuestas, inscripciones y trámites).', respuestas: 'Aquí encontrás las respuestas ya cargadas de actividades y de formularios.', equipo: 'Aquí encontrás al equipo docente y su asignación a cursos y ediciones.', constructor: 'Aquí armás y editás las fichas de inscripción de cada curso.', herramientas: 'Herramientas internas del sistema.', accesos: 'Aquí gestionás quién entra al sistema y con qué permisos.', auditoria: 'Aquí encontrás el historial de acciones realizadas en el sistema.', buscador: 'Aquí buscás inscripciones en todos los cursos a la vez.' }; return <p className="section-lead">{DESC[tab] || ''}</p>; })()}</div>
           {/* El buscador de texto libre vive en un solo lugar: la pestaña Buscador (🔎 arriba a
               la derecha). Antes había un segundo cuadro de búsqueda acá mismo, duplicando esa
               función — se saca para que quede un único buscador en toda la app. Si "q" ya viene
@@ -465,8 +513,58 @@ export default function Panel() {
           : <AccesoDenegado seccion="Reportes" />)}
 
         {tab === 'emails' && (tienePermisoEmails(usuario) ? <EmailsPanel usuario={usuario} /> : <AccesoDenegado seccion="Emails" />)}
-        {tab === 'actividades' && (tienePermisoActividades(usuario) ? <Actividades ref={actividadesRef} usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} irABuscador={() => setTab('buscador')} /> : <AccesoDenegado seccion="Actividades" />)}
-        {tab === 'formularios' && (tienePermisoFormularios(usuario) ? <Formularios usuario={usuario} showToast={showToast} /> : <AccesoDenegado seccion="Formularios" />)}
+        {/* "Actividades" y "Formularios" comparten una sola pestaña: al entrar se elige cuál
+            de las dos gestionar. "Respuestas" es el mismo patrón para ver lo ya cargado de
+            cada una. Si la persona solo tiene permiso para una de las dos, se salta el
+            selector y entra directo a la que sí puede ver. */}
+        {tab === 'actividadesyformularios' && (() => {
+          const puedeAct = tienePermisoActividades(usuario);
+          const puedeForm = tienePermisoFormularios(usuario);
+          if (!puedeAct && !puedeForm) return <AccesoDenegado seccion="Actividades y formularios" />;
+          const elegida = vistaAyF || (puedeAct && !puedeForm ? 'actividades' : (!puedeAct && puedeForm ? 'formularios' : null));
+          if (!elegida) {
+            return (
+              <SelectorDoble
+                opciones={[
+                  puedeAct && { key: 'actividades', icono: '📝', label: 'Fichas de actividades', onClick: () => setVistaAyF('actividades') },
+                  puedeForm && { key: 'formularios', icono: '🗒️', label: 'Ficha de formularios', onClick: () => setVistaAyF('formularios') }
+                ].filter(Boolean)}
+              />
+            );
+          }
+          return (
+            <>
+              {vistaAyF && <button className="btn-sm" style={{ marginBottom: 12 }} onClick={() => setVistaAyF(null)}>← Volver</button>}
+              {elegida === 'actividades'
+                ? <Actividades ref={actividadesRef} usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} irABuscador={() => setTab('buscador')} />
+                : <Formularios usuario={usuario} showToast={showToast} />}
+            </>
+          );
+        })()}
+        {tab === 'respuestas' && (() => {
+          const puedeAct = tienePermisoActividades(usuario);
+          const puedeForm = tienePermisoFormularios(usuario);
+          if (!puedeAct && !puedeForm) return <AccesoDenegado seccion="Respuestas" />;
+          const elegida = vistaResp || (puedeAct && !puedeForm ? 'actividades' : (!puedeAct && puedeForm ? 'formularios' : null));
+          if (!elegida) {
+            return (
+              <SelectorDoble
+                opciones={[
+                  puedeAct && { key: 'actividades', icono: '📝', label: 'Respuestas de actividades', onClick: () => setVistaResp('actividades') },
+                  puedeForm && { key: 'formularios', icono: '🗒️', label: 'Respuestas de formularios', onClick: () => setVistaResp('formularios') }
+                ].filter(Boolean)}
+              />
+            );
+          }
+          return (
+            <>
+              {vistaResp && <button className="btn-sm" style={{ marginBottom: 12 }} onClick={() => setVistaResp(null)}>← Volver</button>}
+              {elegida === 'actividades'
+                ? <Actividades usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} irABuscador={() => setTab('buscador')} subInicial="respuestas" />
+                : <Formularios usuario={usuario} showToast={showToast} subInicial="respuestas" />}
+            </>
+          );
+        })()}
         {tab === 'equipo' && (tienePermisoAsignarDocentes(usuario) ? <Equipo usuario={usuario} /> : <AccesoDenegado seccion="Equipo Docente" />)}
         {tab === 'accesos' && (tienePermisoAccesos(usuario) ? <Accesos usuario={usuario} /> : <AccesoDenegado seccion="Accesos" />)}
         {tab === 'auditoria' && (tienePermisoAuditoria(usuario) ? <Auditoria usuario={usuario} /> : <AccesoDenegado seccion="Historial de acciones" />)}

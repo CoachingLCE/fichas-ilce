@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { APP_URL } from '../lib/constants';
+import { APP_URL, cantidadClasesFija, esAsincronica, calcularFechaFinEdicion } from '../lib/constants';
 import { generarHorarios } from '../lib/husos';
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -123,7 +123,8 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
   function setEds(nuevas) { upd({ ediciones: nuevas }); }
   function addEd() {
     const id = String(Date.now()).slice(-6);
-    setEds([...eds, { id, label: `Edición ${eds.length + 1}`, horarios: '' }]);
+    const fija = cantidadClasesFija(d.curso);
+    setEds([...eds, { id, label: `Edición ${eds.length + 1}`, horarios: '', ...(fija ? { cantidadClases: String(fija) } : {}) }]);
     setEdAbierta(id);
   }
   function updEd(i, patch) { setEds(eds.map((e, j) => j === i ? { ...e, ...patch } : e)); }
@@ -199,19 +200,19 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
     if (isNaN(dt)) return iso;
     return dt.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
   };
-  // Fecha de fin estimada de una edición: fecha de inicio + (cantidad de clases - 1) *
-  // frecuencia (semanal = 7 días, quincenal = 14 días). Es por edición (no por curso),
-  // porque la cantidad de encuentros varía de una edición a otra incluso dentro del mismo
-  // curso. Devuelve '' si falta algún dato.
-  const calcularFechaFin = (fecha, cantidadClases, frecuencia) => {
-    const n = parseInt(cantidadClases, 10);
-    if (!fecha || !n || n < 1) return '';
-    const dias = (frecuencia === 'quincenal' ? 14 : 7) * (n - 1);
-    const dt = new Date(fecha + 'T00:00:00');
-    if (isNaN(dt)) return '';
-    dt.setDate(dt.getDate() + dias);
-    return dt.toISOString().slice(0, 10);
-  };
+  // calcularFechaFinEdicion ahora vive en lib/constants.js (para que el modal de "Nueva
+  // edición" rápida use exactamente la misma cuenta) — acá queda solo el alias corto.
+  const calcularFechaFin = calcularFechaFinEdicion;
+
+  // Para los cursos de cadencia fija (ver CANTIDAD_CLASES_POR_CURSO), completa sola la
+  // cantidad de clases de cualquier edición que todavía no la tenga cargada — no pisa un
+  // valor ya cargado a mano (podría ser una excepción real de esa edición puntual).
+  useEffect(() => {
+    const fija = cantidadClasesFija(d.curso);
+    if (!fija || eds.every((e) => e.cantidadClases)) return;
+    setEds(eds.map((e) => (e.cantidadClases ? e : { ...e, cantidadClases: String(fija), fechaFin: calcularFechaFin(e.fecha, fija) })));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [d.curso, eds]);
 
   return (
     <div className="ctor3" onClick={() => edMenu !== null && setEdMenu(null)}>
@@ -263,13 +264,16 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
             <div className="ctor-ed-list">
               {eds.map((e, i) => {
                 const abierta = edAbierta === e.id;
+                const asincronica = esAsincronica(e.label);
+                const fija = cantidadClasesFija(d.curso);
                 return (
                   <div className="ctor-ed-card" key={e.id || i}>
                     <div className="ctor-ed-head">
                       <div className="ctor-ed-titulo">
                         <b>{e.label || `Edición ${i + 1}`}</b>
-                        {e.fecha && <span className="muted"> · {fechaLegible(e.fecha)}</span>}
-                        {e.fecha && e.cantidadClases && <span className="muted"> → {fechaLegible(calcularFechaFin(e.fecha, e.cantidadClases, e.frecuencia))}</span>}
+                        {!asincronica && e.fecha && <span className="muted"> · {fechaLegible(e.fecha)}</span>}
+                        {!asincronica && e.fecha && e.cantidadClases && <span className="muted"> → {fechaLegible(calcularFechaFin(e.fecha, e.cantidadClases))}</span>}
+                        {e.docente && <span className="muted"> · Docente: {e.docente}</span>}
                       </div>
                       <button className="linklike" onClick={() => setEdAbierta(abierta ? null : e.id)}>{abierta ? 'cerrar' : 'editar'}</button>
                       <div className="ctor-ed-menu-wrap">
@@ -286,31 +290,44 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
                     </div>
                     {abierta && (
                       <div className="ctor-ed-body">
-                        <input className="ctrl" style={{ fontWeight: 700 }} value={e.label} onChange={(ev) => updEd(i, { label: ev.target.value })} placeholder="Ej: Edición 17 — Lunes 5 de mayo" />
-                        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', marginTop: 8 }}>
-                          <input className="ctrl" type="date" style={{ maxWidth: 160 }} value={e.fecha || ''} onChange={(ev) => updEd(i, { fecha: ev.target.value })} title="Fecha de la primera clase (hora de Argentina)" />
-                          <input className="ctrl" type="time" style={{ maxWidth: 120 }} value={e.horaIni || ''} onChange={(ev) => updEd(i, { horaIni: ev.target.value })} title="Desde (hora AR)" />
-                          <input className="ctrl" type="time" style={{ maxWidth: 120 }} value={e.horaFin || ''} onChange={(ev) => updEd(i, { horaFin: ev.target.value })} title="Hasta (hora AR)" />
-                          <button className="btn-sm solid" onClick={() => updEd(i, { horarios: generarHorarios(e.fecha, e.horaIni, e.horaFin) })} disabled={!e.fecha || !e.horaIni || !e.horaFin} title="Calcula el horario en otros países a partir de la hora de Argentina">⚙ Calcular husos</button>
-                        </div>
-                        <input className="ctrl" style={{ marginTop: 8 }} value={e.horarios || ''} onChange={(ev) => updEd(i, { horarios: ev.target.value })} placeholder="Horarios por país (se completan al calcular, o escribilos a mano)" />
+                        <input className="ctrl" style={{ fontWeight: 700 }} value={e.label} onChange={(ev) => updEd(i, { label: ev.target.value })} placeholder="Ej: Edición 17 — Lunes 5 de mayo (o 'Cursada Asincrónica')" />
+                        <input className="ctrl" style={{ marginTop: 8 }} value={e.docente || ''} onChange={(ev) => updEd(i, { docente: ev.target.value })} placeholder="Docente (texto libre)" />
+                        {asincronica ? (
+                          <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>Es una cursada asincrónica: no tiene día ni horario fijo, así que esos campos no aplican acá.</p>
+                        ) : (
+                          <>
+                            <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', marginTop: 8 }}>
+                              <input className="ctrl" type="date" style={{ maxWidth: 160 }} value={e.fecha || ''} onChange={(ev) => updEd(i, { fecha: ev.target.value })} title="Fecha de la primera clase (hora de Argentina)" />
+                              <input className="ctrl" type="time" style={{ maxWidth: 120 }} value={e.horaIni || ''} onChange={(ev) => updEd(i, { horaIni: ev.target.value })} title="Desde (hora AR)" />
+                              <input className="ctrl" type="time" style={{ maxWidth: 120 }} value={e.horaFin || ''} onChange={(ev) => updEd(i, { horaFin: ev.target.value })} title="Hasta (hora AR)" />
+                              <button className="btn-sm solid" onClick={() => updEd(i, { horarios: generarHorarios(e.fecha, e.horaIni, e.horaFin) })} disabled={!e.fecha || !e.horaIni || !e.horaFin} title="Calcula el horario en otros países a partir de la hora de Argentina">⚙ Calcular husos</button>
+                            </div>
+                            <input className="ctrl" style={{ marginTop: 8 }} value={e.horarios || ''} onChange={(ev) => updEd(i, { horarios: ev.target.value })} placeholder="Horarios por país (se completan al calcular, o escribilos a mano)" />
+                          </>
+                        )}
                         {/* Fecha de fin: opcional y se calcula sola a partir de la fecha de inicio +
-                            cantidad de clases — así no hay que ir a buscar un calendario aparte. */}
-                        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', marginTop: 10 }}>
-                          <input className="ctrl" type="number" min="1" style={{ maxWidth: 130 }} value={e.cantidadClases || ''}
-                            onChange={(ev) => { const cantidadClases = ev.target.value; updEd(i, { cantidadClases, fechaFin: calcularFechaFin(e.fecha, cantidadClases, e.frecuencia) }); }}
-                            placeholder="Cant. de clases" title="Cantidad de encuentros de esta edición" />
-                          <select className="ctrl" style={{ maxWidth: 150 }} value={e.frecuencia || 'semanal'}
-                            onChange={(ev) => { const frecuencia = ev.target.value; updEd(i, { frecuencia, fechaFin: calcularFechaFin(e.fecha, e.cantidadClases, frecuencia) }); }}>
-                            <option value="semanal">Semanal</option>
-                            <option value="quincenal">Quincenal</option>
-                          </select>
-                          {e.fecha && e.cantidadClases ? (
-                            <span className="muted" style={{ fontSize: 12.5 }}>Termina el {fechaLegible(calcularFechaFin(e.fecha, e.cantidadClases, e.frecuencia))} (calculado)</span>
-                          ) : (
-                            <span className="muted" style={{ fontSize: 12.5 }}>Completá fecha de inicio y cantidad de clases para calcular la fecha de fin</span>
-                          )}
-                        </div>
+                            cantidad de clases (siempre semanales) — así no hay que ir a buscar un
+                            calendario aparte. Para los cursos de cadencia fija, la cantidad de
+                            clases también se completa sola (ver cantidadClasesFija). */}
+                        {!asincronica && (
+                          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', marginTop: 10 }}>
+                            {fija ? (
+                              <input className="ctrl" disabled style={{ maxWidth: 200 }} value={`${e.cantidadClases || fija} clases (fijo para este curso)`} title="Este curso siempre tiene la misma cantidad de clases — se completa solo." />
+                            ) : (
+                              <input className="ctrl" type="number" min="1" style={{ maxWidth: 130 }} value={e.cantidadClases || ''}
+                                onChange={(ev) => { const cantidadClases = ev.target.value; updEd(i, { cantidadClases, fechaFin: calcularFechaFin(e.fecha, cantidadClases) }); }}
+                                placeholder="Cant. de clases" title="Cantidad de encuentros de esta edición" />
+                            )}
+                            {e.fecha && e.cantidadClases ? (
+                              <span className="muted" style={{ fontSize: 12.5 }}>
+                                Termina el {fechaLegible(calcularFechaFin(e.fecha, e.cantidadClases))}
+                                {' '}(calculado: {e.cantidadClases} clases semanales desde el {fechaLegible(e.fecha)})
+                              </span>
+                            ) : (
+                              <span className="muted" style={{ fontSize: 12.5 }}>Completá fecha de inicio{fija ? '' : ' y cantidad de clases'} para calcular la fecha de fin</span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

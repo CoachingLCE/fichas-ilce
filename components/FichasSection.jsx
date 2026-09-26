@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState, forwardRef, useImperativeHandle } from 'react';
-import { APP_URL, colorCurso, inicialesCurso } from '../lib/constants';
+import { APP_URL, colorCurso, inicialesCurso, cantidadClasesFija, calcularFechaFinEdicion } from '../lib/constants';
 import Constructor from './Constructor';
 
 const ESTADO_META = {
@@ -32,6 +32,11 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
   const [orden, setOrden] = useState('nombre');
   const [menuAbierto, setMenuAbierto] = useState(null);
   const [copiado, setCopiado] = useState(null);
+  // "Crear edición" (menú ⋮, vista tarjetas): en vez de abrir el Constructor completo de
+  // entrada, primero pasa por este modal liviano con los datos mínimos — más rápido para el
+  // caso común de "sumar la próxima edición". Guarda `d` (la ficha) para la que se está
+  // creando la edición nueva.
+  const [nuevaEdPara, setNuevaEdPara] = useState(null);
 
   useEffect(() => { cargar(); /* eslint-disable-next-line */ }, []);
   async function cargar() {
@@ -169,8 +174,18 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
                 </td>
                 <td><span className={'fstate ' + meta.cls}><span className="d" />{meta.label}</span></td>
                 <td>{insc > 0 ? <button className="linklike" onClick={() => onVerInscripciones(d.curso)}>{insc} inscriptos →</button> : <span className="sec">0</span>}</td>
-                <td className="sec">{d.onDemand ? 'On demand' : eds.length > 0 ? `${eds.length} edición${eds.length === 1 ? '' : 'es'}` : '—'}</td>
-                <td className="sec">{proxima || '—'}</td>
+                <td className="sec">
+                  {d.onDemand ? 'On demand' : eds.length > 0 ? `${eds.length} edición${eds.length === 1 ? '' : 'es'}` : '—'}
+                  {/* Marca si entre las ediciones hay alguna asincrónica (sin día/horario fijo) —
+                      así se ve de un vistazo sin tener que abrir cada ficha. */}
+                  {eds.some((e) => /asincr/.test(norm(e.label))) && (
+                    <span className="fstate bor" style={{ marginLeft: 6 }} title="Tiene una cursada asincrónica entre sus ediciones"><span className="d" />Asincrónica</span>
+                  )}
+                  {eds.length > 0 && eds.some((e) => !/asincr/.test(norm(e.label))) && (
+                    <span className="fstate pub" style={{ marginLeft: 6 }} title="Tiene ediciones con día y horario fijo"><span className="d" />Sincrónica</span>
+                  )}
+                </td>
+                <td className="sec">{d.curso === 'Coaching Inmobiliario' ? 'No aplica' : (proxima || '—')}</td>
                 <td className="sec">{actualizado || '—'}</td>
                 <td className="col-url">
                   <div className="url-cell url-chip">
@@ -206,7 +221,7 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
                       <button className="pcard-menu-btn" aria-label="Más acciones" onClick={(e) => { e.stopPropagation(); setMenuAbierto(menuAbierto === d.slug ? null : d.slug); }}>•••</button>
                       {menuAbierto === d.slug && (
                         <div className="fmenu-pop" onClick={(e) => e.stopPropagation()}>
-                          {puedeEditar && <button onClick={() => { setMenuAbierto(null); onEditar(d.slug); }}>Crear edición</button>}
+                          {puedeEditar && <button onClick={() => { setMenuAbierto(null); setNuevaEdPara(d); }}>Crear edición</button>}
                           {puedeEditar && <>
                             <div className="sep" />
                             {d.estado !== 'Publicada' && <button onClick={() => guardarEstado(d, 'Publicada')}>Publicar</button>}
@@ -275,10 +290,152 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
         </div>
         </div>
       )}
+
+      {nuevaEdPara && (
+        <ModalNuevaEdicion
+          def={nuevaEdPara}
+          usuario={usuario}
+          onCerrar={() => setNuevaEdPara(null)}
+          onCreada={async (slug) => {
+            setNuevaEdPara(null);
+            await cargar();
+            onEditar(slug);
+          }}
+        />
+      )}
     </div>
   );
 });
 export default FichasSection;
+
+// Sugiere el próximo número de edición a partir de las ya cargadas (el label sigue la
+// convención "Edición N — ...", ver Constructor). Si ninguna edición existente sigue esa
+// convención (o no hay ninguna todavía), arranca en 1.
+function sugerirProximoNumero(eds) {
+  const nums = (eds || []).map((e) => {
+    const m = /Edición\s+(\d+)/i.exec(e.label || '');
+    return m ? parseInt(m[1], 10) : null;
+  }).filter((n) => n != null);
+  return nums.length ? Math.max(...nums) + 1 : 1;
+}
+
+// "2026-10-05" -> "Lunes 5 de octubre" (mismo formato que ya usan las ediciones cargadas a
+// mano, ver EDICIONES_DEFAULT en lib/constants.js: "Edición 15 — Lunes 31 de agosto").
+function diaFechaLabel(iso) {
+  if (!iso) return '';
+  const dt = new Date(iso + 'T00:00:00');
+  if (isNaN(dt)) return iso;
+  const s = dt.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// Modal liviano de "Nueva edición", disparado desde "Crear edición" en el menú ⋮ de una
+// ficha (vista tarjetas) — pensado para el caso común de sumar la próxima edición sin abrir
+// el Constructor completo. Al guardar, arma la edición y abre el Constructor de esa ficha
+// para que se puedan revisar/ajustar el resto de los campos (mismo criterio ya usado en
+// Formaciones/disponibilidad-zoom: crear rápido, después ajustar si hace falta).
+function ModalNuevaEdicion({ def, usuario, onCerrar, onCreada }) {
+  const eds = def.ediciones || [];
+  const fija = cantidadClasesFija(def.curso);
+  const [numero, setNumero] = useState(String(sugerirProximoNumero(eds)));
+  const [sincronica, setSincronica] = useState(true);
+  const [fecha, setFecha] = useState('');
+  const [horaIni, setHoraIni] = useState('');
+  const [horaFin, setHoraFin] = useState('');
+  const [cantidadClases, setCantidadClases] = useState(fija ? String(fija) : '');
+  const [docente, setDocente] = useState('');
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState('');
+
+  const fechaFinPreview = sincronica ? calcularFechaFinEdicion(fecha, fija ? String(fija) : cantidadClases) : '';
+  const labelPreview = !numero.trim()
+    ? ''
+    : sincronica
+      ? `Edición ${numero.trim()}${fecha ? ' — ' + diaFechaLabel(fecha) : ''}`
+      : `Edición ${numero.trim()} — Cursada Asincrónica`;
+
+  async function crear() {
+    if (!numero.trim()) { setError('Falta el número de edición.'); return; }
+    if (sincronica && !fecha) { setError('Elegí la fecha de la primera clase (o marcá la edición como asincrónica).'); return; }
+    setError(''); setGuardando(true);
+    const id = String(Date.now()).slice(-6);
+    const nuevaEd = {
+      id,
+      label: sincronica ? `Edición ${numero.trim()} — ${diaFechaLabel(fecha)}` : `Edición ${numero.trim()} — Cursada Asincrónica`,
+      horarios: '',
+      ...(docente.trim() ? { docente: docente.trim() } : {}),
+      ...(sincronica ? { fecha, ...(horaIni ? { horaIni } : {}), ...(horaFin ? { horaFin } : {}) } : {}),
+      ...(fija ? { cantidadClases: String(fija) } : (cantidadClases ? { cantidadClases: String(cantidadClases) } : {}))
+    };
+    try {
+      const res = await fetch('/api/fichas', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ solicitanteEmail: usuario.email, slug: def.slug, def: { ...def, ediciones: [...eds, nuevaEd] } })
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'No se pudo crear la edición.');
+      onCreada(def.slug);
+    } catch (e) {
+      setError(e.message || 'Error de conexión.');
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <div className="mwrap on" onClick={onCerrar}>
+      <div className="modal" style={{ maxWidth: 460 }} onClick={(e) => e.stopPropagation()}>
+        <h3 style={{ marginTop: 0 }}>+ Nueva edición</h3>
+        <p className="muted" style={{ fontSize: 12.5, margin: '2px 0 14px' }}>{def.curso}</p>
+
+        <div className="fgroup-label">Número de edición</div>
+        <input className="ctrl" style={{ width: '100%', marginBottom: 10 }} value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="Ej: 17" />
+
+        <label className="wiz-check-inline" style={{ marginBottom: 10 }}>
+          <input type="checkbox" checked={!sincronica} onChange={(e) => setSincronica(!e.target.checked)} />
+          Es una cursada asincrónica (sin día ni horario fijo)
+        </label>
+
+        {sincronica ? (
+          <>
+            <div className="fgroup-label">Fecha de la primera clase</div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+              <input className="ctrl" type="date" style={{ maxWidth: 160 }} value={fecha} onChange={(e) => setFecha(e.target.value)} />
+              <input className="ctrl" type="time" style={{ maxWidth: 120 }} value={horaIni} onChange={(e) => setHoraIni(e.target.value)} title="Desde (hora AR, opcional)" />
+              <input className="ctrl" type="time" style={{ maxWidth: 120 }} value={horaFin} onChange={(e) => setHoraFin(e.target.value)} title="Hasta (hora AR, opcional)" />
+            </div>
+          </>
+        ) : (
+          <p className="muted" style={{ fontSize: 12, marginBottom: 10 }}>No tiene día ni horario fijo, así que esos campos no aplican acá.</p>
+        )}
+
+        <div className="fgroup-label">Cantidad de clases</div>
+        {fija ? (
+          <input className="ctrl" disabled style={{ width: '100%', marginBottom: 10 }} value={`${fija} clases (fijo para este curso)`} />
+        ) : (
+          <input className="ctrl" type="number" min="1" style={{ width: '100%', marginBottom: 10 }} value={cantidadClases} onChange={(e) => setCantidadClases(e.target.value)} placeholder="Cantidad de encuentros de esta edición" />
+        )}
+
+        <div className="fgroup-label">Docente</div>
+        <input className="ctrl" style={{ width: '100%', marginBottom: 12 }} value={docente} onChange={(e) => setDocente(e.target.value)} placeholder="Nombre del docente (opcional por ahora)" />
+
+        {labelPreview && (
+          <div className="note" style={{ marginBottom: 12, fontSize: 12.5 }}>
+            Se va a crear <b>{labelPreview}</b>
+            {sincronica && fechaFinPreview && <> — termina el {diaFechaLabel(fechaFinPreview)}</>}
+            .
+          </div>
+        )}
+
+        {error && <p style={{ color: 'rgb(248 113 113)', fontSize: 12.5, marginBottom: 10 }}>{error}</p>}
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <button className="btn-sm" onClick={onCerrar} disabled={guardando}>Cancelar</button>
+          <button className="btn-sm solid" onClick={crear} disabled={guardando}>{guardando ? 'Creando…' : 'Crear y abrir Constructor'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // La próxima edición con fecha de inicio en el futuro (o la más próxima si ya pasaron
 // todas), para tener de un vistazo cuándo arranca lo que sigue de ese curso.

@@ -33,13 +33,22 @@ export default function ActividadForm({ act }) {
   const qIndex = step - 1;
 
   function elegir(opt) { setResp((r) => ({ ...r, [qIndex]: opt })); setError(''); }
+  function escribir(texto) { setResp((r) => ({ ...r, [qIndex]: texto })); }
+
+  // Cuántas preguntas de la actividad NO se autocorrigen (respuesta abierta) — se usa acá
+  // para el mensaje de "se corrige al enviar" y en la pantalla final de resultado.
+  const cantAbiertas = act.preguntas.filter((p) => p.tipo === 'abierta').length;
 
   function siguiente() {
     if (esDatos) {
       if (!validarEmail(email)) { setError('Ingresá un correo válido.'); return; }
       setError(''); setStep(1); return;
     }
-    if (resp[qIndex] == null) { setError('Elegí una opción para continuar.'); return; }
+    const esAbierta = act.preguntas[qIndex]?.tipo === 'abierta';
+    if (esAbierta ? !String(resp[qIndex] || '').trim() : resp[qIndex] == null) {
+      setError(esAbierta ? 'Escribí tu respuesta para continuar.' : 'Elegí una opción para continuar.');
+      return;
+    }
     setError('');
     if (step < total) setStep(step + 1);
     else enviar();
@@ -77,6 +86,7 @@ export default function ActividadForm({ act }) {
             <p className="muted" style={{ fontSize: 14 }}>Tu resultado en <b>{act.titulo}</b>:</p>
             <div style={{ fontFamily: 'Jost', fontWeight: 700, fontSize: 48, color: 'rgb(var(--accentTeal))', margin: '6px 0' }}>{resultado.puntaje} / {resultado.total}</div>
             <p className="muted" style={{ fontSize: 14 }}>{pct}% correctas{resultado.emailOk ? ` · te enviamos el detalle a ${email}` : ''}</p>
+            {cantAbiertas > 0 && <p className="muted" style={{ fontSize: 12.5 }}>({cantAbiertas} pregunta{cantAbiertas === 1 ? '' : 's'} de desarrollo no {cantAbiertas === 1 ? 'entra' : 'entran'} en este puntaje — el equipo la{cantAbiertas === 1 ? '' : 's'} revisa aparte.)</p>}
           </>)}
         </div>
         {/* Pie fijo al finalizar cualquier actividad, pedido por Diego: volver al campus,
@@ -111,7 +121,12 @@ export default function ActividadForm({ act }) {
             <h3 style={{ fontSize: 18, margin: '0 0 4px' }}>Antes de empezar</h3>
             {act.intro
               ? <p className="quiz-intro" style={{ fontSize: 13.5, marginTop: 0, marginBottom: 16, whiteSpace: 'pre-line', color: 'rgb(var(--textSec))', lineHeight: 1.55 }}>{act.intro}</p>
-              : <p className="muted" style={{ fontSize: 13.5, marginTop: 0, marginBottom: 16 }}>Completá tus datos y respondé las {total} preguntas. Se corrige al enviar.</p>}
+              : <p className="muted" style={{ fontSize: 13.5, marginTop: 0, marginBottom: 16 }}>
+                  Completá tus datos y respondé las {total} preguntas.{' '}
+                  {cantAbiertas > 0
+                    ? `Las de opción se corrigen al enviar; ${cantAbiertas} ${cantAbiertas === 1 ? 'es de desarrollo' : 'son de desarrollo'} y las revisa el equipo.`
+                    : 'Se corrige al enviar.'}
+                </p>}
             <div className="quiz-field"><label>Correo <span className="req">*</span></label>
               <input className="ctrl" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tunombre@correo.com" /></div>
             <div className="quiz-field"><label>Nombre y apellido</label>
@@ -129,7 +144,10 @@ export default function ActividadForm({ act }) {
           <>
             <div className="quiz-count">Pregunta {step} de {total}</div>
             <h3 style={{ fontSize: 18, margin: '4px 0 16px', lineHeight: 1.3 }}>{p.pregunta}</h3>
-            {(p.opciones || []).map((op, j) => (
+            {p.tipo === 'abierta' ? (
+              <textarea className="ctrl" rows={5} value={resp[qIndex] || ''} onChange={(e) => escribir(e.target.value)}
+                placeholder="Escribí tu respuesta acá…" style={{ resize: 'vertical', width: '100%' }} />
+            ) : (p.opciones || []).map((op, j) => (
               <div key={j} className={'quiz-opt' + (resp[qIndex] === j ? ' sel' : '')} onClick={() => elegir(j)}
                 role="radio" aria-checked={resp[qIndex] === j} tabIndex={0}
                 onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && elegir(j)}>
