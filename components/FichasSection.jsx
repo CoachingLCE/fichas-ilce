@@ -112,6 +112,20 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
   if (construyendo) {
     return <Constructor usuario={usuario} initialSlug={construyendo} showToast={showToast} onVolver={() => { setConstruyendo(null); cargar(); }} volverLabel="← Volver a Fichas de inscripción" />;
   }
+  if (nuevaEdPara) {
+    return (
+      <NuevaEdicionPanel
+        def={nuevaEdPara}
+        usuario={usuario}
+        onVolver={() => setNuevaEdPara(null)}
+        onCreada={async (slug) => {
+          setNuevaEdPara(null);
+          await cargar();
+          onEditar(slug);
+        }}
+      />
+    );
+  }
 
   if (!defs) return <div className="spin" />;
 
@@ -290,19 +304,6 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
         </div>
         </div>
       )}
-
-      {nuevaEdPara && (
-        <ModalNuevaEdicion
-          def={nuevaEdPara}
-          usuario={usuario}
-          onCerrar={() => setNuevaEdPara(null)}
-          onCreada={async (slug) => {
-            setNuevaEdPara(null);
-            await cargar();
-            onEditar(slug);
-          }}
-        />
-      )}
     </div>
   );
 });
@@ -329,16 +330,23 @@ function diaFechaLabel(iso) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-// Modal liviano de "Nueva edición", disparado desde "Crear edición" en el menú ⋮ de una
-// ficha (vista tarjetas) — pensado para el caso común de sumar la próxima edición sin abrir
-// el Constructor completo. Al guardar, arma la edición y abre el Constructor de esa ficha
-// para que se puedan revisar/ajustar el resto de los campos (mismo criterio ya usado en
-// Formaciones/disponibilidad-zoom: crear rápido, después ajustar si hace falta).
-function ModalNuevaEdicion({ def, usuario, onCerrar, onCreada }) {
+const TIPO_CURSADA = [
+  { v: 'sincronica', l: 'Sincrónica — con día y horario fijo' },
+  { v: 'asincronica', l: 'Asincrónica — sin día ni horario fijo' },
+  { v: 'ondemand', l: 'A demanda — el curso entero, sin ediciones programadas' }
+];
+
+// Pantalla de "Nueva edición", disparada desde "Crear edición" en el menú ⋮ de una ficha
+// (vista tarjetas) — pensada para el caso común de sumar la próxima edición sin abrir el
+// Constructor completo de entrada. Ocupa toda la pantalla (no un modal chico), con el tipo
+// de cursada arriba en un combo y la vista previa actualizándose al costado a medida que se
+// completa — mismo criterio que ya usa listadopresentismo en su propia "Nueva edición".
+// Al guardar, abre el Constructor de esa ficha para revisar/ajustar el resto de los campos.
+function NuevaEdicionPanel({ def, usuario, onVolver, onCreada }) {
   const eds = def.ediciones || [];
   const fija = cantidadClasesFija(def.curso);
+  const [tipo, setTipo] = useState('sincronica');
   const [numero, setNumero] = useState(String(sugerirProximoNumero(eds)));
-  const [sincronica, setSincronica] = useState(true);
   const [fecha, setFecha] = useState('');
   const [horaIni, setHoraIni] = useState('');
   const [horaFin, setHoraFin] = useState('');
@@ -347,30 +355,42 @@ function ModalNuevaEdicion({ def, usuario, onCerrar, onCreada }) {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
+  const sincronica = tipo === 'sincronica';
+  const ondemand = tipo === 'ondemand';
   const fechaFinPreview = sincronica ? calcularFechaFinEdicion(fecha, fija ? String(fija) : cantidadClases) : '';
-  const labelPreview = !numero.trim()
-    ? ''
-    : sincronica
-      ? `Edición ${numero.trim()}${fecha ? ' — ' + diaFechaLabel(fecha) : ''}`
-      : `Edición ${numero.trim()} — Cursada Asincrónica`;
+  const labelPreview = ondemand
+    ? 'Modalidad a demanda'
+    : !numero.trim()
+      ? ''
+      : sincronica
+        ? `Edición ${numero.trim()}${fecha ? ' — ' + diaFechaLabel(fecha) : ''}`
+        : `Edición ${numero.trim()} — Cursada Asincrónica`;
 
   async function crear() {
-    if (!numero.trim()) { setError('Falta el número de edición.'); return; }
-    if (sincronica && !fecha) { setError('Elegí la fecha de la primera clase (o marcá la edición como asincrónica).'); return; }
+    if (!ondemand && !numero.trim()) { setError('Falta el número de edición.'); return; }
+    if (sincronica && !fecha) { setError('Elegí la fecha de la primera clase (o cambiá el tipo de cursada).'); return; }
     setError(''); setGuardando(true);
-    const id = String(Date.now()).slice(-6);
-    const nuevaEd = {
-      id,
-      label: sincronica ? `Edición ${numero.trim()} — ${diaFechaLabel(fecha)}` : `Edición ${numero.trim()} — Cursada Asincrónica`,
-      horarios: '',
-      ...(docente.trim() ? { docente: docente.trim() } : {}),
-      ...(sincronica ? { fecha, ...(horaIni ? { horaIni } : {}), ...(horaFin ? { horaFin } : {}) } : {}),
-      ...(fija ? { cantidadClases: String(fija) } : (cantidadClases ? { cantidadClases: String(cantidadClases) } : {}))
-    };
     try {
+      let nuevoDef;
+      if (ondemand) {
+        // "A demanda" es una propiedad de la ficha entera (mismo campo que ya usa Coaching
+        // Inmobiliario) — no se agrega una edición nueva a la lista, se marca el curso.
+        nuevoDef = { ...def, onDemand: true };
+      } else {
+        const id = String(Date.now()).slice(-6);
+        const nuevaEd = {
+          id,
+          label: sincronica ? `Edición ${numero.trim()} — ${diaFechaLabel(fecha)}` : `Edición ${numero.trim()} — Cursada Asincrónica`,
+          horarios: '',
+          ...(docente.trim() ? { docente: docente.trim() } : {}),
+          ...(sincronica ? { fecha, ...(horaIni ? { horaIni } : {}), ...(horaFin ? { horaFin } : {}) } : {}),
+          ...(fija ? { cantidadClases: String(fija) } : (cantidadClases ? { cantidadClases: String(cantidadClases) } : {}))
+        };
+        nuevoDef = { ...def, ediciones: [...eds, nuevaEd] };
+      }
       const res = await fetch('/api/fichas', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ solicitanteEmail: usuario.email, slug: def.slug, def: { ...def, ediciones: [...eds, nuevaEd] } })
+        body: JSON.stringify({ solicitanteEmail: usuario.email, slug: def.slug, def: nuevoDef })
       });
       const data = await res.json();
       if (!data.ok) throw new Error(data.error || 'No se pudo crear la edición.');
@@ -382,57 +402,99 @@ function ModalNuevaEdicion({ def, usuario, onCerrar, onCreada }) {
   }
 
   return (
-    <div className="mwrap on" onClick={onCerrar}>
-      <div className="modal" style={{ maxWidth: 460 }} onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ marginTop: 0 }}>+ Nueva edición</h3>
-        <p className="muted" style={{ fontSize: 12.5, margin: '2px 0 14px' }}>{def.curso}</p>
-
-        <div className="fgroup-label">Número de edición</div>
-        <input className="ctrl" style={{ width: '100%', marginBottom: 10 }} value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="Ej: 17" />
-
-        <label className="wiz-check-inline" style={{ marginBottom: 10 }}>
-          <input type="checkbox" checked={!sincronica} onChange={(e) => setSincronica(!e.target.checked)} />
-          Es una cursada asincrónica (sin día ni horario fijo)
-        </label>
-
-        {sincronica ? (
-          <>
-            <div className="fgroup-label">Fecha de la primera clase</div>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
-              <input className="ctrl" type="date" style={{ maxWidth: 160 }} value={fecha} onChange={(e) => setFecha(e.target.value)} />
-              <input className="ctrl" type="time" style={{ maxWidth: 120 }} value={horaIni} onChange={(e) => setHoraIni(e.target.value)} title="Desde (hora AR, opcional)" />
-              <input className="ctrl" type="time" style={{ maxWidth: 120 }} value={horaFin} onChange={(e) => setHoraFin(e.target.value)} title="Hasta (hora AR, opcional)" />
-            </div>
-          </>
-        ) : (
-          <p className="muted" style={{ fontSize: 12, marginBottom: 10 }}>No tiene día ni horario fijo, así que esos campos no aplican acá.</p>
-        )}
-
-        <div className="fgroup-label">Cantidad de clases</div>
-        {fija ? (
-          <input className="ctrl" disabled style={{ width: '100%', marginBottom: 10 }} value={`${fija} clases (fijo para este curso)`} />
-        ) : (
-          <input className="ctrl" type="number" min="1" style={{ width: '100%', marginBottom: 10 }} value={cantidadClases} onChange={(e) => setCantidadClases(e.target.value)} placeholder="Cantidad de encuentros de esta edición" />
-        )}
-
-        <div className="fgroup-label">Docente</div>
-        <input className="ctrl" style={{ width: '100%', marginBottom: 12 }} value={docente} onChange={(e) => setDocente(e.target.value)} placeholder="Nombre del docente (opcional por ahora)" />
-
-        {labelPreview && (
-          <div className="note" style={{ marginBottom: 12, fontSize: 12.5 }}>
-            Se va a crear <b>{labelPreview}</b>
-            {sincronica && fechaFinPreview && <> — termina el {diaFechaLabel(fechaFinPreview)}</>}
-            .
-          </div>
-        )}
-
-        {error && <p style={{ color: 'rgb(248 113 113)', fontSize: 12.5, marginBottom: 10 }}>{error}</p>}
-
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <button className="btn-sm" onClick={onCerrar} disabled={guardando}>Cancelar</button>
-          <button className="btn-sm solid" onClick={crear} disabled={guardando}>{guardando ? 'Creando…' : 'Crear y abrir Constructor'}</button>
+    <div>
+      <div className="fhead">
+        <div>
+          <button className="linklike" onClick={onVolver}>← Volver a Fichas de inscripción</button>
+          <h2 style={{ margin: '6px 0 0' }}>+ Nueva edición</h2>
+          <p className="fhead-sub">{def.curso}</p>
         </div>
       </div>
+
+      <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <div className="ctor-section" style={{ flex: '1 1 460px', minWidth: 320 }}>
+          <div className="ctor-section-lbl">Información general</div>
+          <div className="fgroup-label" style={{ marginTop: 10 }}>Tipo de cursada</div>
+          <select className="fsel" style={{ width: '100%', marginBottom: 14 }} value={tipo} onChange={(e) => setTipo(e.target.value)}>
+            {TIPO_CURSADA.map((t) => <option key={t.v} value={t.v}>{t.l}</option>)}
+          </select>
+
+          {!ondemand && (
+            <>
+              <div className="fgroup-label">Número de edición</div>
+              <input className="ctrl" style={{ width: '100%', marginBottom: 14 }} value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="Ej: 17" />
+            </>
+          )}
+
+          {ondemand ? (
+            <p className="muted" style={{ fontSize: 12.5, marginBottom: 14 }}>
+              El curso queda disponible siempre, sin ediciones programadas (mismo criterio que Coaching Inmobiliario) — no hace falta cargar fecha ni número.
+            </p>
+          ) : sincronica ? (
+            <>
+              <div className="fgroup-label">Fecha de la primera clase</div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
+                <input className="ctrl" type="date" style={{ maxWidth: 160 }} value={fecha} onChange={(e) => setFecha(e.target.value)} />
+                <input className="ctrl" type="time" style={{ maxWidth: 120 }} value={horaIni} onChange={(e) => setHoraIni(e.target.value)} title="Desde (hora AR, opcional)" />
+                <input className="ctrl" type="time" style={{ maxWidth: 120 }} value={horaFin} onChange={(e) => setHoraFin(e.target.value)} title="Hasta (hora AR, opcional)" />
+              </div>
+            </>
+          ) : (
+            <p className="muted" style={{ fontSize: 12.5, marginBottom: 14 }}>No tiene día ni horario fijo, así que esos campos no aplican acá.</p>
+          )}
+
+          {!ondemand && (
+            <>
+              <div className="fgroup-label">Cantidad de clases</div>
+              {fija ? (
+                <input className="ctrl" disabled style={{ width: '100%', marginBottom: 14 }} value={`${fija} clases (fijo para este curso)`} />
+              ) : (
+                <input className="ctrl" type="number" min="1" style={{ width: '100%', marginBottom: 14 }} value={cantidadClases} onChange={(e) => setCantidadClases(e.target.value)} placeholder="Cantidad de encuentros de esta edición" />
+              )}
+
+              <div className="fgroup-label">Docente</div>
+              <input className="ctrl" style={{ width: '100%', marginBottom: 14 }} value={docente} onChange={(e) => setDocente(e.target.value)} placeholder="Nombre del docente (opcional por ahora)" />
+            </>
+          )}
+
+          {error && <p style={{ color: 'rgb(248 113 113)', fontSize: 12.5, marginBottom: 10 }}>{error}</p>}
+
+          <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+            <button className="btn-sm solid" onClick={crear} disabled={guardando}>{guardando ? 'Creando…' : 'Crear edición'}</button>
+            <button className="btn-sm" onClick={onVolver} disabled={guardando}>Cancelar</button>
+          </div>
+        </div>
+
+        {/* Vista previa: se va completando sola a medida que se cargan los datos — mismo
+            criterio que la "Nueva edición" de listadopresentismo. */}
+        <div className="ctor-section" style={{ flex: '0 1 300px', minWidth: 260, position: 'sticky', top: 16 }}>
+          <div className="ctor-section-lbl">Vista previa</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <span className="curso-avatar" style={{ background: colorCurso(def.curso) + '22', color: colorCurso(def.curso) }}>{inicialesCurso(def.curso)}</span>
+            <b style={{ color: colorCurso(def.curso) }}>{def.curso}</b>
+          </div>
+          <div style={{ fontSize: 12.5, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <FilaPreview label={ondemand ? 'Modalidad' : 'Edición'}>{ondemand ? 'A demanda' : (numero.trim() ? numero.trim() : '—')}</FilaPreview>
+            {!ondemand && <FilaPreview label="Docente">{docente.trim() || '— Sin asignar —'}</FilaPreview>}
+            {!ondemand && <FilaPreview label="Fecha de inicio">{sincronica ? (fecha ? diaFechaLabel(fecha) : '—') : 'No aplica'}</FilaPreview>}
+            {!ondemand && <FilaPreview label="Fecha de finalización">{sincronica ? (fechaFinPreview ? diaFechaLabel(fechaFinPreview) : '— Elegí la fecha de inicio —') : 'No aplica'}</FilaPreview>}
+          </div>
+          {labelPreview && (
+            <div className="note" style={{ marginTop: 12, fontSize: 12 }}>
+              Se va a crear: <b>{labelPreview}</b>.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FilaPreview({ label, children }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, borderBottom: '1px solid rgb(var(--border))', paddingBottom: 6 }}>
+      <span className="muted">{label}</span>
+      <span style={{ fontWeight: 600, textAlign: 'right' }}>{children}</span>
     </div>
   );
 }
