@@ -74,6 +74,22 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
     return () => window.removeEventListener('beforeunload', h);
   }, [dirty]);
 
+  // Autocompleta la cantidad de clases fija por curso. Va ACÁ (antes de cualquier return
+  // temprano) y con guardas internas para no romper el orden de hooks (React #310).
+  useEffect(() => {
+    if (!defs) return;
+    const idx = (sel != null && defs[sel]) ? sel : 0;
+    const dd = defs[idx];
+    if (!dd) return;
+    const edsLocal = dd.ediciones || [];
+    const fija = cantidadClasesFija(dd.curso);
+    if (!fija || edsLocal.length === 0 || edsLocal.every((e) => e.cantidadClases)) return;
+    setDefs((arr) => arr.map((x, i) => i === idx
+      ? { ...x, ediciones: edsLocal.map((e) => e.cantidadClases ? e : { ...e, cantidadClases: String(fija), fechaFin: calcularFechaFinEdicion(e.fecha, fija) }) }
+      : x));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defs, sel]);
+
   if (errorCarga) {
     return (
       <div className="empty" style={{ textAlign: 'center', padding: '40px 20px' }}>
@@ -205,15 +221,6 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
   // edición" rápida use exactamente la misma cuenta) — acá queda solo el alias corto.
   const calcularFechaFin = calcularFechaFinEdicion;
 
-  // Para los cursos de cadencia fija (ver CANTIDAD_CLASES_POR_CURSO), completa sola la
-  // cantidad de clases de cualquier edición que todavía no la tenga cargada — no pisa un
-  // valor ya cargado a mano (podría ser una excepción real de esa edición puntual).
-  useEffect(() => {
-    const fija = cantidadClasesFija(d.curso);
-    if (!fija || eds.every((e) => e.cantidadClases)) return;
-    setEds(eds.map((e) => (e.cantidadClases ? e : { ...e, cantidadClases: String(fija), fechaFin: calcularFechaFin(e.fecha, fija) })));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [d.curso, eds]);
 
   return (
     <div className="ctor3" onClick={() => edMenu !== null && setEdMenu(null)}>
