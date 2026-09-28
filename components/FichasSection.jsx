@@ -140,7 +140,6 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
         {/* El acceso directo al Constructor ahora vive al lado de las sub-pestañas "Fichas de
             inscripción / Fichas completadas" (ver Panel.jsx), como "Crear nueva ficha de
             inscripción" — se sacó de acá para no duplicarlo. */}
-        {puedeEditar && <button className="btn btn-primary" style={{ flex: 'none', padding: '10px 18px' }} onClick={() => showToast('El alta de cursos nuevos llega en el próximo lote (cursos dinámicos).')}>+ Nueva ficha</button>}
       </div>
 
       {/* Filtros */}
