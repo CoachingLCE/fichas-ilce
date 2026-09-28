@@ -179,7 +179,7 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
             const actualizado = fmtFecha(d.actualizado);
             return (
               <tr key={d.slug}>
-                <td className="ins-name">
+                <td className="ins-name" style={{ borderLeft: `4px solid ${colorCurso(d.curso)}` }}>
                   <div className="curso-cell">
                     <span className="curso-avatar" style={{ background: colorCurso(d.curso) + '22', color: colorCurso(d.curso) }}>{inicialesCurso(d.curso)}</span>
                     <span style={{ color: colorCurso(d.curso) }}>{d.curso}</span>

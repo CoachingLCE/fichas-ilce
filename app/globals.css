@@ -1221,3 +1221,8 @@ tr.clickable .repx-cellbar:hover .fl{filter:brightness(1.15)}
 .evol-panel-h span{font-size:13px;color:rgb(var(--textSec));font-weight:600}
 .evol-panel-h b{font-family:'Dosis';font-size:20px;font-weight:700}
 @media (max-width:700px){.evol-paneles{grid-template-columns:1fr}}
+
+/* Tabla de Fichas: filas con hover suave y borde de color a la izquierda (estilo cronograma). */
+.tablewrap-fichas tbody tr{transition:background .12s}
+.tablewrap-fichas tbody tr:hover td{background:rgb(var(--surface2))}
+.tablewrap-fichas tbody td.ins-name{border-top-left-radius:8px;border-bottom-left-radius:8px}
