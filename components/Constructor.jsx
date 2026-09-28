@@ -108,7 +108,8 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
     if (onVolver) onVolver();
   }
 
-  const d = defs[sel];
+  const d = defs[sel] || defs[0];
+  if (!d) return <div className="spin" />;
 
   function upd(patch) {
     setDefs((arr) => arr.map((x, i) => i === sel ? { ...x, ...patch } : x));
