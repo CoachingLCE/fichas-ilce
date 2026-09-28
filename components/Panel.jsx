@@ -541,20 +541,14 @@ export default function Panel() {
           const puedeAct = tienePermisoActividades(usuario);
           const puedeForm = tienePermisoFormularios(usuario);
           if (!puedeAct && !puedeForm) return <AccesoDenegado seccion="Respuestas" />;
-          const elegida = vistaResp || (puedeAct && !puedeForm ? 'actividades' : (!puedeAct && puedeForm ? 'formularios' : null));
-          if (!elegida) {
-            return (
-              <SelectorDoble
-                opciones={[
-                  puedeAct && { key: 'actividades', icono: '📝', label: 'Respuestas de actividades', onClick: () => setVistaResp('actividades') },
-                  puedeForm && { key: 'formularios', icono: '🗒️', label: 'Respuestas de formularios', onClick: () => setVistaResp('formularios') }
-                ].filter(Boolean)}
-              />
-            );
-          }
+          const elegida = vistaResp || (puedeForm && !puedeAct ? 'formularios' : 'actividades');
           return (
             <>
-              {vistaResp && <button className="btn-sm" style={{ marginBottom: 12 }} onClick={() => setVistaResp(null)}>← Volver</button>}
+              <div className="subtabs-pill">
+                <button onClick={() => setTab('inscripciones')} title="Ver las inscripciones (Fichas completadas)">📋 Respuestas fichas</button>
+                {puedeAct && <button className={elegida === 'actividades' ? 'on' : ''} onClick={() => setVistaResp('actividades')}>📝 Respuestas actividades</button>}
+                {puedeForm && <button className={elegida === 'formularios' ? 'on' : ''} onClick={() => setVistaResp('formularios')}>🗒️ Respuestas formularios</button>}
+              </div>
               {elegida === 'actividades'
                 ? <Actividades usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} irABuscador={() => setTab('buscador')} subInicial="respuestas" />
                 : <Formularios usuario={usuario} showToast={showToast} subInicial="respuestas" />}
