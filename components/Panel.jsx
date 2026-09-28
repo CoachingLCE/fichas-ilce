@@ -521,20 +521,16 @@ export default function Panel() {
           const puedeAct = tienePermisoActividades(usuario);
           const puedeForm = tienePermisoFormularios(usuario);
           if (!puedeAct && !puedeForm) return <AccesoDenegado seccion="Actividades y formularios" />;
-          const elegida = vistaAyF || (puedeAct && !puedeForm ? 'actividades' : (!puedeAct && puedeForm ? 'formularios' : null));
-          if (!elegida) {
-            return (
-              <SelectorDoble
-                opciones={[
-                  puedeAct && { key: 'actividades', icono: '📝', label: 'Fichas de actividades', onClick: () => setVistaAyF('actividades') },
-                  puedeForm && { key: 'formularios', icono: '🗒️', label: 'Ficha de formularios', onClick: () => setVistaAyF('formularios') }
-                ].filter(Boolean)}
-              />
-            );
-          }
+          // Toggle fijo arriba: Actividades | Formularios (cada uno con sus propias sub-pestañas adentro).
+          const elegida = vistaAyF || (puedeForm && !puedeAct ? 'formularios' : 'actividades');
           return (
             <>
-              {vistaAyF && <button className="btn-sm" style={{ marginBottom: 12 }} onClick={() => setVistaAyF(null)}>← Volver</button>}
+              {puedeAct && puedeForm && (
+                <div className="subtabs-pill">
+                  <button className={elegida === 'actividades' ? 'on' : ''} onClick={() => setVistaAyF('actividades')}>📝 Actividades</button>
+                  <button className={elegida === 'formularios' ? 'on' : ''} onClick={() => setVistaAyF('formularios')}>🗒️ Formularios</button>
+                </div>
+              )}
               {elegida === 'actividades'
                 ? <Actividades ref={actividadesRef} usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} irABuscador={() => setTab('buscador')} />
                 : <Formularios usuario={usuario} showToast={showToast} />}
