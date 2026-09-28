@@ -222,7 +222,7 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
             const subDefault = `Ficha de inscripción — ${d.curso}`;
             const sub = (d.titulo && d.titulo.trim() && d.titulo.trim() !== subDefault && d.titulo.trim() !== d.curso) ? d.titulo.trim() : null;
             return (
-              <div className="pcard" key={d.slug} style={{ borderLeft: `4px solid ${colorCurso(d.curso)}66` }}>
+              <div className="pcard" key={d.slug} style={{ borderLeft: `5px solid ${colorCurso(d.curso)}` }}>
                 <div className="pcard-top">
                   <div className="pcard-dotrow">
                     <span className="pcard-colordot" style={{ background: colorCurso(d.curso) }} />
