@@ -151,7 +151,6 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
       <div className="fbar">
         {/* El buscador de texto libre queda solo en la pestaña "Buscador" (busca en toda la
             app), igual que en Actividades — acá ya quedan los chips de estado de arriba. */}
-        {irABuscador && <button className="btn-sm" onClick={irABuscador}>🔎 Buscar</button>}
         <span style={{ flex: 1 }} />
         <select className="fsel" value={orden} onChange={(e) => setOrden(e.target.value)}>
           <option value="nombre">Ordenar: Nombre</option>

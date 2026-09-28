@@ -532,7 +532,7 @@ export default function Panel() {
                 </div>
               )}
               {elegida === 'actividades'
-                ? <Actividades ref={actividadesRef} usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} irABuscador={() => setTab('buscador')} />
+                ? <Actividades ref={actividadesRef} usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} irABuscador={() => setTab('buscador')} irAReportes={() => setTab('reportes')} />
                 : <Formularios usuario={usuario} showToast={showToast} />}
             </>
           );
@@ -550,7 +550,7 @@ export default function Panel() {
                 {puedeForm && <button className={elegida === 'formularios' ? 'on' : ''} onClick={() => setVistaResp('formularios')}>🗒️ Respuestas formularios</button>}
               </div>
               {elegida === 'actividades'
-                ? <Actividades usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} irABuscador={() => setTab('buscador')} subInicial="respuestas" />
+                ? <Actividades usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} irABuscador={() => setTab('buscador')} irAReportes={() => setTab('reportes')} subInicial="respuestas" />
                 : <Formularios usuario={usuario} showToast={showToast} subInicial="respuestas" />}
             </>
           );

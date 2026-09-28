@@ -92,7 +92,7 @@ const lbl = { fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 5, 
 // El alta/baja de acceso de docentes se gestiona en una única pantalla, "Equipo Docente"
 // (ver Equipo.jsx); antes había una pestaña "Docentes" duplicada acá adentro con el mismo
 // alcance, lo que generaba dos lugares distintos para lo mismo — se saca (pedido de Diego).
-const Actividades = forwardRef(function Actividades({ usuario, showToast, puedeGestionar, irABuscador, subInicial }, ref) {
+const Actividades = forwardRef(function Actividades({ usuario, showToast, puedeGestionar, irABuscador, irAReportes, subInicial }, ref) {
   // "subInicial" lo usa Panel.jsx para abrir directo en "Respuestas" cuando se entra desde
   // la pestaña "Respuestas" (en vez de siempre arrancar en "Actividades").
   const [sub, setSub] = useState(subInicial || 'lista');
@@ -109,7 +109,7 @@ const Actividades = forwardRef(function Actividades({ usuario, showToast, puedeG
       <div className="subtabs">
         <button className={sub === 'lista' ? 'on' : ''} onClick={() => setSub('lista')}>Actividades</button>
         <button className={sub === 'respuestas' ? 'on' : ''} onClick={() => setSub('respuestas')}>Respuestas</button>
-        <button className={sub === 'reportes' ? 'on' : ''} onClick={() => setSub('reportes')}>Reportes</button>
+        <button className={sub === 'reportes' ? 'on' : ''} onClick={() => { if (irAReportes) irAReportes(); else setSub('reportes'); }}>Reportes</button>
       </div>
       {sub === 'lista' && <Lista ref={listaRef} usuario={usuario} showToast={showToast} puedeGestionar={puedeGestionar} irABuscador={irABuscador} />}
       {sub === 'respuestas' && <Respuestas usuario={usuario} irABuscador={irABuscador} />}
