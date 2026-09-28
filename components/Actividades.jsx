@@ -98,11 +98,12 @@ const Actividades = forwardRef(function Actividades({ usuario, showToast, puedeG
   const [sub, setSub] = useState(subInicial || 'lista');
   const listaRef = useRef(null);
   const [abrirNuevaAlEntrar, setAbrirNuevaAlEntrar] = useState(false);
+  const [preseedNueva, setPreseedNueva] = useState(null);
   useEffect(() => {
-    if (sub === 'lista' && abrirNuevaAlEntrar) { listaRef.current?.nueva(); setAbrirNuevaAlEntrar(false); }
+    if (sub === 'lista' && abrirNuevaAlEntrar) { listaRef.current?.nueva(preseedNueva); setAbrirNuevaAlEntrar(false); setPreseedNueva(null); }
   }, [sub, abrirNuevaAlEntrar]);
   useImperativeHandle(ref, () => ({
-    nueva: () => { setSub('lista'); setAbrirNuevaAlEntrar(true); }
+    nueva: (preseed) => { setPreseedNueva(preseed || null); setSub('lista'); setAbrirNuevaAlEntrar(true); }
   }));
   return (
     <div>
@@ -652,8 +653,14 @@ const Lista = forwardRef(function Lista({ usuario, showToast, puedeGestionar, ir
     setActs(data.ok ? data.actividades : []);
   }
 
-  function nueva() {
-    setModo({ tipo: 'editor', base: { slug: '', curso: CURSOS[0].nombre, titulo: '', clase: '', edicion: '', fechaDisponible: '', mostrarResultado: true, estado: 'Publicada', preguntas: [nuevaPreg()], _nuevo: true } });
+  function nueva(preseed) {
+    const base = { slug: '', curso: CURSOS[0].nombre, titulo: '', clase: '', edicion: '', fechaDisponible: '', mostrarResultado: true, estado: 'Publicada', preguntas: [nuevaPreg()], _nuevo: true };
+    if (preseed) {
+      if (preseed.curso) base.curso = preseed.curso;
+      if (preseed.clase != null && preseed.clase !== '') base.clase = String(preseed.clase);
+      if (preseed.cantidadPreguntas > 0) base.preguntas = Array.from({ length: preseed.cantidadPreguntas }, () => nuevaPreg());
+    }
+    setModo({ tipo: 'editor', base });
   }
   useImperativeHandle(ref, () => ({ nueva }));
   function editar(a) { setModo({ tipo: 'editor', base: { ...a, _nuevo: false } }); }

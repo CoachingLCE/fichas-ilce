@@ -19,7 +19,7 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
   // El botón "Crear nueva ficha de inscripción" vive al lado de las sub-pestañas, en Panel.jsx
   // (no acá adentro), así que Panel necesita poder abrir el Constructor desde afuera.
   useImperativeHandle(ref, () => ({
-    abrirConstructor: () => { if (defs && defs.length > 0) onEditar(defs[0].slug); }
+    abrirConstructor: (curso) => { if (!defs || defs.length === 0) return; const d = curso ? (defs.find((x) => x.curso === curso) || defs[0]) : defs[0]; onEditar(d.slug); }
   }));
   const [defs, setDefs] = useState(null);
   const [q, setQ] = useState('');

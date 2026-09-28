@@ -7,6 +7,7 @@ import { Isologo, IsologoDefs } from './Isologo';
 import ThemeSelector from './ThemeSelector';
 import Accesos from './Accesos';
 import VersionBadge from './VersionBadge';
+import CrearWizard from './CrearWizard';
 import FichasSection from './FichasSection';
 import Actividades from './Actividades';
 import EmailsPanel from './EmailsPanel';
@@ -144,6 +145,7 @@ export default function Panel() {
   // Si el alta elegida no es la pestaña activa, primero hay que cambiar de pestaña (recién ahí
   // se monta esa sección y su ref queda disponible) y disparar la acción apenas monte.
   const [crearAbierto, setCrearAbierto] = useState(false);
+  const [preseedCrear, setPreseedCrear] = useState(null);
   // Pedido de Diego: la barra de navegación de arriba (.topnav) ya era "flotante" (sticky),
   // pero ahora además se oculta al bajar en la página y reaparece apenas se sube un poco —
   // mismo patrón que ya tiene disponibilidad-zoom en otras pantallas. No se oculta cerca del
@@ -169,23 +171,22 @@ export default function Panel() {
   const [vistaAyF, setVistaAyF] = useState(null);
   const [vistaResp, setVistaResp] = useState(null);
   useEffect(() => {
-    if (tab === 'fichas' && accionAlEntrar === 'ficha') { fichasRef.current?.abrirConstructor(); setAccionAlEntrar(null); }
-    if (tab === 'actividadesyformularios' && vistaAyF === 'actividades' && accionAlEntrar === 'actividad') { actividadesRef.current?.nueva(); setAccionAlEntrar(null); }
+    if (tab === 'fichas' && accionAlEntrar === 'ficha') { fichasRef.current?.abrirConstructor(preseedCrear?.curso); setAccionAlEntrar(null); setPreseedCrear(null); }
+    if (tab === 'actividadesyformularios' && vistaAyF === 'actividades' && accionAlEntrar === 'actividad') { actividadesRef.current?.nueva(preseedCrear); setAccionAlEntrar(null); setPreseedCrear(null); }
   }, [tab, vistaAyF, accionAlEntrar]);
-  function elegirCrear(tipo) {
+  function crearActividad(preseed) {
     setCrearAbierto(false);
-    if (tipo === 'inscripcion') {
-      if (tab !== 'fichas') { setAccionAlEntrar('ficha'); setTab('fichas'); }
-      else fichasRef.current?.abrirConstructor();
-    } else if (tipo === 'actividad') {
-      if (tab !== 'actividadesyformularios' || vistaAyF !== 'actividades') {
-        setAccionAlEntrar('actividad'); setVistaAyF('actividades'); setTab('actividadesyformularios');
-      } else actividadesRef.current?.nueva();
-    } else if (tipo === 'formulario') {
-      setVistaAyF('formularios');
-      setTab('actividadesyformularios');
-      showToast('Los formularios se cargan pegando la definición en la pestaña "Formularios" de la Sheet — el alta desde acá todavía no existe.');
-    }
+    if (tab === 'actividadesyformularios' && vistaAyF === 'actividades') { actividadesRef.current?.nueva(preseed); }
+    else { setPreseedCrear(preseed); setAccionAlEntrar('actividad'); setVistaAyF('actividades'); setTab('actividadesyformularios'); }
+  }
+  function crearInscripcion({ curso }) {
+    setCrearAbierto(false);
+    if (tab === 'fichas') { fichasRef.current?.abrirConstructor(curso); }
+    else { setPreseedCrear({ curso }); setAccionAlEntrar('ficha'); setTab('fichas'); }
+  }
+  function crearFormulario() {
+    setCrearAbierto(false); setVistaAyF('formularios'); setTab('actividadesyformularios');
+    showToast('El alta guiada de formularios llega en el proximo lote — por ahora se cargan en la pestaña Formularios de la Sheet.');
   }
   function editarFicha(slug) { setConstructorSlug(slug); setTab('constructor'); }
   function verInscripcionesDe(curso) { setFCurso(curso); setTab('inscripciones'); }
@@ -400,23 +401,12 @@ export default function Panel() {
         )}
 
         {crearAbierto && (
-          <div className="mwrap on" onClick={() => setCrearAbierto(false)}>
-            <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 380 }}>
-              <h3 style={{ marginTop: 0 }}>¿Qué querés crear?</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
-                {tienePermisoConstructor(usuario) && (
-                  <button className="btn-sm solid" style={{ justifyContent: 'flex-start', padding: '12px 16px' }} onClick={() => elegirCrear('inscripcion')}>📋 Inscripción</button>
-                )}
-                {tienePermisoGestionActividades(usuario) && (
-                  <button className="btn-sm solid" style={{ justifyContent: 'flex-start', padding: '12px 16px' }} onClick={() => elegirCrear('actividad')}>📝 Actividad</button>
-                )}
-                {tienePermisoFormularios(usuario) && (
-                  <button className="btn-sm solid" style={{ justifyContent: 'flex-start', padding: '12px 16px' }} onClick={() => elegirCrear('formulario')}>🗒️ Formulario</button>
-                )}
-              </div>
-              <button className="btn-sm" style={{ marginTop: 16, width: '100%', justifyContent: 'center' }} onClick={() => setCrearAbierto(false)}>Cancelar</button>
-            </div>
-          </div>
+          <CrearWizard
+            onCerrar={() => setCrearAbierto(false)}
+            onCrearActividad={crearActividad}
+            onCrearFormulario={crearFormulario}
+            onCrearInscripcion={crearInscripcion}
+          />
         )}
 
         <PausaSemanal />
