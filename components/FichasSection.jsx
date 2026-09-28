@@ -354,6 +354,24 @@ function NuevaEdicionPanel({ def, usuario, onVolver, onCreada }) {
   const [docente, setDocente] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
+  // Precarga del equipo docente: al abrir el form se trae el roster para ofrecer los docentes
+  // del curso en un desplegable (en vez de tipear el nombre a mano).
+  const [docentesRoster, setDocentesRoster] = useState([]);
+  const [modoDocenteLibre, setModoDocenteLibre] = useState(false);
+  useEffect(() => {
+    let vivo = true;
+    fetch('/api/docentes?solicitanteEmail=' + encodeURIComponent(usuario.email))
+      .then((r) => r.json())
+      .then((d) => { if (vivo && d && d.ok) setDocentesRoster(d.docentes || []); })
+      .catch(() => {});
+    return () => { vivo = false; };
+  }, [usuario]);
+  const docentesDelCurso = useMemo(() => {
+    const norm = (x) => (x || '').toString().trim().toLowerCase();
+    const delCurso = docentesRoster.filter((d) => norm(d.curso) === norm(def.curso) && (d.nombre || '').trim());
+    const base = delCurso.length ? delCurso : docentesRoster;
+    return [...new Set(base.map((d) => (d.nombre || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  }, [docentesRoster, def.curso]);
 
   const sincronica = tipo === 'sincronica';
   const ondemand = tipo === 'ondemand';
@@ -453,7 +471,27 @@ function NuevaEdicionPanel({ def, usuario, onVolver, onCreada }) {
               )}
 
               <div className="fgroup-label">Docente</div>
-              <input className="ctrl" style={{ width: '100%', marginBottom: 14 }} value={docente} onChange={(e) => setDocente(e.target.value)} placeholder="Nombre del docente (opcional por ahora)" />
+              {!modoDocenteLibre && docentesDelCurso.length > 0 ? (
+                <select
+                  className="fsel" style={{ width: '100%', marginBottom: 14 }}
+                  value={docentesDelCurso.includes(docente) ? docente : ''}
+                  onChange={(e) => { if (e.target.value === '__otro__') { setModoDocenteLibre(true); setDocente(''); } else setDocente(e.target.value); }}
+                >
+                  <option value="">— Sin asignar todavía —</option>
+                  {docentesDelCurso.map((n) => <option key={n} value={n}>{n}</option>)}
+                  <option value="__otro__">✏️ Otro (escribir)…</option>
+                </select>
+              ) : (
+                <>
+                  <input className="ctrl" style={{ width: '100%', marginBottom: docentesDelCurso.length > 0 ? 6 : 14 }} value={docente} onChange={(e) => setDocente(e.target.value)} placeholder="Nombre del docente (opcional por ahora)" />
+                  {docentesDelCurso.length > 0 && (
+                    <button type="button" onClick={() => { setModoDocenteLibre(false); setDocente(''); }}
+                      style={{ background: 'none', border: 'none', color: 'rgb(var(--accentTeal))', cursor: 'pointer', padding: 0, fontSize: 12, marginBottom: 14, display: 'block' }}>
+                      ← Elegir del equipo docente
+                    </button>
+                  )}
+                </>
+              )}
             </>
           )}
 
