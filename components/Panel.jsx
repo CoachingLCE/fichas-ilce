@@ -609,9 +609,9 @@ export default function Panel() {
       <VersionBadge />
       <TourGuiado tab={tab} setTab={setTab} permisos={{
         dashboard: tienePermisoDashboard(usuario),
-        actividades: tienePermisoActividades(usuario),
-        formularios: tienePermisoFormularios(usuario),
+        actividadesyformularios: tienePermisoActividades(usuario) || tienePermisoFormularios(usuario),
         emails: tienePermisoEmails(usuario),
+        equipo: tienePermisoAsignarDocentes(usuario),
         accesos: tienePermisoAccesos(usuario),
         auditoria: tienePermisoAuditoria(usuario),
         verComo: puedeVerComoOtro(usuarioReal)
