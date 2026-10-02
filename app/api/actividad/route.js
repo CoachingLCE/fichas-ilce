@@ -7,6 +7,31 @@ import { enviarResultadoActividad, enviarAvisoActividadDocente } from '../../../
 
 export const dynamic = 'force-dynamic';
 
+// Para que el formulario público pueda avisarle al estudiante "ya completaste esta
+// actividad" ANTES de dejarlo pasar a las preguntas (en vez de dejarlo responder de nuevo
+// y recién fallar al enviar). Las respuestas se guardan por Actividad (título) + Email —
+// no hay un ID de estudiante en este sistema — así que se busca por esos dos campos,
+// igual que ya compara el aviso a docentes más abajo.
+export async function GET(req) {
+  const { searchParams } = new URL(req.url);
+  const slug = searchParams.get('slug');
+  const email = (searchParams.get('email') || '').trim().toLowerCase();
+  if (!slug || !validarEmail(email)) return NextResponse.json({ ok: false, error: 'Datos inválidos' }, { status: 400 });
+  const act = await getActividad(slug);
+  if (!act) return NextResponse.json({ ok: false, error: 'Actividad no encontrada' }, { status: 404 });
+  // El email de prueba de Diego nunca queda guardado (ver POST) — para él, "ya completada"
+  // no existe nunca, así puede probar el flujo las veces que haga falta.
+  if (email === 'diegolernerdl@gmail.com') return NextResponse.json({ ok: true, yaCompletada: false });
+  const previas = await readSheet(TABS.RESPUESTAS_ACT);
+  const tituloNorm = act.titulo.trim().toLowerCase();
+  const previa = previas.find((r) => (r.Email || '').trim().toLowerCase() === email && (r.Actividad || '').trim().toLowerCase() === tituloNorm);
+  if (!previa) return NextResponse.json({ ok: true, yaCompletada: false });
+  return NextResponse.json({
+    ok: true, yaCompletada: true, fecha: previa.Fecha || '',
+    puntaje: Number(previa['Puntuación']) || 0, total: Number(previa.Total) || 0
+  });
+}
+
 export async function POST(req) {
   let body;
   try { body = await req.json(); } catch { return NextResponse.json({ ok: false, error: 'JSON inválido' }, { status: 400 }); }
@@ -22,6 +47,7 @@ export async function POST(req) {
   if (act.estado !== 'Publicada') return NextResponse.json({ ok: false, error: 'La actividad no está disponible' }, { status: 403 });
   const hoy = new Date().toISOString().slice(0, 10);
   if (act.fechaDisponible && act.fechaDisponible > hoy) return NextResponse.json({ ok: false, error: 'La actividad todavía no está disponible' }, { status: 403 });
+  if (act.fechaCierre && act.fechaCierre < hoy) return NextResponse.json({ ok: false, error: 'El período para completar esta actividad ya finalizó' }, { status: 403 });
 
   // Si la actividad ya tiene una edición asignada por quien la creó, esa es la fuente de
   // verdad (el formulario público ni siquiera la pide) — nunca la que mande el navegador.
@@ -38,6 +64,13 @@ export async function POST(req) {
 
   let emailOk = true;
   if (!esPruebaDiego) {
+    // No se permite un segundo envío con el mismo email para la misma actividad — antes se
+    // podía (append-only, sin chequeo), lo que dejaba filas duplicadas. El formulario ya
+    // debería frenar esto antes (GET de más arriba), esto es el resguardo del lado servidor.
+    const previas = await readSheet(TABS.RESPUESTAS_ACT);
+    const tituloNorm = act.titulo.trim().toLowerCase();
+    const yaRespondio = previas.some((r) => (r.Email || '').trim().toLowerCase() === String(email).trim().toLowerCase() && (r.Actividad || '').trim().toLowerCase() === tituloNorm);
+    if (yaRespondio) return NextResponse.json({ ok: false, error: 'Ya enviaste esta actividad con este correo', yaCompletada: true }, { status: 409 });
     try {
       await appendRow(TABS.RESPUESTAS_ACT, [
         id, new Date().toISOString(), act.titulo, act.curso, edicionFinal,

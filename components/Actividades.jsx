@@ -11,75 +11,23 @@ const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(
 // usa googleapis (server-only). Se duplica acá la única cuenta que hace falta del lado
 // del cliente: derivar "Programada" a partir de Estado + fechaDisponible.
 function estadoEfectivoCliente(a) {
-  if (a.estado === 'Publicada' && a.fechaDisponible && a.fechaDisponible > new Date().toISOString().slice(0, 10)) return 'Programada';
+  const hoy = new Date().toISOString().slice(0, 10);
+  if (a.estado === 'Publicada' && a.fechaDisponible && a.fechaDisponible > hoy) return 'Programada';
+  if (a.estado === 'Publicada' && a.fechaCierre && a.fechaCierre < hoy) return 'Cerrada';
   return a.estado || 'Publicada';
 }
 const ESTADO_ICO = {
   Publicada: { cls: 'pub', ico: '🟢' },
   Borrador: { cls: 'bor', ico: '⚪' },
   Programada: { cls: 'prog', ico: '🟠' },
+  Cerrada: { cls: 'cer', ico: '🔴' },
   Archivada: { cls: 'arch', ico: '🔴' }
 };
 
-function Reportes({ usuario }) {
-  const [acts, setActs] = useState(null);
-  const [abierto, setAbierto] = useState(null);
-  useEffect(() => { (async () => {
-    const res = await fetch('/api/actividades/reporte?solicitanteEmail=' + encodeURIComponent(usuario.email));
-    const d = await res.json(); setActs(d.ok ? d.actividades : []);
-  })(); /* eslint-disable-next-line */ }, []);
-  if (!acts) return <div className="spin" />;
-  const conResp = acts.filter((a) => a.totalResp > 0);
-  if (conResp.length === 0) return <div className="empty"><div className="ico">📊</div><h3>Todavía no hay datos para reportar</h3><p>Cuando los estudiantes respondan las actividades, vas a ver acá promedios y las preguntas que más se erran.</p></div>;
-
-  const colorPct = (p) => p >= 70 ? 'rgb(74 222 128)' : p >= 40 ? 'rgb(251 191 36)' : 'rgb(248 113 113)';
-  return (
-    <div>
-      {conResp.map((a) => {
-        // Las preguntas abiertas no tienen "% de acierto" (no se autocorrigen) — quedan
-        // afuera del ranking de "más se erran", que solo tiene sentido para las cerradas.
-        const peor = [...a.preguntas].filter((p) => p.tipo !== 'abierta' && p.respondidas > 0).sort((x, y) => x.pct - y.pct).slice(0, 3);
-        const open = abierto === a.slug;
-        return (
-          <div className="panel" key={a.slug}>
-            <div className="sechead" style={{ marginBottom: 6 }}>
-              <div>
-                <div className="htitle">{a.titulo}</div>
-                <div className="muted" style={{ fontSize: 12 }}>{a.curso}</div>
-              </div>
-              <span className="grow" />
-              <div style={{ textAlign: 'center' }}><div style={{ fontFamily: 'Jost', fontWeight: 700, fontSize: 22, color: 'rgb(var(--accentTeal))' }}>{a.totalResp}</div><div className="muted" style={{ fontSize: 11 }}>respuestas</div></div>
-              <div style={{ textAlign: 'center', marginLeft: 18 }}><div style={{ fontFamily: 'Jost', fontWeight: 700, fontSize: 22, color: colorPct(a.promedio) }}>{a.promedio}%</div><div className="muted" style={{ fontSize: 11 }}>promedio</div></div>
-              {a.tiempoProm > 0 && <div style={{ textAlign: 'center', marginLeft: 18 }}><div style={{ fontFamily: 'Jost', fontWeight: 700, fontSize: 22 }}>{fmtTiempo(a.tiempoProm)}</div><div className="muted" style={{ fontSize: 11 }}>tiempo prom.</div></div>}
-              <button className="btn-sm" style={{ marginLeft: 16 }} onClick={() => setAbierto(open ? null : a.slug)}>{open ? 'Ocultar detalle' : 'Ver por pregunta'}</button>
-            </div>
-
-            {peor.length > 0 && (
-              <div style={{ background: 'rgba(248,113,113,.08)', border: '1px solid rgba(248,113,113,.25)', borderRadius: 10, padding: '10px 12px', fontSize: 13 }}>
-                <b style={{ color: 'rgb(248 113 113)' }}>Preguntas que más se erran:</b>
-                <ol style={{ margin: '6px 0 0', paddingLeft: 18 }}>
-                  {peor.map((p, i) => <li key={i} style={{ marginBottom: 2 }}>{p.pregunta} <span className="muted">({p.pct}% acierto)</span></li>)}
-                </ol>
-              </div>
-            )}
-
-            {open && (
-              <div style={{ marginTop: 12 }}>
-                {a.preguntas.map((p, i) => (
-                  <div className="bar" key={i} style={{ alignItems: 'flex-start' }}>
-                    <span className="lb" style={{ width: 'auto', flex: 1, whiteSpace: 'normal', color: 'rgb(var(--text))' }}>{i + 1}. {p.pregunta}</span>
-                    <span className="track" style={{ maxWidth: 160 }}><span className="fill" style={{ width: p.pct + '%', background: colorPct(p.pct) }} /></span>
-                    <span className="vv" style={{ width: 90 }}>{p.pct}% · {p.aciertos}/{p.respondidas}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
+// (Antes acá vivía un componente "Reportes" local, duplicado del tab "Reportes" de arriba —
+// era inalcanzable en la práctica (Panel.jsx siempre pasa "irAReportes", que lleva al tab real)
+// y mostraba las mismas métricas/gráficos que ya están en Reportes → se saca (pedido de Diego:
+// "todos los reportes, métricas, gráficos y análisis deben concentrarse exclusivamente" ahí).
 
 function fmtTiempo(seg) {
   seg = Number(seg) || 0;
@@ -110,11 +58,10 @@ const Actividades = forwardRef(function Actividades({ usuario, showToast, puedeG
       <div className="subtabs">
         <button className={sub === 'lista' ? 'on' : ''} onClick={() => setSub('lista')}>Actividades</button>
         <button className={sub === 'respuestas' ? 'on' : ''} onClick={() => setSub('respuestas')}>Respuestas</button>
-        <button className={sub === 'reportes' ? 'on' : ''} onClick={() => { if (irAReportes) irAReportes(); else setSub('reportes'); }}>Reportes</button>
+        <button onClick={() => irAReportes && irAReportes()}>Reportes</button>
       </div>
       {sub === 'lista' && <Lista ref={listaRef} usuario={usuario} showToast={showToast} puedeGestionar={puedeGestionar} irABuscador={irABuscador} />}
       {sub === 'respuestas' && <Respuestas usuario={usuario} irABuscador={irABuscador} />}
-      {sub === 'reportes' && <Reportes usuario={usuario} />}
     </div>
   );
 });
@@ -208,7 +155,9 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar }) {
   async function guardar() {
     const msgInfo = !validarInfo(e) ? 'Poné un título para la actividad.' : '';
     const msgPreg = !msgInfo ? validarPreguntas(e) : '';
-    if (msgInfo || msgPreg) { setError(msgInfo || msgPreg); setPaso(msgInfo ? 0 : 1); return; }
+    const msgFechas = (!msgInfo && !msgPreg && e.fechaDisponible && e.fechaCierre && e.fechaCierre < e.fechaDisponible)
+      ? 'La fecha de cierre no puede ser anterior a la de disponibilidad.' : '';
+    if (msgInfo || msgPreg || msgFechas) { setError(msgInfo || msgPreg || msgFechas); setPaso(msgInfo ? 0 : msgPreg ? 1 : 2); return; }
     setGuardando(true); setError('');
     const slug = e.slug || slugify(e.titulo);
     try {
@@ -216,7 +165,7 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar }) {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           solicitanteEmail: usuario.email, slug, curso: e.curso, titulo: e.titulo, clase: e.clase,
-          estado: e.estado, edicion: e.edicion, fechaDisponible: e.fechaDisponible,
+          estado: e.estado, edicion: e.edicion, intro: e.intro, fechaDisponible: e.fechaDisponible, fechaCierre: e.fechaCierre,
           mostrarResultado: e.mostrarResultado !== false, preguntas: e.preguntas
         })
       });
@@ -323,9 +272,23 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar }) {
 
       {paso === 2 && (
         <div className="wiz-panel">
-          <label style={lbl}>Fecha de disponibilidad (opcional)</label>
-          <input className="ctrl" type="date" style={{ maxWidth: 200 }} value={e.fechaDisponible || ''} onChange={(ev) => set({ fechaDisponible: ev.target.value })} />
-          <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>Vacío = disponible apenas la publiques. Con una fecha futura, la actividad figura como <b>Programada</b> hasta ese día (nadie puede responderla antes).</p>
+          <label style={lbl}>Instrucciones para el estudiante (opcional)</label>
+          <textarea className="ctrl" rows={3} style={{ resize: 'vertical', width: '100%' }} value={e.intro || ''} onChange={(ev) => set({ intro: ev.target.value })} placeholder="Ej: Mirá la clase grabada antes de responder. Tenés hasta el domingo." />
+          <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>Se le muestra al estudiante en "Antes de empezar", antes de pedirle el correo. Vacío = usa el texto genérico ({'"'}Completá tus datos y respondé las N preguntas{'"'}).</p>
+
+          <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginTop: 18 }}>
+            <div>
+              <label style={lbl}>Fecha de disponibilidad (opcional)</label>
+              <input className="ctrl" type="date" style={{ maxWidth: 200 }} value={e.fechaDisponible || ''} onChange={(ev) => set({ fechaDisponible: ev.target.value })} />
+              <p className="muted" style={{ fontSize: 12, marginTop: 6, maxWidth: 260 }}>Vacío = disponible apenas la publiques. Con una fecha futura, figura como <b>Programada</b> hasta ese día.</p>
+            </div>
+            <div>
+              <label style={lbl}>Fecha de cierre (opcional)</label>
+              <input className="ctrl" type="date" style={{ maxWidth: 200 }} value={e.fechaCierre || ''} onChange={(ev) => set({ fechaCierre: ev.target.value })} />
+              <p className="muted" style={{ fontSize: 12, marginTop: 6, maxWidth: 260 }}>Vacío = sin fecha límite. Pasado ese día, figura como <b>Cerrada</b> y el estudiante ya no puede responderla (ni ver el formulario).</p>
+            </div>
+          </div>
+
           <label className="wiz-check-inline" style={{ marginTop: 18 }}>
             <input type="checkbox" checked={e.mostrarResultado !== false} onChange={(ev) => set({ mostrarResultado: ev.target.checked })} />
             Mostrarle el puntaje al estudiante al terminar
@@ -348,6 +311,8 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar }) {
               <div><div className="k">Clase</div><div className="v">{e.clase || '—'}</div></div>
               <div><div className="k">Estado</div><div className="v">{e.estado}</div></div>
               <div><div className="k">Preguntas</div><div className="v">{preguntas.length} ({preguntas.filter((p) => p.tipo !== 'abierta').length} cerrada{preguntas.filter((p) => p.tipo !== 'abierta').length === 1 ? '' : 's'} · {preguntas.filter((p) => p.tipo === 'abierta').length} abierta{preguntas.filter((p) => p.tipo === 'abierta').length === 1 ? '' : 's'})</div></div>
+              <div><div className="k">Disponible desde</div><div className="v">{e.fechaDisponible || 'Inmediata'}</div></div>
+              <div><div className="k">Cierra el</div><div className="v">{e.fechaCierre || 'Sin límite'}</div></div>
               <div><div className="k">Muestra resultado</div><div className="v">{e.mostrarResultado !== false ? 'Sí' : 'No'}</div></div>
             </div>
             <div className="wiz-grupo-lbl">Preguntas</div>
@@ -596,6 +561,7 @@ function DetalleActividad({ a, puedeGestionar, showToast, onEditar, onDuplicar, 
           </div>
           <div><div className="k">Estado</div><div className="v">{a.estado}</div></div>
           <div><div className="k">Fecha de disponibilidad</div><div className="v">{a.fechaDisponible || 'Inmediata'}</div></div>
+          <div><div className="k">Fecha de cierre</div><div className="v">{a.fechaCierre || 'Sin límite'}</div></div>
           <div><div className="k">Muestra resultado</div><div className="v">{a.mostrarResultado === false ? 'No' : 'Sí'}</div></div>
           <div><div className="k">Última actualización</div><div className="v">{a.actualizado ? new Date(a.actualizado).toLocaleString('es-AR') : '—'}</div></div>
         </div>
@@ -654,7 +620,7 @@ const Lista = forwardRef(function Lista({ usuario, showToast, puedeGestionar, ir
   }
 
   function nueva(preseed) {
-    const base = { slug: '', curso: CURSOS[0].nombre, titulo: '', clase: '', edicion: '', fechaDisponible: '', mostrarResultado: true, estado: 'Publicada', preguntas: [nuevaPreg()], _nuevo: true };
+    const base = { slug: '', curso: CURSOS[0].nombre, titulo: '', clase: '', edicion: '', intro: '', fechaDisponible: '', fechaCierre: '', mostrarResultado: true, estado: 'Publicada', preguntas: [nuevaPreg()], _nuevo: true };
     if (preseed) {
       if (preseed.curso) base.curso = preseed.curso;
       if (preseed.clase != null && preseed.clase !== '') base.clase = String(preseed.clase);
@@ -670,8 +636,8 @@ const Lista = forwardRef(function Lista({ usuario, showToast, puedeGestionar, ir
     const claseNueva = Number.isFinite(claseNum) && String(claseNum) === claseTxt ? String(claseNum + 1) : (claseTxt ? claseTxt + ' (copia)' : '');
     setModo({
       tipo: 'editor', base: {
-        slug: '', curso: a.curso, edicion: a.edicion || '', clase: claseNueva, titulo: (a.titulo || '') + ' (copia)',
-        estado: 'Borrador', fechaDisponible: '', mostrarResultado: a.mostrarResultado !== false,
+        slug: '', curso: a.curso, edicion: a.edicion || '', clase: claseNueva, titulo: (a.titulo || '') + ' (copia)', intro: a.intro || '',
+        estado: 'Borrador', fechaDisponible: '', fechaCierre: '', mostrarResultado: a.mostrarResultado !== false,
         preguntas: (a.preguntas || []).map((p) => ({ ...p, opciones: [...(p.opciones || [])] })), _nuevo: true
       }
     });
@@ -689,7 +655,7 @@ const Lista = forwardRef(function Lista({ usuario, showToast, puedeGestionar, ir
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           solicitanteEmail: usuario.email, slug: a.slug, curso: a.curso, titulo: a.titulo,
-          clase: a.clase, estado: a.estado, edicion: a.edicion, fechaDisponible: a.fechaDisponible,
+          clase: a.clase, estado: a.estado, edicion: a.edicion, intro: a.intro, fechaDisponible: a.fechaDisponible, fechaCierre: a.fechaCierre,
           mostrarResultado: a.mostrarResultado !== false, preguntas: a.preguntas, ...patch
         })
       });
@@ -831,21 +797,13 @@ function Respuestas({ usuario, irABuscador }) {
       return true;
     });
   }, [r, q, fCurso, fEd, fAct]);
-  const estudiantes = new Set(filtradas.map((x) => (x.email || '').toLowerCase())).size;
-  const actsCount = new Set(filtradas.map((x) => x.actividad)).size;
-  const promedio = filtradas.length
-    ? Math.round(filtradas.reduce((s, x) => s + (Number(x.total) ? Number(x.puntaje) / Number(x.total) : 0), 0) / filtradas.length * 100)
-    : 0;
   if (!data) return <div className="spin" />;
 
+  // Nota: antes acá había una barra de KPIs (respuestas/estudiantes/actividades/promedio) que
+  // duplicaba números que Reportes ya muestra — se saca (pedido de Diego: los números agregados
+  // viven solo en Reportes; acá queda la gestión/búsqueda de respuestas individuales).
   return (
     <>
-      <div className="minikpis">
-        <div className="minikpi"><div className="n">{filtradas.length}</div><div className="l">Respuestas</div></div>
-        <div className="minikpi"><div className="n" style={{ color: 'rgb(var(--accentTeal))' }}>{estudiantes}</div><div className="l">Estudiantes</div></div>
-        <div className="minikpi"><div className="n">{actsCount}</div><div className="l">Actividades</div></div>
-        <div className="minikpi"><div className="n" style={{ color: '#d879d1' }}>{promedio}%</div><div className="l">Promedio</div></div>
-      </div>
       <div className="filters">
         {irABuscador && <button className="btn-sm" onClick={irABuscador}>🔎 Buscar</button>}
         <SelectDropdown placeholder="Curso: todos" searchable value={fCurso} onChange={setFCurso} options={cursos.map((x) => ({ value: x, label: x }))} />

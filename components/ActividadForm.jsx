@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { validarEmail } from '../lib/validacion';
 import { Isologo } from './Isologo';
 
@@ -15,17 +15,36 @@ function IconYoutube() {
   return (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2.5" y="5.5" width="19" height="13" rx="4" /><path d="M10.5 9.3v5.4l4.6-2.7-4.6-2.7Z" fill="currentColor" stroke="none" /></svg>);
 }
 
+// Borrador en el navegador (NO en el servidor): lo único que resuelve es "no perder lo que
+// ya tenías tipeado si se te cerró la pestaña o se cortó internet" — si entrás desde otro
+// celu/PC no lo vas a tener. Por eso el estado que se le muestra al estudiante dice
+// "Respuestas guardadas en este dispositivo", nunca solo "Guardado" a secas.
+function draftKey(slug) { return 'ilce-actividad-draft-' + slug; }
+function leerDraft(slug) {
+  try { const raw = localStorage.getItem(draftKey(slug)); return raw ? JSON.parse(raw) : null; } catch { return null; }
+}
+function borrarDraft(slug) { try { localStorage.removeItem(draftKey(slug)); } catch { /* */ } }
+
 export default function ActividadForm({ act }) {
-  const [step, setStep] = useState(0); // 0 = datos, 1..N = preguntas
-  const [email, setEmail] = useState('');
-  const [nombre, setNombre] = useState('');
+  const draftInicial = useRef(null);
+  if (draftInicial.current === null) draftInicial.current = leerDraft(act.slug) || {};
+
+  const [step, setStep] = useState(draftInicial.current.step || 0); // 0 = datos, 1..N = preguntas
+  const [email, setEmail] = useState(draftInicial.current.email || '');
+  const [nombre, setNombre] = useState(draftInicial.current.nombre || '');
   // Si quien armó la actividad ya le puso una edición, no hace falta preguntársela
   // de nuevo al estudiante (y de paso se evita que la escriba mal).
-  const [edicion, setEdicion] = useState(act.edicion || '');
-  const [resp, setResp] = useState({});
+  const [edicion, setEdicion] = useState(act.edicion || draftInicial.current.edicion || '');
+  const [resp, setResp] = useState(draftInicial.current.resp || {});
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState(null);
   const [error, setError] = useState('');
+  const [guardado, setGuardado] = useState(null); // null | 'ok' | 'guardando' | 'error'
+  const [confirmarEnvio, setConfirmarEnvio] = useState(false);
+  const [verificando, setVerificando] = useState(false);
+  // Si el GET de abajo encuentra una respuesta previa con este correo, se corta acá: nunca
+  // se le deja ver de nuevo el formulario (pedido de Diego — "ya completada" siempre gana).
+  const [yaCompletada, setYaCompletada] = useState(null);
   const inicioRef = useRef(Date.now());
 
   const total = act.preguntas.length;
@@ -39,10 +58,37 @@ export default function ActividadForm({ act }) {
   // para el mensaje de "se corrige al enviar" y en la pantalla final de resultado.
   const cantAbiertas = act.preguntas.filter((p) => p.tipo === 'abierta').length;
 
-  function siguiente() {
+  // Autosave del borrador (debounced) — nunca antes de que el estudiante empiece a escribir
+  // nada (step 0 recién abierto, sin draft previo) para no mostrar "Guardando…" de la nada.
+  const autosavePrimerCambio = useRef(draftInicial.current && Object.keys(draftInicial.current).length > 0);
+  useEffect(() => {
+    if (resultado || yaCompletada) return;
+    if (step === 0 && !email && !nombre && Object.keys(resp).length === 0 && !autosavePrimerCambio.current) return;
+    autosavePrimerCambio.current = true;
+    setGuardado('guardando');
+    const t = setTimeout(() => {
+      try {
+        localStorage.setItem(draftKey(act.slug), JSON.stringify({ step, email, nombre, edicion, resp }));
+        setGuardado('ok');
+      } catch { setGuardado('error'); }
+    }, 350);
+    return () => clearTimeout(t);
+    /* eslint-disable-next-line */
+  }, [step, email, nombre, edicion, resp]);
+
+  async function siguiente() {
     if (esDatos) {
       if (!validarEmail(email)) { setError('Ingresá un correo válido.'); return; }
-      setError(''); setStep(1); return;
+      setError('');
+      setVerificando(true);
+      try {
+        const res = await fetch(`/api/actividad?slug=${encodeURIComponent(act.slug)}&email=${encodeURIComponent(email)}`);
+        const data = await res.json();
+        if (data.ok && data.yaCompletada) { setYaCompletada(data); borrarDraft(act.slug); setVerificando(false); return; }
+      } catch { /* si falla la verificación, no bloqueamos al estudiante — se revisa igual al enviar */ }
+      setVerificando(false);
+      setStep(1);
+      return;
     }
     const esAbierta = act.preguntas[qIndex]?.tipo === 'abierta';
     if (esAbierta ? !String(resp[qIndex] || '').trim() : resp[qIndex] == null) {
@@ -51,9 +97,12 @@ export default function ActividadForm({ act }) {
     }
     setError('');
     if (step < total) setStep(step + 1);
-    else enviar();
+    else setConfirmarEnvio(true); // última pregunta -> pantalla de confirmación, no envío directo
   }
-  function atras() { if (step > 0) { setError(''); setStep(step - 1); } }
+  function atras() {
+    if (confirmarEnvio) { setConfirmarEnvio(false); return; }
+    if (step > 0) { setError(''); setStep(step - 1); }
+  }
 
   async function enviar() {
     setEnviando(true); setError('');
@@ -63,10 +112,52 @@ export default function ActividadForm({ act }) {
         body: JSON.stringify({ slug: act.slug, email, nombre, edicion, respuestas: resp, duracion: Math.round((Date.now() - inicioRef.current) / 1000) })
       });
       const data = await res.json();
-      if (!data.ok) { setError(data.error || 'No se pudo enviar'); setEnviando(false); return; }
+      if (!data.ok) {
+        // Si el servidor dice que ya la habías respondido (p. ej. la mandaste desde otra
+        // pestaña mientras tanto), mostramos esa pantalla en vez de un error genérico.
+        if (data.yaCompletada) { setYaCompletada({ yaCompletada: true }); setConfirmarEnvio(false); setEnviando(false); borrarDraft(act.slug); return; }
+        setError(data.error || 'No se pudo enviar'); setEnviando(false); return;
+      }
       setResultado(data);
+      setConfirmarEnvio(false);
+      borrarDraft(act.slug);
     } catch { setError('Error de conexión'); }
     setEnviando(false);
+  }
+
+  const IndicadorGuardado = ({ compacto }) => {
+    if (!guardado) return null;
+    const txt = guardado === 'guardando' ? 'Guardando…' : guardado === 'error' ? '⚠ No se pudo guardar en este dispositivo' : '✓ Respuestas guardadas en este dispositivo';
+    const color = guardado === 'error' ? 'rgb(248 113 113)' : guardado === 'guardando' ? 'rgb(var(--textMuted))' : 'rgb(74 222 128)';
+    return <div style={{ fontSize: 11.5, color, textAlign: compacto ? 'right' : 'left', marginTop: compacto ? 0 : 8 }}>{txt}</div>;
+  };
+
+  // "Ya completada": gana siempre sobre cualquier otra pantalla — ni se le llega a mostrar
+  // una sola pregunta. No hay forma de saber si Diego permite editar respuestas ya enviadas
+  // (no existe ese dato en el sistema), así que el mensaje es honesto: no es editable.
+  if (yaCompletada) {
+    return (
+      <div className="quizstage"><div className="quizcard">
+        <div className="quiz-band">
+          <div className="quiz-band-top"><div className="kd">ACTIVIDAD · {act.curso.toUpperCase()}</div><Isologo size={20} /></div>
+          <div className="ti">{act.titulo}</div>
+        </div>
+        <div className="quiz-body" style={{ textAlign: 'center', padding: '40px 30px 8px' }}>
+          <div className="quiz-ring">✓</div>
+          <h3 style={{ fontSize: 20, margin: '4px 0' }}>Ya completaste esta actividad</h3>
+          {yaCompletada.fecha ? (
+            <p className="muted" style={{ fontSize: 14 }}>La respondiste el {new Date(yaCompletada.fecha).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}.</p>
+          ) : null}
+          {(act.mostrarResultado !== false && yaCompletada.total > 0) && (
+            <div style={{ fontFamily: 'Jost', fontWeight: 700, fontSize: 40, color: 'rgb(var(--accentTeal))', margin: '10px 0' }}>{yaCompletada.puntaje} / {yaCompletada.total}</div>
+          )}
+          <p className="muted" style={{ fontSize: 13, marginTop: 14 }}>Ya no podés volver a enviarla ni modificar tus respuestas.</p>
+        </div>
+        <div className="quiz-postfoot">
+          <a className="quiz-postlink" href="http://campus.institutoilce.com/" target="_blank" rel="noopener noreferrer">← Volver al campus</a>
+        </div>
+      </div></div>
+    );
   }
 
   if (resultado) {
@@ -79,7 +170,7 @@ export default function ActividadForm({ act }) {
         </div>
         <div className="quiz-body" style={{ textAlign: 'center', padding: '40px 30px 8px' }}>
           <div className="quiz-ring">✓</div>
-          <h3 style={{ fontSize: 22, margin: '4px 0' }}>¡Actividad enviada!</h3>
+          <h3 style={{ fontSize: 22, margin: '4px 0' }}>¡Actividad completada! 🎉</h3>
           {act.mostrarResultado === false ? (
             <p className="muted" style={{ fontSize: 14 }}>Registramos tus respuestas de <b>{act.titulo}</b>{resultado.emailOk ? ` y te enviamos el detalle a ${email}` : ''}.</p>
           ) : (<>
@@ -104,29 +195,29 @@ export default function ActividadForm({ act }) {
     );
   }
 
-  const p = esDatos ? null : act.preguntas[qIndex];
+  const p = esDatos || confirmarEnvio ? null : act.preguntas[qIndex];
   const progreso = esDatos ? 0 : Math.round((step / (total + 1)) * 100);
 
   return (
     <div className="quizstage"><div className="quizcard">
       <div className="quiz-band">
-        <div className="quiz-band-top"><div className="kd">ACTIVIDAD · {act.curso.toUpperCase()}</div><Isologo size={20} /></div>
+        <div className="quiz-band-top"><div className="kd">ACTIVIDAD · {act.curso.toUpperCase()}{act.edicion ? ` · ED. ${act.edicion}` : ''}</div><Isologo size={20} /></div>
         <div className="ti">{act.titulo}</div>
       </div>
-      <div className="quiz-prog"><div className="quiz-prog-fill" style={{ width: (esDatos ? 4 : progreso) + '%' }} /></div>
+      <div className="quiz-prog"><div className="quiz-prog-fill" style={{ width: (esDatos ? 4 : confirmarEnvio ? 100 : progreso) + '%' }} /></div>
 
       <div className="quiz-body">
         {esDatos ? (
           <>
             <h3 style={{ fontSize: 18, margin: '0 0 4px' }}>Antes de empezar</h3>
-            {act.intro
-              ? <p className="quiz-intro" style={{ fontSize: 13.5, marginTop: 0, marginBottom: 16, whiteSpace: 'pre-line', color: 'rgb(var(--textSec))', lineHeight: 1.55 }}>{act.intro}</p>
-              : <p className="muted" style={{ fontSize: 13.5, marginTop: 0, marginBottom: 16 }}>
-                  Completá tus datos y respondé las {total} preguntas.{' '}
-                  {cantAbiertas > 0
-                    ? `Las de opción se corrigen al enviar; ${cantAbiertas} ${cantAbiertas === 1 ? 'es de desarrollo' : 'son de desarrollo'} y las revisa el equipo.`
-                    : 'Se corrige al enviar.'}
-                </p>}
+            {act.intro && <p className="quiz-intro" style={{ fontSize: 13.5, marginTop: 0, marginBottom: 10, whiteSpace: 'pre-line', color: 'rgb(var(--textSec))', lineHeight: 1.55 }}>{act.intro}</p>}
+            <p className="muted" style={{ fontSize: 13.5, marginTop: 0, marginBottom: 16 }}>
+              Son {total} pregunta{total === 1 ? '' : 's'}.{' '}
+              {cantAbiertas > 0
+                ? `Las de opción se corrigen al enviar; ${cantAbiertas} ${cantAbiertas === 1 ? 'es de desarrollo' : 'son de desarrollo'} y las revisa el equipo.`
+                : 'Se corrige al enviar.'}
+              {act.fechaCierre ? ` Tenés tiempo hasta el ${new Date(act.fechaCierre + 'T00:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })}.` : ''}
+            </p>
             <div className="quiz-field"><label>Correo <span className="req">*</span></label>
               <input className="ctrl" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tunombre@correo.com" /></div>
             <div className="quiz-field"><label>Nombre y apellido</label>
@@ -140,13 +231,18 @@ export default function ActividadForm({ act }) {
                   inputMode="numeric" pattern="[0-9]*" placeholder="Ej: 15" /></div>
             )}
           </>
+        ) : confirmarEnvio ? (
+          <div style={{ textAlign: 'center', padding: '14px 0' }}>
+            <h3 style={{ fontSize: 17, margin: '0 0 10px' }}>¿Querés enviar tus respuestas?</h3>
+            <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.5 }}>Respondiste las {total} preguntas. Una vez enviada, <b>no vas a poder modificarlas</b> — revisá antes de confirmar si querés volver atrás.</p>
+          </div>
         ) : (
           <>
             <div className="quiz-count">Pregunta {step} de {total}</div>
-            <h3 style={{ fontSize: 18, margin: '4px 0 16px', lineHeight: 1.3 }}>{p.pregunta}</h3>
+            <h3 style={{ fontSize: 18, margin: '4px 0 16px', lineHeight: 1.3 }}>{step}. {p.pregunta}</h3>
             {p.tipo === 'abierta' ? (
               <textarea className="ctrl" rows={5} value={resp[qIndex] || ''} onChange={(e) => escribir(e.target.value)}
-                placeholder="Escribí tu respuesta acá…" style={{ resize: 'vertical', width: '100%' }} />
+                placeholder="Escribí tu respuesta…" style={{ resize: 'vertical', width: '100%' }} />
             ) : (p.opciones || []).map((op, j) => (
               <div key={j} className={'quiz-opt' + (resp[qIndex] === j ? ' sel' : '')} onClick={() => elegir(j)}
                 role="radio" aria-checked={resp[qIndex] === j} tabIndex={0}
@@ -157,12 +253,13 @@ export default function ActividadForm({ act }) {
           </>
         )}
         {error && <div className="err" style={{ display: 'block', marginTop: 6 }}>{error}</div>}
+        {!esDatos && <IndicadorGuardado />}
       </div>
 
       <div className="quiz-foot">
-        {step > 0 && <button className="btn btn-ghost" onClick={atras} disabled={enviando}>Atrás</button>}
-        <button className="btn btn-teal" style={{ flex: 1 }} onClick={siguiente} disabled={enviando}>
-          {enviando ? 'Enviando…' : esDatos ? 'Comenzar' : step < total ? 'Siguiente' : 'Enviar actividad'}
+        {(step > 0 || confirmarEnvio) && <button className="btn btn-ghost" onClick={atras} disabled={enviando}>{confirmarEnvio ? 'Revisar' : 'Atrás'}</button>}
+        <button className="btn btn-teal" style={{ flex: 1 }} onClick={confirmarEnvio ? enviar : siguiente} disabled={enviando || verificando}>
+          {enviando ? 'Enviando…' : verificando ? 'Verificando…' : confirmarEnvio ? 'Sí, enviar' : esDatos ? 'Comenzar' : step < total ? 'Siguiente' : 'Enviar actividad'}
         </button>
       </div>
     </div></div>
