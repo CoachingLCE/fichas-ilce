@@ -879,28 +879,58 @@ function ReportesResumen({ rows, irAConFiltro }) {
         )}
       </Seccion>
 
-      <Seccion titulo="Por país" sub="De dónde son las fichas — clickeá una fila para verla en Fichas completadas.">
-        {porPais.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : (
-          <div>{porPais.map(([k, v]) => (
-            <Barra key={k} label={k} n={v} max={maxPais} claseFill={k === 'Sin datos' ? 'm' : ''} onClick={k !== 'Sin datos' && irAConFiltro ? () => irAConFiltro('pais', k) : undefined} />
-          ))}</div>
-        )}
-      </Seccion>
+      <div className="repx-duo">
+        <Seccion titulo="Por país" sub="De dónde son las fichas — clickeá una fila para verla en Fichas completadas.">
+          {porPais.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : (
+            <TablaCompacta filas={porPais} dirtyLabel="Sin datos" onClick={irAConFiltro ? (k) => irAConFiltro('pais', k) : undefined} />
+          )}
+        </Seccion>
 
-      <Seccion titulo="Origen de inscripciones" sub="Por qué canal llegó cada ficha.">
-        {porOrigen.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : (
-          <div>{porOrigen.map(([k, v]) => <Barra key={k} label={k} n={v} max={maxOrigen} claseFill={k === 'Sin informar' ? 'm' : ''} />)}</div>
-        )}
-      </Seccion>
+        <Seccion titulo="Origen de inscripciones" sub="Por qué canal llegó cada ficha.">
+          {porOrigen.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : (
+            <TablaCompacta filas={porOrigen} dirtyLabel="Sin informar" />
+          )}
+        </Seccion>
+      </div>
 
       <Expandible titulo="Por edición">
         {porEdicion.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : (
-          <div>{porEdicion.map(([k, v]) => (
-            <Barra key={k} label={k} n={v} max={maxEdicion} onClick={irAConFiltro ? () => irAConFiltro('ed', k.replace(/^Ed\.\s*/, '')) : undefined} />
-          ))}</div>
+          <div className="repx-ed-grid">
+            {porEdicion.map(([k, v]) => {
+              const onClick = irAConFiltro ? () => irAConFiltro('ed', k.replace(/^Ed\.\s*/, '')) : undefined;
+              const contenido = (<><span className="rm-n">{k}</span><span className="rm-v">{v}</span></>);
+              return onClick
+                ? <button key={k} type="button" className="repx-ed-item rm-click" onClick={onClick}>{contenido}</button>
+                : <div key={k} className="repx-ed-item">{contenido}</div>;
+            })}
+          </div>
         )}
       </Expandible>
     </div>
+  );
+}
+
+// Tabla compacta de dos columnas (Nombre + Cantidad, número a la derecha), usada en "Por
+// país" y "Origen de inscripciones" en reemplazo de las barras horizontales largas — mismo
+// dato y misma lógica de agrupación (ver porPais/porOrigen más arriba), solo cambia cómo se
+// muestra. dirtyLabel marca en gris/itálica la fila de valores "sucios" (p. ej. "Sin datos"),
+// igual que antes hacía claseFill="m" en la barra.
+function TablaCompacta({ filas, dirtyLabel, onClick }) {
+  return (
+    <table className="repx-minitable">
+      <tbody>
+        {filas.map(([k, v]) => {
+          const dirty = k === dirtyLabel;
+          const clickable = onClick && !dirty;
+          return (
+            <tr key={k} className={(dirty ? 'rm-dirty ' : '') + (clickable ? 'rm-click' : '')} onClick={clickable ? () => onClick(k) : undefined}>
+              <td className="rm-n" title={k}>{k}</td>
+              <td className="rm-v">{v}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
   );
 }
 
