@@ -26,13 +26,17 @@ async function construirReporte(usuario) {
   // Definiciones (para saber las preguntas y la correcta)
   const defsRaw = await readSheet(TABS.ACTIVIDADES);
   const defs = defsRaw.filter((f) => f.Slug).map((f) => {
-    let preguntas = [];
+    let preguntas = [], edicion = '';
     try {
       const raw = JSON.parse(f['Preguntas JSON'] || '[]');
       // Soporta los dos formatos: array directo [ ... ] o el nuevo { clase, intro, preguntas: [ ... ] }.
       preguntas = Array.isArray(raw) ? raw : (Array.isArray(raw.preguntas) ? raw.preguntas : []);
+      // "edicion" (pedido nuevo de Diego para Reportes → Actividades: columna Edición): vive
+      // dentro del mismo JSON que preguntas, igual que en /api/actividades — una actividad sin
+      // edición asignada simplemente queda vacía acá (es del curso completo, como siempre).
+      edicion = (!Array.isArray(raw) && raw.edicion) || '';
     } catch {}
-    return { slug: f.Slug, curso: f.Curso, titulo: f['Título'], preguntas };
+    return { slug: f.Slug, curso: f.Curso, titulo: f['Título'], edicion, preguntas };
   });
   const porTitulo = {};
   defs.forEach((d) => { porTitulo[d.titulo] = d; });
@@ -40,7 +44,7 @@ async function construirReporte(usuario) {
   // Respuestas
   let resp = (await readSheet(TABS.RESPUESTAS_ACT)).filter((f) => f.ID).map((f) => {
     let r = {}; try { r = JSON.parse(f['Respuestas JSON'] || '{}'); } catch {}
-    return { actividad: f.Actividad, curso: f.Curso, edicion: f['Edición'], email: (f.Email || '').trim().toLowerCase(), puntaje: Number(f['Puntuación']) || 0, total: Number(f.Total) || 0, dur: Number(f['Duración seg']) || 0, r };
+    return { actividad: f.Actividad, curso: f.Curso, edicion: f['Edición'], email: (f.Email || '').trim().toLowerCase(), nombre: f.Nombre || '', puntaje: Number(f['Puntuación']) || 0, total: Number(f.Total) || 0, dur: Number(f['Duración seg']) || 0, r };
   });
 
   // Alcance docente
@@ -66,9 +70,12 @@ async function construirReporte(usuario) {
       });
       // Las 'abierta' no tienen "acierto" (no se autocorrigen) — pct queda null para que la
       // UI no las muestre con una barra de % ni las meta en el ranking de "más se erran".
-      return { pregunta: p.pregunta, tipo: p.tipo || 'multiple', respondidas, aciertos, pct: p.tipo === 'abierta' ? null : (respondidas ? Math.round(aciertos / respondidas * 100) : 0) };
+      // "opciones" (pedido nuevo de Diego, Reporte de Respuestas): para poder mostrar la
+      // distribución completa, incluyendo las opciones que nadie eligió (0 respuestas) — sin
+      // esto, una opción con 0 votos simplemente no aparecería en el reporte.
+      return { pregunta: p.pregunta, tipo: p.tipo || 'multiple', opciones: p.tipo === 'abierta' ? [] : (p.opciones || []), respondidas, aciertos, pct: p.tipo === 'abierta' ? null : (respondidas ? Math.round(aciertos / respondidas * 100) : 0) };
     });
-    return { slug: d.slug, titulo: d.titulo, curso: d.curso, totalResp, promedio, tiempoProm, preguntas };
+    return { slug: d.slug, titulo: d.titulo, curso: d.curso, edicion: d.edicion, totalResp, promedio, tiempoProm, preguntas };
   }).filter((a) => a.totalResp > 0 || true); // incluimos todas, aunque tengan 0 respuestas
 
   // Cruce por curso: cuántos estudiantes distintos (por email) respondieron al menos una
@@ -84,5 +91,14 @@ async function construirReporte(usuario) {
     return { curso, estudiantesConActividad: emailsUnicos.size, totalRespuestas, promedio };
   });
 
-  return NextResponse.json({ ok: true, actividades: salida, porCurso });
+  // Detalle por envío (liviano: sin el JSON de respuestas por pregunta) — lo necesita Reportes
+  // para el cruce por estudiante ("Reporte de estudiantes") y para poder aplicar los filtros
+  // de Edición/Docente, que a nivel de envío individual sí son datos reales (a diferencia de
+  // "salida"/"porCurso", agregados por curso completo). Nada que no estuviera ya en la Sheet.
+  const respuestas = resp.map((x) => ({
+    actividad: x.actividad, curso: x.curso, edicion: x.edicion, email: x.email, nombre: x.nombre,
+    pct: x.total ? Math.round(x.puntaje / x.total * 100) : null, dur: x.dur
+  }));
+
+  return NextResponse.json({ ok: true, actividades: salida, porCurso, respuestas });
 }

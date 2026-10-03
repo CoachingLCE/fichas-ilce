@@ -65,8 +65,12 @@ function GraficoLinea({ etiquetas, puntos, color = '#22d3ee', alto = 88 }) {
     </div>
   );
 }
-import { exportarCSV, exportarXLSX } from '../lib/exportUtils';
+import { exportarCSV, exportarXLSX, exportarPDF } from '../lib/exportUtils';
 
+// Misma normalización que ya usa el backend (/api/actividades/reporte) para cruzar una
+// respuesta con su actividad por título — se repite acá (liviana, sin import) para poder
+// agrupar "Respondieron" por actividad del lado del cliente sin pegarle de nuevo al server.
+function normTxt(v) { return (v || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[¿?¡!.,;:]/g, '').replace(/\s+/g, ' ').trim(); }
 function iso(d) { return d.toISOString().slice(0, 10); }
 function hace(n) { const d = new Date(); d.setDate(d.getDate() - n); return iso(d); }
 function primerDiaMes() { const d = new Date(); d.setDate(1); return iso(d); }
@@ -145,7 +149,7 @@ function Pct({ v, tone }) {
   return <span className={'repx-pct ' + t}>{v == null ? '—' : v + '%'}</span>;
 }
 
-function ExportarMenu({ disabled, onCSV, onXLSX }) {
+function ExportarMenu({ disabled, onCSV, onXLSX, onPDF }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="fmenu" onClick={(e) => e.stopPropagation()}>
@@ -154,6 +158,7 @@ function ExportarMenu({ disabled, onCSV, onXLSX }) {
         <div className="fmenu-pop" style={{ right: 0, bottom: 'auto', top: 'calc(100% + 6px)' }}>
           <button onClick={() => { setOpen(false); onXLSX(); }}>Excel (.xlsx)</button>
           <button onClick={() => { setOpen(false); onCSV(); }}>CSV</button>
+          <button onClick={() => { setOpen(false); onPDF(); }}>PDF</button>
         </div>
       )}
     </div>
@@ -197,10 +202,18 @@ function CrossLink({ onClick, children }) {
   return <button type="button" className="repx-crosslink" onClick={onClick}>{children} <Ico.arrowOut /></button>;
 }
 
+// Reestructuración pedida por Diego: Resumen · Fichas · Actividades · Cursos · Estudiantes
+// (Formularios se mantiene, aparte, al final — Diego no lo mencionó en el pedido de
+// reestructuración y ya era un reporte real y en uso, así que no se saca ni se mezcla).
 const NAV = [
   { v: 'resumen', l: 'Resumen' },
-  { v: 'inscripciones', l: 'Inscripciones' },
+  { v: 'inscripciones', l: 'Fichas' },
   { v: 'actividades', l: 'Actividades', req: 'act' },
+  { v: 'preguntas', l: 'Preguntas', req: 'act' },
+  { v: 'respuestas', l: 'Respuestas', req: 'act' },
+  { v: 'cursos', l: 'Cursos' },
+  { v: 'estudiantes', l: 'Estudiantes' },
+  { v: 'campos', l: 'Campos' },
   { v: 'formularios', l: 'Formularios', req: 'form' },
 ];
 const PERIODOS = [
@@ -214,6 +227,7 @@ export default function Reportes({ usuario, rows, puedeActividades, puedeFormula
   const [fCurso, setFCurso] = useState('');
   const [fEd, setFEd] = useState('');
   const [fEstado, setFEstado] = useState('');
+  const [fDocente, setFDocente] = useState('');
   const [fDesde, setFDesde] = useState('');
   const [fHasta, setFHasta] = useState('');
   const [periodo, setPeriodo] = useState('todo');
@@ -226,10 +240,20 @@ export default function Reportes({ usuario, rows, puedeActividades, puedeFormula
   const [actError, setActError] = useState('');
   const [formData, setFormData] = useState(null);
   const [formError, setFormError] = useState('');
+  // Detalle de respuestas pregunta por pregunta (mismo endpoint que ya usa la pestaña
+  // "Respuestas" de Actividades) — lo necesitan los nuevos Reporte de Preguntas y Reporte de
+  // Respuestas para poder mostrar distribución de opciones elegidas y listar respuestas abiertas.
+  const [respData, setRespData] = useState(null);
+  const [respError, setRespError] = useState('');
+  // Directorio de Docentes (Email/Nombre/Curso/Edición) para el filtro global "Docente" — no
+  // es un reporte en sí, solo la lista para armar el cruce Curso+Edición -> Docente.
+  const [docentes, setDocentes] = useState([]);
 
   useEffect(() => { if (rows) setActualizado(new Date()); }, [rows]);
   useEffect(() => { if (puedeActividades) cargarActividades(); /* eslint-disable-next-line */ }, [puedeActividades]);
+  useEffect(() => { if (puedeActividades) cargarRespuestasDetalle(); /* eslint-disable-next-line */ }, [puedeActividades]);
   useEffect(() => { if (puedeFormularios) cargarFormularios(); /* eslint-disable-next-line */ }, [puedeFormularios]);
+  useEffect(() => { cargarDocentes(); /* eslint-disable-next-line */ }, []);
   useEffect(() => {
     if (!moreOpen) return;
     const onDoc = (e) => { if (moreRef.current && !moreRef.current.contains(e.target)) setMoreOpen(false); };
@@ -242,8 +266,16 @@ export default function Reportes({ usuario, rows, puedeActividades, puedeFormula
       const res = await fetch('/api/actividades/reporte?solicitanteEmail=' + encodeURIComponent(usuario.email));
       const d = await res.json();
       if (!d.ok) throw new Error(d.error || 'No se pudo cargar');
-      setActData({ actividades: d.actividades || [], porCurso: d.porCurso || [] });
-    } catch (e) { setActError(e.message || 'Error de conexión'); setActData({ actividades: [], porCurso: [] }); }
+      setActData({ actividades: d.actividades || [], porCurso: d.porCurso || [], respuestas: d.respuestas || [] });
+    } catch (e) { setActError(e.message || 'Error de conexión'); setActData({ actividades: [], porCurso: [], respuestas: [] }); }
+  }
+  async function cargarRespuestasDetalle() {
+    try {
+      const res = await fetch('/api/actividades/respuestas?solicitanteEmail=' + encodeURIComponent(usuario.email));
+      const d = await res.json();
+      if (!d.ok) throw new Error(d.error || 'No se pudo cargar');
+      setRespData(d.respuestas || []);
+    } catch (e) { setRespError(e.message || 'Error de conexión'); setRespData([]); }
   }
   async function cargarFormularios() {
     try {
@@ -253,13 +285,22 @@ export default function Reportes({ usuario, rows, puedeActividades, puedeFormula
       setFormData(d.respuestas || []);
     } catch (e) { setFormError(e.message || 'Error de conexión'); setFormData([]); }
   }
+  async function cargarDocentes() {
+    try {
+      const res = await fetch('/api/docentes?solicitanteEmail=' + encodeURIComponent(usuario.email));
+      const d = await res.json();
+      if (d.ok) setDocentes(d.docentes || []);
+    } catch { /* el filtro de Docente simplemente no aparece si esto falla — el resto de Reportes sigue andando */ }
+  }
   async function actualizar() {
     setRefrescando(true);
     try {
       const tareas = [];
       if (onActualizar) tareas.push(onActualizar());
       if (puedeActividades) tareas.push(cargarActividades());
+      if (puedeActividades) tareas.push(cargarRespuestasDetalle());
       if (puedeFormularios) tareas.push(cargarFormularios());
+      tareas.push(cargarDocentes());
       await Promise.all(tareas);
     } finally { setRefrescando(false); }
   }
@@ -278,6 +319,26 @@ export default function Reportes({ usuario, rows, puedeActividades, puedeFormula
   // Ojo: todos los hooks (useMemo acá abajo) tienen que ejecutarse siempre en el mismo orden,
   // así que el "if (!rows) return spinner" queda MÁS ABAJO, después de todos ellos — nunca
   // antes. Cada useMemo usa "rows || []" para no explotar mientras todavía no llegaron.
+  // Asignaciones (Curso [+ Edición]) del docente elegido en el filtro global — misma regla que
+  // ya usa /api/actividades/respuestas para el alcance de un Docente real: si la fila de
+  // Docentes no tiene Edición cargada, aplica a todas las ediciones de ese curso.
+  const asignDocente = useMemo(() => {
+    if (!fDocente) return null;
+    return docentes.filter((d) => (d.email || '').toLowerCase() === fDocente)
+      .map((d) => ({ curso: (d.curso || '').trim(), edicion: (d.edicion || '').trim() }));
+  }, [docentes, fDocente]);
+  const cursosDisponiblesDocente = useMemo(() => asignDocente ? new Set(asignDocente.map((a) => a.curso)) : null, [asignDocente]);
+  function coincideDocente(curso, ed) {
+    if (!asignDocente) return true;
+    const c = (curso || '').trim(), e = (ed == null ? '' : String(ed)).trim();
+    return asignDocente.some((a) => a.curso === c && (!a.edicion || a.edicion === e));
+  }
+  const docentesDisp = useMemo(() => {
+    const m = new Map();
+    docentes.forEach((d) => { if (d.email && !m.has(d.email.toLowerCase())) m.set(d.email.toLowerCase(), d.nombre || d.email); });
+    return [...m.entries()].map(([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label, 'es'));
+  }, [docentes]);
+
   const cursosDisp = useMemo(() => [...new Set((rows || []).map((r) => r.curso).filter(Boolean))].sort(), [rows]);
   const edicionesDisp = useMemo(() => [...new Set((rows || []).map((r) => r.ed).filter(Boolean))].sort((a, b) => {
     const na = parseInt(a, 10), nb = parseInt(b, 10);
@@ -289,50 +350,244 @@ export default function Reportes({ usuario, rows, puedeActividades, puedeFormula
     if (fCurso && r.curso !== fCurso) return false;
     if (fEd && r.ed !== fEd) return false;
     if (fEstado && r.estado !== fEstado) return false;
+    if (fDocente && !coincideDocente(r.curso, r.ed)) return false;
     if (fDesde && (r.fecha || '') < fDesde) return false;
     if (fHasta && (r.fecha || '') > fHasta) return false;
     return true;
-  }), [rows, fCurso, fEd, fEstado, fDesde, fHasta]);
+  }), [rows, fCurso, fEd, fEstado, fDocente, asignDocente, fDesde, fHasta]);
 
-  // Actividades: el reporte agregado viene por actividad/curso, sin fecha ni edición por
-  // respuesta individual — así que ahí solo se puede aplicar el filtro de Curso (dato real
-  // por actividad). Edición/Estado/Fecha no se pueden calcular sin cambiar la API, así que
-  // no se aplican (en vez de fingir que filtran).
+  // Actividades: "actividades"/"porCurso" vienen agregados por curso completo desde la API (las
+  // actividades no están asociadas a una edición puntual en los datos — son del curso entero),
+  // así que ahí solo se pueden aplicar Curso y Docente (a nivel de curso). Edición/Estado/Fecha
+  // no se pueden calcular sin cambiar esa agregación, así que no se aplican (en vez de fingir
+  // que filtran). "respuestas" sí es por envío individual y trae Edición real, así que esa sí
+  // queda filtrada también por Edición y por Docente+Edición exacto (la usa Estudiantes).
   const actividadesF = useMemo(() => {
     if (!actData) return null;
-    const actividades = fCurso ? actData.actividades.filter((a) => a.curso === fCurso) : actData.actividades;
-    const porCurso = fCurso ? actData.porCurso.filter((c) => c.curso === fCurso) : actData.porCurso;
-    return { actividades, porCurso };
-  }, [actData, fCurso]);
+    const actividades = actData.actividades.filter((a) => (!fCurso || a.curso === fCurso) && (!cursosDisponiblesDocente || cursosDisponiblesDocente.has(a.curso)));
+    const porCurso = actData.porCurso.filter((c) => (!fCurso || c.curso === fCurso) && (!cursosDisponiblesDocente || cursosDisponiblesDocente.has(c.curso)));
+    const respuestas = (actData.respuestas || []).filter((r) => {
+      if (fCurso && (r.curso || '').trim() !== fCurso) return false;
+      if (fEd && (r.edicion || '').trim() !== fEd) return false;
+      if (fDocente && !coincideDocente(r.curso, r.edicion)) return false;
+      return true;
+    });
+    return { actividades, porCurso, respuestas };
+  }, [actData, fCurso, fEd, fDocente, cursosDisponiblesDocente, asignDocente]);
 
-  // Formularios: cada respuesta sí trae curso, edición y fecha reales.
+  // Detalle de respuestas (pregunta por pregunta) — mismos criterios de alcance que
+  // actividadesF.respuestas arriba (Curso/Edición/Docente reales por envío) + Período, que acá
+  // sí tiene sentido (cada fila trae su fecha real de envío).
+  const respDataF = useMemo(() => {
+    if (!respData) return null;
+    return respData.filter((r) => {
+      if (fCurso && (r.curso || '').trim() !== fCurso) return false;
+      if (fEd && (r.edicion || '').trim() !== fEd) return false;
+      if (fDocente && !coincideDocente(r.curso, r.edicion)) return false;
+      if (fDesde && (r.fecha || '') < fDesde) return false;
+      if (fHasta && (r.fecha || '') > fHasta) return false;
+      return true;
+    });
+  }, [respData, fCurso, fEd, fDocente, asignDocente, fDesde, fHasta]);
+
+  // Estudiantes distintos por Curso y por Curso+Edición (de Fichas, ya filtradas) — lo necesita
+  // el Reporte de Actividades para la columna "Estudiantes" (el universo posible de respuestas
+  // de cada actividad): si la actividad tiene una Edición propia asignada, el universo es esa
+  // edición puntual; si no, es el curso completo (mismo criterio que ya rige para Actividades
+  // en el resto de Reportes: son del curso entero salvo que se les haya puesto una edición).
+  const estudiantesPorCursoEdicion = useMemo(() => {
+    const porCurso = {}, porCursoEd = {};
+    rowsF.forEach((r) => {
+      if (!r.curso || !r.em) return;
+      const email = r.em.trim().toLowerCase();
+      (porCurso[r.curso] = porCurso[r.curso] || new Set()).add(email);
+      if (r.ed) { const k = r.curso + '||' + r.ed; (porCursoEd[k] = porCursoEd[k] || new Set()).add(email); }
+    });
+    return { porCurso, porCursoEd };
+  }, [rowsF]);
+
+  // Cada actividad, enriquecida con Estudiantes/Respondieron/Participación (pedido de Diego:
+  // columnas Actividad | Curso | Edición | Estudiantes | Respondieron | Participación en el
+  // Reporte de Actividades) — "Respondieron" sale de cruzar por título normalizado contra las
+  // respuestas ya filtradas (actividadesF.respuestas), igual que ya hace el backend.
+  const actividadesConParticipacion = useMemo(() => {
+    if (!actividadesF) return [];
+    const respondieronPorActividad = {};
+    (actividadesF.respuestas || []).forEach((r) => {
+      if (!r.actividad || !r.email) return;
+      const k = normTxt(r.actividad);
+      (respondieronPorActividad[k] = respondieronPorActividad[k] || new Set()).add(r.email);
+    });
+    return actividadesF.actividades.map((a) => {
+      const estudiantes = a.edicion
+        ? (estudiantesPorCursoEdicion.porCursoEd[a.curso + '||' + a.edicion]?.size ?? 0)
+        : (estudiantesPorCursoEdicion.porCurso[a.curso]?.size ?? 0);
+      const respondieron = respondieronPorActividad[normTxt(a.titulo)]?.size || 0;
+      const participacion = estudiantes > 0 ? Math.round(respondieron / estudiantes * 100) : null;
+      return { ...a, estudiantes, respondieron, participacion };
+    });
+  }, [actividadesF, estudiantesPorCursoEdicion]);
+
+  // Reporte de Preguntas (pedido nuevo de Diego, antes vivía colapsado dentro de Actividades):
+  // una fila por pregunta de cada actividad, con correctas/incorrectas además del % que ya había.
+  const preguntasTabla = useMemo(() => {
+    if (!actividadesF) return [];
+    return actividadesF.actividades.flatMap((a) => (a.preguntas || []).map((p, i) => ({
+      actividadSlug: a.slug, actividad: a.titulo, curso: a.curso, edicion: a.edicion || '', idx: i,
+      pregunta: p.pregunta, tipo: p.tipo || 'multiple', respondidas: p.respondidas,
+      correctas: p.tipo === 'abierta' ? null : p.aciertos,
+      incorrectas: p.tipo === 'abierta' ? null : Math.max(0, p.respondidas - p.aciertos),
+      pct: p.pct
+    })));
+  }, [actividadesF]);
+
+  // Reporte de Respuestas (pedido nuevo de Diego): una fila por respuesta de pregunta
+  // individual — ya filtrada por los filtros globales (Curso/Edición/Docente/Período) a través
+  // de respDataF. La vista interactiva (distribución por opción / lista de respuestas abiertas)
+  // se arma en el componente a partir de este mismo detalle; exportar siempre baja TODO el
+  // detalle ya filtrado, no solo lo que se esté mirando en pantalla en ese momento.
+  const respuestasDetalleFlat = useMemo(() => {
+    if (!respDataF) return [];
+    return respDataF.flatMap((r) => (r.detalle || []).map((d, i) => ({
+      fecha: (r.fecha || '').slice(0, 10), actividad: r.actividad, curso: r.curso, edicion: r.edicion || '',
+      estudiante: r.nombre || '', email: r.email, pregunta: d.pregunta, tipo: d.tipo, idx: i,
+      respuesta: d.tipo === 'abierta' ? (d.respuesta ?? '') : (d.opcionElegida ?? ''),
+      correcta: d.tipo === 'abierta' ? '' : (d.respuesta == null ? '' : (d.ok ? 'Sí' : 'No'))
+    })));
+  }, [respDataF]);
+
+  // Reporte de Campos de Inscripción (pedido nuevo de Diego): distribución de las respuestas de
+  // los campos de selección que SÍ se completan hoy en la ficha pública (Origen/Modalidad/Medio
+  // de contacto). Los "campos personalizados" que se pueden definir en Constructor → "Editar
+  // campos" todavía no se muestran en el formulario público (FichaWizard no los lee) ni se
+  // guardan en ningún lado — no hay datos reales que reportar para esos todavía, así que no se
+  // inventan: se avisa en la pantalla en vez de mostrar un reporte vacío sin explicación.
+  const CAMPOS_SELECCION = [
+    { key: 'origen', label: '¿Cómo llegaste a nosotros?' },
+    { key: 'mod', label: 'Modalidad de cursada' },
+    { key: 'med', label: 'Medio de contacto preferido' }
+  ];
+  const camposDistribucion = useMemo(() => {
+    return CAMPOS_SELECCION.map((c) => {
+      const conteo = {};
+      let sinDato = 0;
+      rowsF.forEach((r) => {
+        let v = (r[c.key] || '').toString().trim();
+        if (!v) { sinDato++; return; }
+        // "Modalidad" guarda el detalle que escribió la persona como "Otro: <lo que sea>" — se
+        // agrupa como una sola opción "Otro" (si no, cada respuesta libre sería su propia
+        // barra de 1, en vez de una distribución legible de las opciones reales).
+        if (/^otro:/i.test(v)) v = 'Otro';
+        conteo[v] = (conteo[v] || 0) + 1;
+      });
+      const total = rowsF.length;
+      const opciones = Object.entries(conteo).map(([valor, n]) => ({ valor, n, pct: total ? Math.round(n / total * 100) : 0 })).sort((a, b) => b.n - a.n);
+      return { ...c, opciones, sinDato, total };
+    });
+  }, [rowsF]);
+  const camposExport = useMemo(() => camposDistribucion.flatMap((c) => c.opciones.map((o) => ({ campo: c.label, valor: o.valor, cantidad: o.n, pct: o.pct + '%' }))), [camposDistribucion]);
+
+  // Formularios: cada respuesta sí trae curso, edición y fecha reales — Docente también se
+  // puede aplicar exacto (Curso + Edición).
   const formF = useMemo(() => {
     if (!formData) return null;
     return formData.filter((r) => {
       if (fCurso && r.curso !== fCurso) return false;
       if (fEd && (r.edicion || '') !== fEd) return false;
+      if (fDocente && !coincideDocente(r.curso, r.edicion)) return false;
       if (fDesde && (r.fecha || '') < fDesde) return false;
       if (fHasta && (r.fecha || '') > fHasta) return false;
       return true;
     });
-  }, [formData, fCurso, fEd, fDesde, fHasta]);
+  }, [formData, fCurso, fEd, fDocente, asignDocente, fDesde, fHasta]);
 
-  const hayFiltros = !!(fCurso || fEd || fEstado || fDesde || fHasta);
-  function limpiarFiltros() { setFCurso(''); setFEd(''); setFEstado(''); setFDesde(''); setFHasta(''); setPeriodo('todo'); }
-  const nFiltrosExtra = (fCurso ? 1 : 0) + (fEd ? 1 : 0) + (fEstado ? 1 : 0);
+  const hayFiltros = !!(fCurso || fEd || fEstado || fDocente || fDesde || fHasta);
+  function limpiarFiltros() { setFCurso(''); setFEd(''); setFEstado(''); setFDocente(''); setFDesde(''); setFHasta(''); setPeriodo('todo'); }
+  const nFiltrosExtra = (fCurso ? 1 : 0) + (fEd ? 1 : 0) + (fEstado ? 1 : 0) + (fDocente ? 1 : 0);
+
+  // Cursos: Curso | Ediciones | Estudiantes | Actividades | Participación — a partir de Fichas
+  // (ya filtradas) + el agregado por curso de Actividades (si está disponible).
+  const cursosTabla = useMemo(() => {
+    const porCursoMap = {};
+    rowsF.forEach((r) => {
+      if (!r.curso) return;
+      const c = (porCursoMap[r.curso] = porCursoMap[r.curso] || { curso: r.curso, ediciones: new Set(), estudiantes: new Set() });
+      if (r.ed) c.ediciones.add(r.ed);
+      if (r.em) c.estudiantes.add(r.em.trim().toLowerCase());
+    });
+    const actPorCurso = {}; (actividadesF?.porCurso || []).forEach((c) => { actPorCurso[c.curso] = c; });
+    const actsPorCurso = {}; (actividadesF?.actividades || []).forEach((a) => { actsPorCurso[a.curso] = (actsPorCurso[a.curso] || 0) + 1; });
+    return Object.values(porCursoMap).map((c) => {
+      const act = actPorCurso[c.curso];
+      return {
+        curso: c.curso, ediciones: c.ediciones.size, estudiantes: c.estudiantes.size,
+        actividades: actsPorCurso[c.curso] || 0,
+        participacion: (puedeActividades && act && c.estudiantes.size > 0) ? Math.round(act.estudiantesConActividad / c.estudiantes.size * 100) : null
+      };
+    }).sort((a, b) => b.estudiantes - a.estudiantes);
+  }, [rowsF, actividadesF, puedeActividades]);
+
+  // Estudiantes: Estudiante | Curso | Edición | Actividades realizadas | %participación — una
+  // fila por ficha (Fichas ya filtradas), cruzada con las respuestas de Actividades por
+  // email+curso (las actividades son del curso completo, no de una edición puntual).
+  const estudiantesTabla = useMemo(() => {
+    const realizadasPorEmailCurso = {};
+    (actividadesF?.respuestas || []).forEach((r) => {
+      if (!r.email || !r.curso) return;
+      const key = r.email + '||' + r.curso.trim();
+      (realizadasPorEmailCurso[key] = realizadasPorEmailCurso[key] || new Set()).add(r.actividad);
+    });
+    const actsPorCurso = {}; (actividadesF?.actividades || []).forEach((a) => { actsPorCurso[a.curso] = (actsPorCurso[a.curso] || 0) + 1; });
+    return rowsF.filter((r) => r.curso).map((r) => {
+      const key = (r.em || '').trim().toLowerCase() + '||' + r.curso.trim();
+      const realizadas = realizadasPorEmailCurso[key] ? realizadasPorEmailCurso[key].size : 0;
+      const totalAct = actsPorCurso[r.curso] || 0;
+      return {
+        estudiante: `${r.nom || ''} ${r.ape || ''}`.trim() || r.em || '—', email: r.em, curso: r.curso, ed: r.ed,
+        realizadas, totalAct, pct: (puedeActividades && totalAct > 0) ? Math.round(realizadas / totalAct * 100) : null
+      };
+    });
+  }, [rowsF, actividadesF, puedeActividades]);
 
   const exportInfo = useMemo(() => {
     if (sub === 'resumen' || sub === 'inscripciones') {
       return { nombre: 'reportes_inscripciones', hoja: 'Inscripciones', cols: [['nom', 'Nombre'], ['ape', 'Apellido'], ['em', 'Email'], ['curso', 'Curso'], ['ed', 'Edición'], ['estado', 'Estado'], ['fecha', 'Fecha ficha']], data: rowsF };
     }
     if (sub === 'actividades' && actividadesF) {
-      return { nombre: 'reportes_actividades', hoja: 'Actividades', cols: [['titulo', 'Actividad'], ['curso', 'Curso'], ['totalResp', 'Respuestas'], ['promedio', 'Promedio %'], ['tiempoProm', 'Tiempo promedio (seg)']], data: actividadesF.actividades };
+      return {
+        nombre: 'reportes_actividades', hoja: 'Actividades',
+        cols: [['titulo', 'Actividad'], ['curso', 'Curso'], ['edicion', 'Edición'], ['estudiantes', 'Estudiantes'], ['respondieron', 'Respondieron'], ['participacion', '% participación'], ['promedio', 'Promedio %'], ['tiempoProm', 'Tiempo promedio (seg)']],
+        data: actividadesConParticipacion
+      };
+    }
+    if (sub === 'preguntas' && actividadesF) {
+      return {
+        nombre: 'reportes_preguntas', hoja: 'Preguntas',
+        cols: [['actividad', 'Actividad'], ['pregunta', 'Pregunta'], ['curso', 'Curso'], ['edicion', 'Edición'], ['respondidas', 'Respuestas'], ['correctas', 'Correctas'], ['incorrectas', 'Incorrectas'], ['pct', '% correcto']],
+        data: preguntasTabla
+      };
+    }
+    if (sub === 'respuestas' && respDataF) {
+      return {
+        nombre: 'reportes_respuestas', hoja: 'Respuestas',
+        cols: [['fecha', 'Fecha'], ['actividad', 'Actividad'], ['curso', 'Curso'], ['edicion', 'Edición'], ['estudiante', 'Estudiante'], ['email', 'Email'], ['pregunta', 'Pregunta'], ['tipo', 'Tipo'], ['respuesta', 'Respuesta'], ['correcta', '¿Correcta?']],
+        data: respuestasDetalleFlat
+      };
+    }
+    if (sub === 'cursos') {
+      return { nombre: 'reportes_cursos', hoja: 'Cursos', cols: [['curso', 'Curso'], ['ediciones', 'Ediciones'], ['estudiantes', 'Estudiantes'], ['actividades', 'Actividades'], ['participacion', '% participación']], data: cursosTabla };
+    }
+    if (sub === 'estudiantes') {
+      return { nombre: 'reportes_estudiantes', hoja: 'Estudiantes', cols: [['estudiante', 'Estudiante'], ['email', 'Email'], ['curso', 'Curso'], ['ed', 'Edición'], ['realizadas', 'Actividades realizadas'], ['pct', '% participación']], data: estudiantesTabla };
+    }
+    if (sub === 'campos') {
+      return { nombre: 'reportes_campos_inscripcion', hoja: 'Campos', cols: [['campo', 'Campo'], ['valor', 'Valor'], ['cantidad', 'Cantidad'], ['pct', '% del total']], data: camposExport };
     }
     if (sub === 'formularios' && formF) {
       return { nombre: 'reportes_formularios', hoja: 'Formularios', cols: [['formulario', 'Formulario'], ['curso', 'Curso'], ['edicion', 'Edición'], ['nombre', 'Nombre'], ['email', 'Email'], ['fecha', 'Fecha']], data: formF };
     }
     return null;
-  }, [sub, rowsF, actividadesF, formF]);
+  }, [sub, rowsF, actividadesF, actividadesConParticipacion, preguntasTabla, respDataF, respuestasDetalleFlat, formF, cursosTabla, estudiantesTabla, camposExport]);
 
   if (!rows) return <div className="spin" />;
 
@@ -340,16 +595,25 @@ export default function Reportes({ usuario, rows, puedeActividades, puedeFormula
   if (fCurso) chips.push(['Curso: ' + fCurso, () => setFCurso('')]);
   if (fEd) chips.push(['Edición: ' + fEd, () => setFEd('')]);
   if (fEstado) chips.push(['Estado: ' + fEstado, () => setFEstado('')]);
+  if (fDocente) chips.push(['Docente: ' + (docentesDisp.find((d) => d.value === fDocente)?.label || fDocente), () => setFDocente('')]);
   if (fDesde || fHasta) chips.push([`Fecha: ${fDesde || '…'} → ${fHasta || '…'}`, () => { setFDesde(''); setFHasta(''); setPeriodo('todo'); }]);
 
   const totalesSub = {
     resumen: rows.length, inscripciones: rows.length,
     actividades: actData ? actData.actividades.length : 0,
+    preguntas: actData ? actData.actividades.reduce((s, a) => s + (a.preguntas?.length || 0), 0) : 0,
+    respuestas: respData ? respData.length : 0,
+    cursos: cursosTabla.length, estudiantes: estudiantesTabla.length,
+    campos: rows.length,
     formularios: formData ? formData.length : 0
   };
   const mostrandoSub = {
     resumen: rowsF.length, inscripciones: rowsF.length,
     actividades: actividadesF ? actividadesF.actividades.length : 0,
+    preguntas: preguntasTabla.length,
+    respuestas: respDataF ? respDataF.length : 0,
+    cursos: cursosTabla.length, estudiantes: estudiantesTabla.length,
+    campos: rowsF.length,
     formularios: formF ? formF.length : 0
   };
 
@@ -372,6 +636,7 @@ export default function Reportes({ usuario, rows, puedeActividades, puedeFormula
               disabled={exportInfo.data.length === 0}
               onCSV={() => exportarCSV(exportInfo.nombre + '.csv', exportInfo.cols, exportInfo.data)}
               onXLSX={() => exportarXLSX(exportInfo.nombre + '.xlsx', exportInfo.hoja, exportInfo.cols, exportInfo.data)}
+              onPDF={() => exportarPDF(exportInfo.nombre + '.pdf', 'Reportes · ' + (NAV.find((n) => n.v === sub)?.l || ''), chips.length ? 'Filtros activos: ' + chips.map(([l]) => l).join(' · ') : '', exportInfo.cols, exportInfo.data)}
             />
           )}
         </div>
@@ -400,17 +665,23 @@ export default function Reportes({ usuario, rows, puedeActividades, puedeFormula
               <div className="repx-more-row"><SelectDropdown label="Curso" value={fCurso} onChange={setFCurso} placeholder="Todos los cursos" searchable options={cursosDisp.map((x) => ({ value: x, label: x }))} /></div>
               <div className="repx-more-row"><SelectDropdown label="Edición" value={fEd} onChange={setFEd} placeholder="Todas" searchable options={edicionesDisp.map((x) => ({ value: x, label: 'Ed. ' + x }))} /></div>
               <div className="repx-more-row"><SelectDropdown label="Estado" value={fEstado} onChange={setFEstado} placeholder="Todos" options={ESTADOS.filter((e) => rows.some((r) => r.estado === e)).map((e) => ({ value: e, label: e }))} /></div>
+              {docentesDisp.length > 0 && (
+                <div className="repx-more-row"><SelectDropdown label="Docente" value={fDocente} onChange={setFDocente} placeholder="Todos" searchable options={docentesDisp} /></div>
+              )}
             </div>
           )}
         </div>
         {hayFiltros && <button className="btn-sm" onClick={limpiarFiltros}>Limpiar filtros</button>}
         <span className="grow" />
       </div>
-      {(sub === 'actividades' || sub === 'formularios') && (fEstado) && (
+      {(sub === 'actividades' || sub === 'preguntas' || sub === 'formularios' || sub === 'cursos' || sub === 'estudiantes') && (fEstado) && (
         <p className="muted" style={{ fontSize: 11.5, margin: '0 0 8px' }}>El filtro de Estado no aplica acá (es propio de las fichas de inscripción).</p>
       )}
-      {sub === 'actividades' && (fEd || fDesde || fHasta) && (
-        <p className="muted" style={{ fontSize: 11.5, margin: '0 0 8px' }}>Edición y fecha no se pueden filtrar en Actividades todavía (el reporte no trae ese detalle por respuesta) — solo se aplicó Curso.</p>
+      {(sub === 'actividades' || sub === 'preguntas') && (fEd || fDesde || fHasta) && (
+        <p className="muted" style={{ fontSize: 11.5, margin: '0 0 8px' }}>Las actividades son del curso completo salvo que tengan una Edición propia asignada — acá solo se aplicó Curso (y Docente, a nivel de curso). El Reporte de Respuestas sí filtra por Edición y por Período (son datos reales de cada envío).</p>
+      )}
+      {(sub === 'cursos' || sub === 'estudiantes') && (fEd || fDesde || fHasta) && (
+        <p className="muted" style={{ fontSize: 11.5, margin: '0 0 8px' }}>Las actividades son del curso completo, no de una edición puntual — las columnas de Actividades y % participación no cambian por Edición ni Fecha (Ediciones y Estudiantes sí reflejan esos filtros).</p>
       )}
       {chips.length > 0 && (
         <div className="repx-chips-row">
@@ -423,8 +694,21 @@ export default function Reportes({ usuario, rows, puedeActividades, puedeFormula
       {sub === 'actividades' && puedeActividades && (
         actError ? <div className="empty"><Ico.alert className="lg" /><h3>No se pudo cargar</h3><p>{actError}</p></div> :
         !actividadesF ? <div className="spin" /> :
-        <ReportesActividades data={actividadesF} rowsInsc={rowsF} />
+        <ReportesActividades data={actividadesF} actividades={actividadesConParticipacion} irAPreguntas={() => setSub('preguntas')} />
       )}
+      {sub === 'preguntas' && puedeActividades && (
+        actError ? <div className="empty"><Ico.alert className="lg" /><h3>No se pudo cargar</h3><p>{actError}</p></div> :
+        !actividadesF ? <div className="spin" /> :
+        <ReportesPreguntas actividades={actividadesF.actividades} tabla={preguntasTabla} />
+      )}
+      {sub === 'respuestas' && puedeActividades && (
+        (actError || respError) ? <div className="empty"><Ico.alert className="lg" /><h3>No se pudo cargar</h3><p>{actError || respError}</p></div> :
+        (!actividadesF || !respDataF) ? <div className="spin" /> :
+        <ReportesRespuestas actividades={actividadesF.actividades} detalle={respDataF} />
+      )}
+      {sub === 'cursos' && <ReportesCursos tabla={cursosTabla} puedeActividades={puedeActividades} irAConFiltro={irAConFiltro} />}
+      {sub === 'estudiantes' && <ReportesEstudiantes tabla={estudiantesTabla} puedeActividades={puedeActividades} irAConFiltro={irAConFiltro} />}
+      {sub === 'campos' && <ReportesCampos distribucion={camposDistribucion} />}
       {sub === 'formularios' && puedeFormularios && (
         formError ? <div className="empty"><Ico.alert className="lg" /><h3>No se pudo cargar</h3><p>{formError}</p></div> :
         !formF ? <div className="spin" /> :
@@ -751,7 +1035,8 @@ function Barra({ label, n, max, claseFill = '', onClick }) {
 const MIN_RESP_PREGUNTA_DEFAULT = 3;
 const ORDEN_ACTIVIDADES = [
   { v: 'mas_resp', l: 'Más respuestas' }, { v: 'menos_resp', l: 'Menos respuestas' },
-  { v: 'mayor_prom', l: 'Mayor promedio' }, { v: 'menor_prom', l: 'Menor promedio' }
+  { v: 'mayor_prom', l: 'Mayor promedio' }, { v: 'menor_prom', l: 'Menor promedio' },
+  { v: 'mayor_part', l: 'Mayor participación' }, { v: 'menor_part', l: 'Menor participación' }
 ];
 const ORDEN_PREGUNTAS = [
   { v: 'menor', l: 'Menor % de aciertos primero' }, { v: 'mayor', l: 'Mayor % de aciertos primero' }, { v: 'actividad', l: 'Por actividad' }
@@ -762,16 +1047,15 @@ function fmtDuracion(seg) {
   return `${Math.floor(seg / 60)}m ${seg % 60}s`;
 }
 
-function ReportesActividades({ data, rowsInsc }) {
-  const { actividades, porCurso } = data;
+// "Reporte de Actividades" (pedido de Diego, columnas exactas: Actividad | Curso | Edición |
+// Estudiantes | Respondieron | Participación) — se agregan esas columnas sobre la tabla que ya
+// existía (Promedio/Tiempo promedio quedan al final, no se sacan: seguían siendo datos útiles
+// y nadie pidió sacarlos). "actividades" ya viene enriquecida desde el padre con
+// estudiantes/respondieron/participacion — "data" se mantiene para porCurso (KPI de abajo).
+function ReportesActividades({ data, actividades, irAPreguntas }) {
+  const { porCurso } = data;
   const [ordenAct, setOrdenAct] = useState('menos_resp');
   const [vistaAct, setVistaAct] = useState('tabla');
-  const [ordenPreg, setOrdenPreg] = useState('menor');
-  const [fCursoPreg, setFCursoPreg] = useState('');
-  const [fActPreg, setFActPreg] = useState('');
-  const [minResp, setMinResp] = useState(MIN_RESP_PREGUNTA_DEFAULT);
-  const [abierta, setAbierta] = useState(null);
-  const [abiertoCurso, setAbiertoCurso] = useState(null);
 
   const conRespuestas = actividades.filter((a) => a.totalResp > 0);
   const totalResp = conRespuestas.reduce((s, a) => s + a.totalResp, 0);
@@ -783,35 +1067,15 @@ function ReportesActividades({ data, rowsInsc }) {
     if (ordenAct === 'mas_resp') return b.totalResp - a.totalResp;
     if (ordenAct === 'mayor_prom') return b.promedio - a.promedio;
     if (ordenAct === 'menor_prom') return a.promedio - b.promedio;
+    if (ordenAct === 'mayor_part') return (b.participacion ?? -1) - (a.participacion ?? -1);
+    if (ordenAct === 'menor_part') return (a.participacion ?? 101) - (b.participacion ?? 101);
     return a.totalResp - b.totalResp; // menos_resp
   }), [actividades, ordenAct]);
 
-  // Cruce inscriptos (Fichas, ya filtradas) vs. participación (Actividades) por curso.
-  const cruce = useMemo(() => {
-    const inscriptosPorCurso = {};
-    rowsInsc.forEach((r) => { if (r.curso && !['Rechazada', 'Cancelada'].includes(r.estado)) inscriptosPorCurso[r.curso] = (inscriptosPorCurso[r.curso] || 0) + 1; });
-    const cursos = new Set([...Object.keys(inscriptosPorCurso), ...porCurso.map((p) => p.curso)]);
-    const porCursoMap = {}; porCurso.forEach((p) => { porCursoMap[p.curso] = p; });
-    return [...cursos].map((curso) => {
-      const inscriptos = inscriptosPorCurso[curso] || 0;
-      const act = porCursoMap[curso];
-      const realizaron = act ? act.estudiantesConActividad : 0;
-      return { curso, inscriptos, realizaron, respuestas: act ? act.totalRespuestas : 0, pct: inscriptos > 0 ? Math.round(realizaron / inscriptos * 100) : null, promedio: act && act.totalRespuestas > 0 ? act.promedio : null };
-    }).filter((c) => c.inscriptos > 0 || c.realizaron > 0).sort((a, b) => b.inscriptos - a.inscriptos);
-  }, [rowsInsc, porCurso]);
-
-  const actividadesPorCurso = useMemo(() => { const m = {}; actividades.forEach((a) => (m[a.curso] = m[a.curso] || []).push(a)); return m; }, [actividades]);
-
-  const cursosPreg = useMemo(() => [...new Set(actividades.map((a) => a.curso).filter(Boolean))].sort(), [actividades]);
-  const todasPreguntas = useMemo(() => actividades.flatMap((a) => a.preguntas.map((p, i) => ({
-    actividadSlug: a.slug, actividadTitulo: a.titulo, actividadCurso: a.curso, idx: i, pregunta: p.pregunta, respondidas: p.respondidas, aciertos: p.aciertos, pct: p.pct
-  }))).filter((p) => p.respondidas >= minResp), [actividades, minResp]);
-  const preguntasFiltradas = useMemo(() => todasPreguntas.filter((p) => (!fCursoPreg || p.actividadCurso === fCursoPreg) && (!fActPreg || p.actividadTitulo === fActPreg)), [todasPreguntas, fCursoPreg, fActPreg]);
-  const preguntasOrdenadas = useMemo(() => preguntasFiltradas.slice().sort((a, b) => {
-    if (ordenPreg === 'mayor') return b.pct - a.pct;
-    if (ordenPreg === 'actividad') return a.actividadTitulo.localeCompare(b.actividadTitulo) || a.idx - b.idx;
-    return a.pct - b.pct;
-  }), [preguntasFiltradas, ordenPreg]);
+  // Nota: el cruce "Inscriptos vs. participación por curso" que vivía acá se mudó a la pestaña
+  // Cursos (pedido de Diego: "todos los reportes... deben concentrarse exclusivamente" en su
+  // sección correspondiente); el análisis pregunta por pregunta se mudó a su propia pestaña
+  // "Preguntas" (pedido nuevo) — acá queda solo el resultado por actividad.
 
   return (
     <div>
@@ -824,32 +1088,146 @@ function ReportesActividades({ data, rowsInsc }) {
       </div>
       <p className="muted" style={{ fontSize: 11, marginTop: -8 }}>*Suma de estudiantes distintos por curso — si alguien participó en más de un curso, se cuenta una vez en cada uno (no es un total global deduplicado).</p>
 
-      <Seccion titulo="Participación por curso" sub="Inscriptos (fichas activas, según filtros) vs. estudiantes que efectivamente respondieron alguna actividad de ese curso.">
-        {cruce.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Todavía no hay datos suficientes.</p> : (
+      <Seccion titulo="Resultados por actividad" sub="Estudiantes = inscriptos en el curso (o en su Edición, si la actividad tiene una asignada). Respondieron = estudiantes distintos que la completaron." right={
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <select className="fsel" value={ordenAct} onChange={(e) => setOrdenAct(e.target.value)}>
+            {ORDEN_ACTIVIDADES.map((o) => <option key={o.v} value={o.v}>Ordenar: {o.l}</option>)}
+          </select>
+          <div className="repx-viewtoggle">
+            <button className={vistaAct === 'tabla' ? 'on' : ''} onClick={() => setVistaAct('tabla')}><Ico.table style={{ width: 14, height: 14 }} /> Tabla</button>
+            <button className={vistaAct === 'tarjetas' ? 'on' : ''} onClick={() => setVistaAct('tarjetas')}><Ico.grid style={{ width: 14, height: 14 }} /> Tarjetas</button>
+          </div>
+        </div>
+      }>
+        {actividades.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Todavía no hay actividades.</p> :
+        vistaAct === 'tarjetas' ? (
+          <div className="repx-actcards">
+            {ordenadas.map((a) => (
+              <div key={a.slug} className="repx-actcard">
+                <div className="repx-actcard-t">{a.titulo}</div>
+                <div className="repx-actcard-c">{a.curso}{a.edicion ? ` · Ed. ${a.edicion}` : ''}</div>
+                <div className="repx-actcard-row"><span>Estudiantes</span><b>{a.estudiantes}</b></div>
+                <div className="repx-actcard-row"><span>Respondieron</span><b>{a.respondieron}</b></div>
+                <div className="repx-actcard-row"><span>Participación</span><Pct v={a.participacion} /></div>
+                <div className="repx-actcard-row"><span>Promedio</span><span className={'repx-actcard-pct repx-pct ' + (a.totalResp ? pctTone(a.promedio) : 'muted')}>{a.totalResp ? a.promedio + '%' : '—'}</span></div>
+                <div className="repx-actcard-row"><span>Tiempo promedio</span><span>{fmtDuracion(a.tiempoProm)}</span></div>
+              </div>
+            ))}
+          </div>
+        ) : (
           <div className="tablewrap tablewrap-ancha" style={{ maxHeight: 420 }}>
             <table>
-              <thead><tr><th>Curso</th><th>Inscriptos</th><th>Participaron</th><th>% participación</th><th>Respuestas</th><th>Promedio</th></tr></thead>
-              <tbody>{cruce.map((c) => {
-                const acts = actividadesPorCurso[c.curso] || [];
-                const puedeExpandir = acts.length > 0;
+              <thead><tr><th>Actividad</th><th>Curso</th><th>Edición</th><th>Estudiantes</th><th>Respondieron</th><th>Participación</th><th>Promedio</th><th>Tiempo promedio</th></tr></thead>
+              <tbody>{ordenadas.map((a) => (
+                <tr key={a.slug}>
+                  <td>{a.titulo}</td>
+                  <td className="sec">{a.curso}</td>
+                  <td className="sec">{a.edicion || '—'}</td>
+                  <td className="sec">{a.estudiantes}</td>
+                  <td><CellBar n={a.respondieron} max={maxResp} /></td>
+                  <td><Pct v={a.participacion} /></td>
+                  <td><Pct v={a.totalResp ? a.promedio : null} /></td>
+                  <td className="sec">{fmtDuracion(a.tiempoProm)}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+      </Seccion>
+
+      {irAPreguntas && (
+        <p style={{ margin: '-4px 0 0' }}><CrossLink onClick={irAPreguntas}>Ver análisis pregunta por pregunta (correctas, incorrectas, % de aciertos)</CrossLink></p>
+      )}
+    </div>
+  );
+}
+
+/* ============================ PREGUNTAS ============================ */
+// "Reporte de Preguntas" (pedido nuevo de Diego, item 4: antes vivía colapsado adentro de
+// Actividades, ahora es su propio reporte): preguntas con mayor/menor % de aciertos, cantidad
+// de respuestas, correctas e incorrectas. "tabla" ya viene armada en el padre (preguntasTabla),
+// respetando los filtros globales de Curso/Docente (mismo alcance que el resto de Actividades).
+function ReportesPreguntas({ actividades, tabla }) {
+  const [orden, setOrden] = useState('menor');
+  const [fCurso, setFCurso] = useState('');
+  const [fAct, setFAct] = useState('');
+  const [q, setQ] = useState('');
+  const [minResp, setMinResp] = useState(MIN_RESP_PREGUNTA_DEFAULT);
+  const [abierta, setAbierta] = useState(null);
+
+  const cursosDisp = useMemo(() => [...new Set(actividades.map((a) => a.curso).filter(Boolean))].sort(), [actividades]);
+  const base = useMemo(() => tabla.filter((p) => p.respondidas >= minResp && p.tipo !== 'abierta'), [tabla, minResp]);
+  const filtradas = useMemo(() => {
+    const qq = normTxt(q);
+    return base.filter((p) => (!fCurso || p.curso === fCurso) && (!fAct || p.actividad === fAct) && (!qq || normTxt(p.pregunta).includes(qq)));
+  }, [base, fCurso, fAct, q]);
+  const ordenadas = useMemo(() => filtradas.slice().sort((a, b) => {
+    if (orden === 'mayor') return b.pct - a.pct;
+    if (orden === 'actividad') return a.actividad.localeCompare(b.actividad, 'es') || a.idx - b.idx;
+    return a.pct - b.pct;
+  }), [filtradas, orden]);
+
+  const abiertas = tabla.filter((p) => p.tipo === 'abierta').length;
+  const promGeneral = filtradas.length ? Math.round(filtradas.reduce((s, p) => s + p.pct, 0) / filtradas.length) : null;
+  const peor = ordenadas[0];
+
+  return (
+    <div>
+      <p className="fhead-sub" style={{ marginBottom: 14 }}>Desempeño pregunta por pregunta, en todas las actividades (o filtrado a una sola).</p>
+      <div className="repx-kpis">
+        <RepKpi icon={<Ico.list />} n={base.length} label="Preguntas analizadas" sub={abiertas ? `+${abiertas} de respuesta abierta (no se autocorrigen)` : null} />
+        <RepKpi icon={<Ico.check />} n={promGeneral == null ? '—' : promGeneral + '%'} label="Promedio de aciertos" subTone={promGeneral != null ? pctTone(promGeneral) : ''} />
+        <RepKpi icon={<Ico.alert />} n={peor ? peor.pct + '%' : '—'} label="Punto más débil" sub={peor ? `${peor.pregunta.slice(0, 36)}${peor.pregunta.length > 36 ? '…' : ''}` : null} subTone={peor ? 'bad' : ''} />
+      </div>
+      <p className="muted" style={{ fontSize: 11, marginTop: -8 }}>Solo se incluyen preguntas de opción múltiple o Verdadero/Falso (se autocorrigen) con al menos {minResp} respuesta{minResp === 1 ? '' : 's'}.</p>
+
+      <Seccion titulo="Preguntas" right={
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <input className="ctrl" style={{ width: 180 }} placeholder="Buscar pregunta…" value={q} onChange={(e) => setQ(e.target.value)} />
+          <select className="fsel" value={fCurso} onChange={(e) => { setFCurso(e.target.value); setFAct(''); }}>
+            <option value="">Todos los cursos</option>
+            {cursosDisp.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <select className="fsel" value={fAct} onChange={(e) => setFAct(e.target.value)}>
+            <option value="">Todas las actividades</option>
+            {actividades.filter((a) => !fCurso || a.curso === fCurso).map((a) => <option key={a.slug} value={a.titulo}>{a.titulo}</option>)}
+          </select>
+          <select className="fsel" value={orden} onChange={(e) => setOrden(e.target.value)}>
+            {ORDEN_PREGUNTAS.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
+          </select>
+          <input type="number" className="fsel" style={{ width: 70 }} min={1} value={minResp} onChange={(e) => setMinResp(Math.max(1, Number(e.target.value) || 1))} title="Mínimo de respuestas" />
+        </div>
+      }>
+        {ordenadas.length === 0 ? (
+          <p className="muted" style={{ fontSize: 13 }}>No hay preguntas que cumplan el mínimo de respuestas con estos filtros.</p>
+        ) : (
+          <div className="tablewrap tablewrap-ancha" style={{ maxHeight: 460 }}>
+            <table>
+              <thead><tr><th>Actividad</th><th>Pregunta</th><th>Curso</th><th>Edición</th><th>Respuestas</th><th>Correctas</th><th>Incorrectas</th><th>% correcto</th></tr></thead>
+              <tbody>{ordenadas.map((p) => {
+                const key = p.actividadSlug + '·' + p.idx;
+                const act = actividades.find((a) => a.slug === p.actividadSlug);
                 return (
-                  <Fragment key={c.curso}>
-                    <tr className={puedeExpandir ? 'clickable' : ''} style={puedeExpandir ? { cursor: 'pointer' } : undefined} onClick={puedeExpandir ? () => setAbiertoCurso(abiertoCurso === c.curso ? null : c.curso) : undefined}>
-                      <td><b>{c.curso}</b>{puedeExpandir && <span style={{ marginLeft: 8, fontSize: 12, color: 'rgb(var(--accentTeal))' }}>{abiertoCurso === c.curso ? 'Ocultar ▲' : 'Ver actividades ▾'}</span>}</td>
-                      <td className="sec">{c.inscriptos}</td>
-                      <td className="sec">{c.realizaron}</td>
-                      <td><Pct v={c.pct} /></td>
-                      <td className="sec">{c.respuestas}</td>
-                      <td><Pct v={c.promedio} /></td>
+                  <Fragment key={key}>
+                    <tr className="clickable" style={{ cursor: 'pointer' }} onClick={() => setAbierta(abierta === key ? null : key)}>
+                      <td className="sec">{p.actividad}</td>
+                      <td>{p.pregunta}</td>
+                      <td className="sec">{p.curso}</td>
+                      <td className="sec">{p.edicion || '—'}</td>
+                      <td className="sec">{p.respondidas}</td>
+                      <td className="sec">{p.correctas}</td>
+                      <td className="sec">{p.incorrectas}</td>
+                      <td><Pct v={p.pct} /></td>
                     </tr>
-                    {abiertoCurso === c.curso && puedeExpandir && (
-                      <tr><td colSpan={6} style={{ background: 'rgb(var(--surface2))' }}>
+                    {abierta === key && act && (
+                      <tr><td colSpan={8} style={{ background: 'rgb(var(--surface2))' }}>
                         <div style={{ padding: '10px 6px' }}>
-                          {acts.slice().sort((a, b) => b.totalResp - a.totalResp).map((a) => (
-                            <div key={a.slug} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '4px 0', fontSize: 13 }}>
-                              <span style={{ flex: 1 }}>{a.titulo}</span>
-                              <span className="sec" style={{ flex: '0 0 auto' }}>{a.totalResp} resp.</span>
-                              <span style={{ flex: '0 0 auto', fontWeight: 700 }}>{a.totalResp ? a.promedio + '%' : '—'}</span>
+                          <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>Todas las preguntas de «{act.titulo}» · {act.totalResp} respuesta(s) · promedio {act.promedio}%</div>
+                          {act.preguntas.map((pp, i) => (
+                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '4px 0', fontSize: 13, borderBottom: i < act.preguntas.length - 1 ? '1px solid rgb(var(--border))' : 'none' }}>
+                              <span style={{ flex: 1 }}>{pp.pregunta}{pp.tipo === 'abierta' ? <span className="muted"> (abierta)</span> : ''}</span>
+                              <span className="sec" style={{ flex: '0 0 auto' }}>{pp.respondidas} resp.</span>
+                              <Pct v={pp.tipo !== 'abierta' && pp.respondidas ? pp.pct : null} />
                             </div>
                           ))}
                         </div>
@@ -862,107 +1240,252 @@ function ReportesActividades({ data, rowsInsc }) {
           </div>
         )}
       </Seccion>
+    </div>
+  );
+}
 
-      <Seccion titulo="Resultados por actividad" right={
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <select className="fsel" value={ordenAct} onChange={(e) => setOrdenAct(e.target.value)}>
-            {ORDEN_ACTIVIDADES.map((o) => <option key={o.v} value={o.v}>Ordenar: {o.l}</option>)}
+/* ============================ RESPUESTAS ============================ */
+// "Reporte de Respuestas" (pedido nuevo de Diego, item 5): consultar las respuestas
+// registradas — distribución para preguntas de opción, lista para preguntas abiertas.
+// "detalle" ya viene filtrado por los filtros globales (Curso/Edición/Docente/Período) desde
+// el padre (respDataF) — acá solo se agrupa/recorta para mostrarlo (exportar siempre baja el
+// detalle completo ya filtrado, independientemente de qué actividad/pregunta se esté mirando).
+function ReportesRespuestas({ actividades, detalle }) {
+  const actividadesConResp = useMemo(() => {
+    const titulos = new Set(detalle.map((r) => r.actividad));
+    return actividades.filter((a) => titulos.has(a.titulo)).sort((a, b) => a.titulo.localeCompare(b.titulo, 'es'));
+  }, [actividades, detalle]);
+  const [fAct, setFAct] = useState('');
+  useEffect(() => { if (fAct && !actividadesConResp.some((a) => a.titulo === fAct)) setFAct(''); }, [actividadesConResp, fAct]);
+  const actElegida = actividadesConResp.find((a) => a.titulo === fAct) || null;
+  const [fPreg, setFPreg] = useState('');
+  useEffect(() => { setFPreg(''); }, [fAct]);
+
+  const respDeLaActividad = useMemo(() => fAct ? detalle.filter((r) => r.actividad === fAct) : [], [detalle, fAct]);
+
+  // Por cada pregunta de la actividad elegida: distribución de opciones (cerradas) o lista de
+  // respuestas (abiertas), a partir de "detalle" (cada fila trae su "detalle[]" por pregunta).
+  const preguntasVista = useMemo(() => {
+    if (!actElegida) return [];
+    return actElegida.preguntas.map((p, i) => {
+      const respuestasDeEsta = respDeLaActividad.map((r) => (r.detalle || [])[i]).filter((d) => d && d.respuesta != null && d.respuesta !== '');
+      if (p.tipo === 'abierta') {
+        const lista = respDeLaActividad.map((r) => ({ ...(r.detalle || [])[i], nombre: r.nombre, email: r.email, fecha: (r.fecha || '').slice(0, 10) })).filter((d) => d.respuesta != null && d.respuesta !== '');
+        return { idx: i, pregunta: p.pregunta, tipo: p.tipo, total: lista.length, lista };
+      }
+      const conteo = {};
+      (p.opciones || []).forEach((o) => { conteo[o] = 0; });
+      respuestasDeEsta.forEach((d) => { const op = d.opcionElegida; if (op != null) conteo[op] = (conteo[op] || 0) + 1; });
+      const opciones = Object.entries(conteo).map(([valor, n]) => ({ valor, n, pct: respuestasDeEsta.length ? Math.round(n / respuestasDeEsta.length * 100) : 0 }));
+      return { idx: i, pregunta: p.pregunta, tipo: p.tipo, total: respuestasDeEsta.length, opciones };
+    });
+  }, [actElegida, respDeLaActividad]);
+  const preguntasFiltradas = fPreg ? preguntasVista.filter((p) => String(p.idx) === fPreg) : preguntasVista;
+  const maxOpcion = Math.max(1, ...preguntasVista.flatMap((p) => (p.opciones || []).map((o) => o.n)));
+
+  return (
+    <div>
+      <p className="fhead-sub" style={{ marginBottom: 14 }}>Elegí una actividad para ver, pregunta por pregunta, la distribución de respuestas (o la lista, si son abiertas).</p>
+      <div className="repx-kpis">
+        <RepKpi icon={<Ico.edit />} n={detalle.length} label="Respuestas registradas" />
+        <RepKpi icon={<Ico.layers />} n={actividadesConResp.length} label="Actividades con respuestas" />
+      </div>
+
+      <Seccion titulo="Elegí una actividad" right={
+        actElegida && (
+          <select className="fsel" value={fPreg} onChange={(e) => setFPreg(e.target.value)}>
+            <option value="">Todas las preguntas</option>
+            {actElegida.preguntas.map((p, i) => <option key={i} value={i}>{i + 1}. {p.pregunta.slice(0, 40)}</option>)}
           </select>
-          <div className="repx-viewtoggle">
-            <button className={vistaAct === 'tabla' ? 'on' : ''} onClick={() => setVistaAct('tabla')}><Ico.table style={{ width: 14, height: 14 }} /> Tabla</button>
-            <button className={vistaAct === 'tarjetas' ? 'on' : ''} onClick={() => setVistaAct('tarjetas')}><Ico.grid style={{ width: 14, height: 14 }} /> Tarjetas</button>
+        )
+      }>
+        <select className="fsel" style={{ width: '100%', maxWidth: 420 }} value={fAct} onChange={(e) => setFAct(e.target.value)}>
+          <option value="">— Elegí una actividad —</option>
+          {actividadesConResp.map((a) => <option key={a.slug} value={a.titulo}>{a.titulo} · {a.curso} ({detalle.filter((r) => r.actividad === a.titulo).length} respuestas)</option>)}
+        </select>
+      </Seccion>
+
+      {actElegida && preguntasFiltradas.map((p) => (
+        <Seccion key={p.idx} titulo={`${p.idx + 1}. ${p.pregunta}`} sub={p.tipo === 'abierta' ? `Respuesta abierta · ${p.total} respuesta${p.total === 1 ? '' : 's'} (no se autocorrige)` : `${p.total} respuesta${p.total === 1 ? '' : 's'}`}>
+          {p.tipo === 'abierta' ? (
+            p.lista.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Todavía no hay respuestas para esta pregunta.</p> : (
+              <div className="tablewrap" style={{ maxHeight: 340 }}>
+                <table>
+                  <thead><tr><th>Fecha</th><th>Estudiante</th><th>Respuesta</th></tr></thead>
+                  <tbody>{p.lista.map((d, i) => (
+                    <tr key={i}>
+                      <td className="sec">{d.fecha}</td>
+                      <td><b>{d.nombre || '—'}</b><div className="muted" style={{ fontSize: 11 }}>{d.email}</div></td>
+                      <td style={{ whiteSpace: 'pre-wrap' }}>{d.respuesta}</td>
+                    </tr>
+                  ))}</tbody>
+                </table>
+              </div>
+            )
+          ) : p.opciones.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin opciones definidas.</p> : (
+            <div>{p.opciones.map((o) => (
+              <div key={o.valor} style={{ marginBottom: 4 }}>
+                <Barra label={o.valor} n={o.n} max={maxOpcion} />
+                <div style={{ fontSize: 11, color: 'rgb(var(--textMuted))', textAlign: 'right', marginTop: -4, marginBottom: 6 }}>{o.pct}% de las respuestas</div>
+              </div>
+            ))}</div>
+          )}
+        </Seccion>
+      ))}
+      {!actElegida && <p className="muted" style={{ fontSize: 13 }}>Elegí una actividad arriba para ver el detalle de sus respuestas.</p>}
+    </div>
+  );
+}
+
+/* ============================ CAMPOS DE INSCRIPCIÓN ============================ */
+// "Reporte de Campos de Inscripción" (pedido nuevo de Diego, item 8): distribución de las
+// respuestas de cada campo de selección de la ficha. "distribucion" ya viene armada en el
+// padre (camposDistribucion), a partir de Fichas ya filtradas por los filtros globales.
+function ReportesCampos({ distribucion }) {
+  return (
+    <div>
+      <p className="fhead-sub" style={{ marginBottom: 14 }}>Cómo respondieron los estudiantes a cada campo de selección de la ficha de inscripción.</p>
+      <div className="note" style={{ marginBottom: 16 }}>
+        Los campos que se pueden agregar en Constructor → "Editar campos" → "Personalizados" todavía no se muestran en la ficha pública ni se guardan en ningún lado (es un hueco que encontramos de paso, no algo que haya que decidir hoy) — así que no hay datos reales para mostrar de esos. Este reporte usa los tres campos de selección que la ficha SÍ pide hoy a cada estudiante.
+      </div>
+      {distribucion.map((c) => {
+        const max = Math.max(1, ...c.opciones.map((o) => o.n));
+        return (
+          <Seccion key={c.key} titulo={c.label} sub={c.sinDato > 0 ? `${c.sinDato} ficha${c.sinDato === 1 ? '' : 's'} sin este dato.` : undefined}>
+            {c.opciones.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : (
+              <div>{c.opciones.map((o) => (
+                <div key={o.valor} style={{ marginBottom: 4 }}>
+                  <Barra label={o.valor} n={o.n} max={max} />
+                  <div style={{ fontSize: 11, color: 'rgb(var(--textMuted))', textAlign: 'right', marginTop: -4, marginBottom: 6 }}>{o.pct}% de {c.total} ficha{c.total === 1 ? '' : 's'}</div>
+                </div>
+              ))}</div>
+            )}
+          </Seccion>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ============================ CURSOS ============================ */
+// "Reporte de cursos" (pedido de Diego): Curso | Ediciones | Estudiantes | Actividades |
+// Participación, con drill-down al detalle de un curso. La tabla ya viene armada (cursosTabla,
+// useMemo en el componente padre) a partir de Fichas + el agregado por curso de Actividades.
+function ReportesCursos({ tabla, puedeActividades, irAConFiltro }) {
+  const [abierto, setAbierto] = useState(null);
+  const totalEstudiantes = tabla.reduce((s, c) => s + c.estudiantes, 0);
+  const totalEdiciones = tabla.reduce((s, c) => s + c.ediciones, 0);
+  const conPart = tabla.filter((c) => c.participacion != null);
+  const partProm = conPart.length ? Math.round(conPart.reduce((s, c) => s + c.participacion, 0) / conPart.length) : null;
+  const maxEstudiantes = Math.max(1, ...tabla.map((c) => c.estudiantes));
+
+  return (
+    <div>
+      <p className="fhead-sub" style={{ marginBottom: 14 }}>Un curso por fila: ediciones y estudiantes (de Fichas), actividades y participación (de Actividades).</p>
+      <div className="repx-kpis">
+        <RepKpi icon={<Ico.folder />} n={tabla.length} label="Cursos con datos" />
+        <RepKpi icon={<Ico.layers />} n={totalEdiciones} label="Ediciones (suma)" />
+        <RepKpi icon={<Ico.user />} n={totalEstudiantes} label="Estudiantes (suma)" />
+        <RepKpi icon={<Ico.check />} n={puedeActividades ? (partProm == null ? '—' : partProm + '%') : '—'} label="Participación promedio" sub={!puedeActividades ? 'Requiere permiso de Actividades' : null} />
+      </div>
+
+      {tabla.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : (
+        <Seccion titulo="Cursos" sub="Clickeá una fila para ver el detalle del curso.">
+          <div className="tablewrap tablewrap-ancha" style={{ maxHeight: 460 }}>
+            <table>
+              <thead><tr><th>Curso</th><th>Ediciones</th><th>Estudiantes</th><th>Actividades</th><th>% participación</th><th /></tr></thead>
+              <tbody>{tabla.map((c) => {
+                const open = abierto === c.curso;
+                return (
+                  <Fragment key={c.curso}>
+                    <tr className="clickable" style={{ cursor: 'pointer' }} onClick={() => setAbierto(open ? null : c.curso)}>
+                      <td><div className="curso-cell"><span className="curso-avatar" style={{ background: colorCurso(c.curso) + '22', color: colorCurso(c.curso) }}>{inicialesCurso(c.curso)}</span><b style={{ color: colorCurso(c.curso) }}>{c.curso}</b></div></td>
+                      <td className="sec">{c.ediciones}</td>
+                      <td><CellBar n={c.estudiantes} max={maxEstudiantes} /></td>
+                      <td className="sec">{puedeActividades ? c.actividades : '—'}</td>
+                      <td>{puedeActividades ? <Pct v={c.participacion} /> : <span className="muted">—</span>}</td>
+                      <td><Ico.chevronRight style={{ transform: open ? 'rotate(90deg)' : 'none' }} /></td>
+                    </tr>
+                    {open && (
+                      <tr><td colSpan={6} style={{ background: 'rgb(var(--surface2))' }}>
+                        <div style={{ padding: '10px 6px', display: 'flex', gap: 24, flexWrap: 'wrap', fontSize: 13 }}>
+                          <div><span className="muted">Ediciones con fichas: </span><b>{c.ediciones}</b></div>
+                          <div><span className="muted">Estudiantes distintos: </span><b>{c.estudiantes}</b></div>
+                          <div><span className="muted">Actividades del curso: </span><b>{puedeActividades ? c.actividades : 'sin datos'}</b></div>
+                          <div><span className="muted">% participación: </span><b>{puedeActividades ? (c.participacion == null ? '—' : c.participacion + '%') : 'sin datos'}</b></div>
+                          {irAConFiltro && <CrossLink onClick={() => irAConFiltro('curso', c.curso)}>Ver fichas de este curso</CrossLink>}
+                        </div>
+                      </td></tr>
+                    )}
+                  </Fragment>
+                );
+              })}</tbody>
+            </table>
           </div>
+        </Seccion>
+      )}
+    </div>
+  );
+}
+
+/* ============================ ESTUDIANTES ============================ */
+const ORDEN_ESTUDIANTES = [
+  { v: 'menor_part', l: 'Menor % participación primero' }, { v: 'mayor_part', l: 'Mayor % participación primero' },
+  { v: 'nombre', l: 'Nombre (A-Z)' },
+];
+// "Reporte de estudiantes" (pedido de Diego): Estudiante | Curso | Edición | Actividades
+// realizadas | %participación — nada más (tabla ya armada en el padre, estudiantesTabla).
+function ReportesEstudiantes({ tabla, puedeActividades, irAConFiltro }) {
+  const [q, setQ] = useState('');
+  const [orden, setOrden] = useState('menor_part');
+  const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+  const filtradas = useMemo(() => {
+    const qq = norm(q);
+    return tabla.filter((e) => !qq || norm(`${e.estudiante} ${e.email}`).includes(qq));
+  }, [tabla, q]);
+  const ordenadas = useMemo(() => filtradas.slice().sort((a, b) => {
+    if (orden === 'nombre') return a.estudiante.localeCompare(b.estudiante, 'es');
+    if (orden === 'mayor_part') return (b.pct ?? -1) - (a.pct ?? -1);
+    return (a.pct ?? 101) - (b.pct ?? 101); // menor_part: sin dato de participación al final
+  }), [filtradas, orden]);
+
+  const conPart = tabla.filter((e) => e.pct != null);
+  const partProm = conPart.length ? Math.round(conPart.reduce((s, e) => s + e.pct, 0) / conPart.length) : null;
+
+  return (
+    <div>
+      <p className="fhead-sub" style={{ marginBottom: 14 }}>Una fila por ficha: en cuántas actividades de ese curso participó cada estudiante.</p>
+      <div className="repx-kpis">
+        <RepKpi icon={<Ico.user />} n={tabla.length} label="Estudiantes (fichas)" />
+        <RepKpi icon={<Ico.check />} n={puedeActividades ? (partProm == null ? '—' : partProm + '%') : '—'} label="Participación promedio" sub={!puedeActividades ? 'Requiere permiso de Actividades' : null} />
+      </div>
+
+      <Seccion titulo="Estudiantes" right={
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <input className="ctrl" style={{ width: 200 }} placeholder="Buscar estudiante o email…" value={q} onChange={(e) => setQ(e.target.value)} />
+          <select className="fsel" value={orden} onChange={(e) => setOrden(e.target.value)}>
+            {ORDEN_ESTUDIANTES.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
+          </select>
         </div>
       }>
-        {conRespuestas.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Todavía no hay respuestas.</p> :
-        vistaAct === 'tarjetas' ? (
-          <div className="repx-actcards">
-            {ordenadas.map((a) => (
-              <div key={a.slug} className="repx-actcard">
-                <div className="repx-actcard-t">{a.titulo}</div>
-                <div className="repx-actcard-c">{a.curso}</div>
-                <div className="repx-actcard-row"><span>Respuestas</span><b>{a.totalResp}</b></div>
-                <div className="repx-actcard-row"><span>Promedio</span><span className={'repx-actcard-pct repx-pct ' + (a.totalResp ? pctTone(a.promedio) : 'muted')}>{a.totalResp ? a.promedio + '%' : '—'}</span></div>
-                <div className="repx-actcard-row"><span>Tiempo promedio</span><span>{fmtDuracion(a.tiempoProm)}</span></div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="tablewrap" style={{ maxHeight: 420 }}>
+        {ordenadas.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : (
+          <div className="tablewrap tablewrap-ancha" style={{ maxHeight: 460 }}>
             <table>
-              <thead><tr><th>Actividad</th><th>Curso</th><th>Respuestas</th><th>Promedio</th><th>Tiempo promedio</th></tr></thead>
-              <tbody>{ordenadas.map((a) => (
-                <tr key={a.slug}>
-                  <td>{a.titulo}</td>
-                  <td className="sec">{a.curso}</td>
-                  <td><CellBar n={a.totalResp} max={maxResp} /></td>
-                  <td><Pct v={a.totalResp ? a.promedio : null} /></td>
-                  <td className="sec">{fmtDuracion(a.tiempoProm)}</td>
+              <thead><tr><th>Estudiante</th><th>Curso</th><th>Edición</th><th>Actividades realizadas</th><th>% participación</th></tr></thead>
+              <tbody>{ordenadas.map((e, i) => (
+                <tr key={e.email + '·' + e.curso + '·' + i} className={irAConFiltro ? 'clickable' : ''} style={irAConFiltro ? { cursor: 'pointer' } : undefined} onClick={irAConFiltro ? () => irAConFiltro('curso', e.curso) : undefined}>
+                  <td><b>{e.estudiante}</b><div className="muted" style={{ fontSize: 11 }}>{e.email}</div></td>
+                  <td className="sec">{e.curso}</td>
+                  <td className="sec">{e.ed || '—'}</td>
+                  <td className="sec">{puedeActividades ? `${e.realizadas} / ${e.totalAct}` : '—'}</td>
+                  <td>{puedeActividades ? <Pct v={e.pct} /> : <span className="muted">—</span>}</td>
                 </tr>
               ))}</tbody>
             </table>
           </div>
         )}
       </Seccion>
-
-      <Expandible titulo="Análisis de preguntas" defaultOpen={false}>
-        <div className="repx-deemph">
-          <p className="muted" style={{ fontSize: 12, margin: '0 0 10px' }}>Solo se muestran preguntas con al menos {minResp} respuesta{minResp === 1 ? '' : 's'}.</p>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-            <select className="fsel" value={fCursoPreg} onChange={(e) => { setFCursoPreg(e.target.value); setFActPreg(''); }}>
-              <option value="">Todos los cursos</option>
-              {cursosPreg.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <select className="fsel" value={fActPreg} onChange={(e) => setFActPreg(e.target.value)}>
-              <option value="">Todas las actividades</option>
-              {actividades.filter((a) => !fCursoPreg || a.curso === fCursoPreg).map((a) => <option key={a.slug} value={a.titulo}>{a.titulo}</option>)}
-            </select>
-            <select className="fsel" value={ordenPreg} onChange={(e) => setOrdenPreg(e.target.value)}>
-              {ORDEN_PREGUNTAS.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
-            </select>
-            <input type="number" className="fsel" style={{ width: 84 }} min={3} value={minResp} onChange={(e) => setMinResp(Math.max(3, Number(e.target.value) || 3))} title="Mínimo de respuestas" />
-          </div>
-          {preguntasOrdenadas.length === 0 ? (
-            <p className="muted" style={{ fontSize: 13 }}>No hay preguntas que cumplan el mínimo de respuestas con estos filtros.</p>
-          ) : (
-            <div className="tablewrap tablewrap-ancha" style={{ maxHeight: 420 }}>
-              <table>
-                <thead><tr><th>Pregunta</th><th>Actividad</th><th>Curso</th><th>Respondidas</th><th>Aciertos</th><th>% correcto</th></tr></thead>
-                <tbody>{preguntasOrdenadas.map((p) => {
-                  const key = p.actividadSlug + '·' + p.idx;
-                  const act = actividades.find((a) => a.slug === p.actividadSlug);
-                  return (
-                    <Fragment key={key}>
-                      <tr className="clickable" style={{ cursor: 'pointer' }} onClick={() => setAbierta(abierta === key ? null : key)}>
-                        <td>{p.pregunta}</td>
-                        <td className="sec">{p.actividadTitulo}</td>
-                        <td className="sec">{p.actividadCurso}</td>
-                        <td className="sec">{p.respondidas}</td>
-                        <td className="sec">{p.aciertos}</td>
-                        <td><Pct v={p.pct} /></td>
-                      </tr>
-                      {abierta === key && act && (
-                        <tr><td colSpan={6} style={{ background: 'rgb(var(--surface2))' }}>
-                          <div style={{ padding: '10px 6px' }}>
-                            <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>Todas las preguntas de «{act.titulo}» · {act.totalResp} respuesta(s) · promedio {act.promedio}%</div>
-                            {act.preguntas.map((pp, i) => (
-                              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '4px 0', fontSize: 13, borderBottom: i < act.preguntas.length - 1 ? '1px solid rgb(var(--border))' : 'none' }}>
-                                <span style={{ flex: 1 }}>{pp.pregunta}</span>
-                                <span className="sec" style={{ flex: '0 0 auto' }}>{pp.respondidas} resp.</span>
-                                <Pct v={pp.respondidas ? pp.pct : null} />
-                              </div>
-                            ))}
-                          </div>
-                        </td></tr>
-                      )}
-                    </Fragment>
-                  );
-                })}</tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </Expandible>
     </div>
   );
 }
