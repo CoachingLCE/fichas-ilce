@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSession } from '../lib/useSession';
 import { tienePermisoInscripciones, tienePermisoCambiarEstado, tienePermisoExportar, tienePermisoDashboard, tienePermisoConstructor, tienePermisoAccesos, tienePermisoActividades, tienePermisoGestionActividades, tienePermisoAsignarDocentes, tienePermisoEmails, tienePermisoAuditoria, tienePermisoFormularios, puedeVerComoOtro } from '../lib/permisos';
-import { ESTADOS, normalizarEstado, nombreVisibleRoles, estiloCurso } from '../lib/constants';
+import { ESTADOS, normalizarEstado, nombreVisibleRoles, estiloCurso, colorCurso, estadoFechaReciente } from '../lib/constants';
 import { Isologo, IsologoDefs } from './Isologo';
 import ThemeSelector from './ThemeSelector';
 import Accesos from './Accesos';
@@ -26,7 +26,11 @@ const ALL_COLS = [
   ['nom', 'Nombre'], ['ape', 'Apellido'], ['em', 'Email'], ['curso', 'Curso'], ['ed', 'Edición'],
   ['pais', 'País'], ['prov', 'Provincia'], ['loc', 'Localidad'], ['wa', 'WhatsApp'], ['doc', 'Documento'],
   ['ig', 'Instagram'], ['prof', 'Profesión'], ['origen', 'Origen'], ['mod', 'Modalidad'],
-  ['inscrito', 'Inscrito'], ['estado', 'Estado'], ['fecha', 'Fecha ficha']
+  ['inscrito', 'Inscrito'], ['estado', 'Estado'], ['fecha', 'Fecha ficha'],
+  // Se completa sola cuando la persona hace clic en "Hablar por WhatsApp" del mail de
+  // confirmación (ver /api/click/whatsapp) — columna ancha a propósito porque el título es
+  // largo (pedido de Diego).
+  ['clickwa', 'Clic en "hablar por whatsapp"']
 ];
 
 // La columna Edición a veces trae texto ('3° edición', 'Tercera', 'Edición n° 3', '3•').
@@ -38,7 +42,11 @@ function normaliza(f) {
     pais: f['País'], prov: f['Provincia/Estado'], loc: f.Localidad, wa: f.WhatsApp, doc: f.Documento,
     ig: f.Instagram, prof: f['Profesión'], origen: f.Origen, mod: f.Modalidad, med: f['Medio contacto'],
     salud: f['Tema salud'], sobre: f['Sobre vos'], coment: f.Comentarios, cons: f.Consentimiento,
-    inscrito: f.Inscrito, estado: normalizarEstado(f.Estado), fecha: (f['Fecha ficha'] || '').slice(0, 10)
+    inscrito: f.Inscrito, estado: normalizarEstado(f.Estado), fecha: (f['Fecha ficha'] || '').slice(0, 10),
+    // Columna "Click WhatsApp" en la Sheet (ver /api/click/whatsapp): vacía hasta que Diego
+    // la agregue en Inscripciones (columna nueva, al final) — si no existe todavía, esto
+    // simplemente da '' y la celda muestra "—", no rompe nada.
+    clickWa: (f['Click WhatsApp'] || '').slice(0, 10)
   };
 }
 function norm(s) { return (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim(); }
@@ -126,7 +134,7 @@ export default function Panel() {
   const [fEstado, setFEstado] = useState(''); const [fCurso, setFCurso] = useState('');
   const [fEd, setFEd] = useState(''); const [fPais, setFPais] = useState('');
   const [fDesde, setFDesde] = useState(''); const [fHasta, setFHasta] = useState('');
-  const [visCols, setVisCols] = useState(new Set(['nom', 'curso', 'ed', 'pais', 'wa', 'estado', 'fecha']));
+  const [visCols, setVisCols] = useState(new Set(['nom', 'curso', 'ed', 'pais', 'wa', 'estado', 'fecha', 'clickwa']));
   const [colModal, setColModal] = useState(false);
   const [sel, setSel] = useState(null); // registro abierto en drawer
   const [historial, setHistorial] = useState([]);
@@ -238,7 +246,9 @@ export default function Panel() {
         if (!hay.includes(qq) && !digits(r.wa).includes(digits(qq))) return false;
       }
       return true;
-    });
+      // Más recientes primero (pedido de Diego) — antes quedaba en el orden en que las lee
+      // la Sheet, que no es necesariamente cronológico.
+    }).sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
   }, [rows, q, fEstado, fCurso, fEd, fPais, fExterior, fDesde, fHasta]);
 
   // Base para los smart chips: aplica todos los filtros MENOS el estado, así los contadores
@@ -331,9 +341,9 @@ export default function Panel() {
           {/* "Fichas de inscripción" y "Fichas completadas" quedan unificadas bajo una sola
               pestaña ("Fichas"), con sub-pestañas adentro — antes competían visualmente
               como si fueran dos módulos del mismo nivel. */}
-          <button className={'tnav' + (tab === 'fichas' || tab === 'inscripciones' ? ' on' : '')} onClick={() => setTab('fichas')}>Fichas</button>
+          <button className={'tnav' + (tab === 'fichas' ? ' on' : '')} onClick={() => setTab('fichas')}>Fichas de inscripción</button>
           <button className={'tnav' + (tab === 'actividadesyformularios' ? ' on' : '') + ((tienePermisoActividades(usuario) || tienePermisoFormularios(usuario)) ? '' : ' dim')} onClick={() => { setTab('actividadesyformularios'); setVistaAyF(null); }}>Actividades y formularios</button>
-          <button className={'tnav' + (tab === 'respuestas' ? ' on' : '') + ((tienePermisoActividades(usuario) || tienePermisoFormularios(usuario)) ? '' : ' dim')} onClick={() => { setTab('respuestas'); setVistaResp(null); }}>Respuestas</button>
+          <button className={'tnav' + ((tab === 'respuestas' || tab === 'inscripciones') ? ' on' : '') + ((tienePermisoActividades(usuario) || tienePermisoFormularios(usuario)) ? '' : ' dim')} onClick={() => { setTab('respuestas'); setVistaResp(null); }}>Respuestas de fichas, actividades y formularios</button>
           {/* El Dashboard se fusionó dentro de Reportes (v0.89.0): todo lo que mostraba
               (KPIs, Atención, Evolución, Por curso/estado/edición/país/origen) ahora vive
               en la pestaña "Reportes" → "Resumen", así que la pestaña aparte se saca. */}
@@ -393,12 +403,11 @@ export default function Panel() {
           )}
         </div>
 
-        {(tab === 'fichas' || tab === 'inscripciones') && (
-          <div className="subtabs-pill" style={{ alignItems: 'center' }}>
-            <button className={tab === 'fichas' ? 'on' : ''} onClick={() => setTab('fichas')}>📋 Fichas de inscripción</button>
-            <button className={tab === 'inscripciones' ? 'on' : ''} onClick={() => setTab('inscripciones')}>✅ Fichas completadas</button>
-          </div>
-        )}
+        {/* Antes había acá un selector "Fichas de inscripción / Fichas completadas" — "Fichas
+            completadas" (tab "inscripciones") ya se llega a través de "Respuestas de fichas,
+            actividades y formularios" → "Respuestas fichas", así que se saca de acá para no
+            repetir el mismo lugar en dos pestañas (pedido de Diego). La pestaña "Fichas" de
+            arriba ahora entra directo al Constructor. */}
 
         {crearAbierto && (
           <CrearWizard
@@ -650,12 +659,31 @@ function fechaAmigable(iso) {
 function celda(r, k) {
   if (k === 'nom') return <span className="ins-name">{[r.nom, r.ape].filter(Boolean).join(' ') || '—'}</span>;
   if (k === 'estado') return <span className={'badge b-' + (r.estado || '').replace(/\s/g, '')}>{r.estado}</span>;
-  if (k === 'pais') return r.pais ? <span className="pchip">{esArgentina(r.pais) ? '🇦🇷' : '🌎'} {r.pais}</span> : '';
-  if (k === 'ed') return r.ed ? <span className="edchip">Ed. {r.ed}</span> : '';
-  if (k === 'curso') return r.curso ? <span className="cchip" style={estiloCurso(r.curso)}>{r.curso}</span> : '';
+  if (k === 'pais') return r.pais ? <span className="sec">{esArgentina(r.pais) ? '🇦🇷' : '🌎'} {r.pais}</span> : '';
+  if (k === 'ed') return r.ed ? <span className="sec">Ed. {r.ed}</span> : '';
+  // Pedido de Diego: que esta tabla se parezca más a como está armada la de "Próximas
+  // clases" de disponibilidad-zoom — ahí el curso no es un chip con fondo/borde, es un
+  // punto de color + texto coloreado, más liviano. Se mantiene el mismo color por curso
+  // (colorCurso), solo cambia la presentación visual.
+  if (k === 'curso') return r.curso ? (
+    <span className="curso-plano">
+      <span className="curso-dot" style={{ background: colorCurso(r.curso) }} />
+      <span style={{ color: colorCurso(r.curso) }}>{r.curso}</span>
+    </span>
+  ) : '';
   if (k === 'wa') return <span className="sec">{r.wa}</span>;
-  if (k === 'fecha') return <span className="sec" title={r.fecha}>{fechaAmigable(r.fecha)}</span>;
+  if (k === 'fecha') return <CeldaFechaReciente iso={r.fecha} />;
+  if (k === 'clickwa') return r.clickWa ? <span className="badge-click-wa" title={'Clic el ' + r.clickWa}>✓ Clic</span> : <span className="sec">—</span>;
   return r[k] || '';
+}
+// Mismo criterio que la pestaña Respuestas de Actividades (estadoFechaReciente): hoy aparte,
+// 1-9 días "ficha nueva" parpadeando para que salte a la vista, y de ahí en más la fecha de
+// siempre.
+function CeldaFechaReciente({ iso }) {
+  const { tipo } = estadoFechaReciente(iso);
+  if (tipo === 'hoy') return <span className="badge-fecha-hoy" title={iso}>🟢 Inscrito hoy</span>;
+  if (tipo === 'nueva') return <span className="badge-fecha-nueva" title={iso}>✨ Ficha nueva</span>;
+  return <span className="sec" title={iso}>{fechaAmigable(iso)}</span>;
 }
 function fmtFecha(iso) {
   if (!iso) return '';

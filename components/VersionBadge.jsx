@@ -36,7 +36,11 @@ export default function VersionBadge() {
       </button>
       {abierto && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setAbierto(false)}>
-          <div className="bg-surface2 border border-border rounded-2xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="relative bg-surface2 border border-border rounded-2xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            {/* Al abrir, arranca más opaco arriba e "ilumina" hacia abajo (pedido de Diego) —
+                un degradé fijo en la parte de arriba de la ventana, no algo que dependa del
+                scroll. */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-16 rounded-t-2xl bg-gradient-to-b from-black/35 to-transparent z-10" />
             <div className="flex items-center justify-between mb-4">
               <p className="text-base font-bold">📋 Novedades de la app</p>
               <button onClick={() => setAbierto(false)} className="text-textMuted hover:text-text">✕</button>

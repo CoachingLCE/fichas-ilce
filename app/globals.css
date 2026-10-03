@@ -1339,6 +1339,22 @@ tr.clickable .repx-cellbar:hover .fl{filter:brightness(1.15)}
 .repx-ed-item.rm-click:hover{border-color:rgb(var(--accentTeal))}
 .repx-ed-item.rm-click:hover span{color:rgb(var(--accentTeal))}
 
+/* Insignias de "recién llegado" en tablas con fecha (Fichas completadas, Respuestas de
+   actividades) — mismo criterio en los dos lugares, ver estadoFechaReciente en
+   lib/constants.js. "Hoy" queda fija; "nueva" (día 1 a 9) parpadea para llamar la atención,
+   pedido explícito de Diego. */
+.badge-fecha-hoy{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:rgba(74,222,128,.14);border:1px solid rgba(74,222,128,.4);color:rgb(74 222 128);white-space:nowrap}
+.badge-fecha-nueva{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:rgba(236,72,153,.14);border:1px solid rgba(236,72,153,.45);color:#f472b6;white-space:nowrap;animation:version-badge-parpadeo 1.4s ease-in-out infinite}
+.badge-click-wa{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:rgba(37,211,102,.14);border:1px solid rgba(37,211,102,.4);color:#25D366;white-space:nowrap}
+.tablewrap table .col-clickwa{min-width:210px}
+
+/* Curso en la tabla de Fichas completadas: punto de color + texto coloreado, en vez del chip
+   con fondo/borde de antes — para que se parezca más a como está armada la tabla "Próximas
+   clases" de disponibilidad-zoom (pedido de Diego). Mismo color por curso (colorCurso), solo
+   cambia la presentación. */
+.curso-plano{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;white-space:nowrap}
+.curso-dot{width:7px;height:7px;border-radius:999px;flex-shrink:0}
+
 /* Badge de version: parpadea cuando hay novedades que la persona todavia no vio. */
 .version-badge-novedad { animation: version-badge-parpadeo 1.7s ease-in-out infinite; }
 @keyframes version-badge-parpadeo {

@@ -88,7 +88,7 @@ export async function POST(req) {
   let emailOk = true;
   try {
     await enviarConfirmacionInscripcion({
-      email: form.email, nombre: form.nom, curso: curso.nombre, edicion: edicionLabel, medio: form.medio, fecha: hoy()
+      email: form.email, nombre: form.nom, curso: curso.nombre, edicion: edicionLabel, medio: form.medio, fecha: hoy(), id
     });
   } catch (e) {
     emailOk = false;

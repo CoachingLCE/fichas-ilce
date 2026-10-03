@@ -1,18 +1,31 @@
 'use client';
 import { useEffect, useMemo, useRef, useState, forwardRef, useImperativeHandle } from 'react';
-import { CURSOS, APP_URL, colorCurso, inicialesCurso } from '../lib/constants';
+import { CURSOS, APP_URL, colorCurso, inicialesCurso, estadoFechaReciente } from '../lib/constants';
 import { SelectDropdown } from './SelectDropdown';
+import ActividadForm from './ActividadForm';
+import { IsologoDefs } from './Isologo';
 
 const slugify = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-
+function hoyISO() { return new Date().toISOString().slice(0, 10); }
 
 // Este archivo corre en el navegador; lib/actividades.js no se puede importar acá porque
 // usa googleapis (server-only). Se duplica acá la única cuenta que hace falta del lado
-// del cliente: derivar "Programada" a partir de Estado + fechaDisponible.
+// del cliente: derivar "Programada"/"Cerrada" a partir de Estado + fechaDisponible/
+// horaDisponible/fechaCierre — misma lógica que lib/actividades.js (yaDisponible/estadoEfectivo).
+function yaDisponibleCliente(fechaDisponible, horaDisponible) {
+  const hoy = hoyISO();
+  if (!fechaDisponible) return true;
+  if (fechaDisponible > hoy) return false;
+  if (fechaDisponible < hoy) return true;
+  if (!horaDisponible) return true;
+  const ahora = new Date();
+  const actualHHMM = String(ahora.getHours()).padStart(2, '0') + ':' + String(ahora.getMinutes()).padStart(2, '0');
+  return actualHHMM >= horaDisponible;
+}
 function estadoEfectivoCliente(a) {
-  const hoy = new Date().toISOString().slice(0, 10);
-  if (a.estado === 'Publicada' && a.fechaDisponible && a.fechaDisponible > hoy) return 'Programada';
+  const hoy = hoyISO();
+  if (a.estado === 'Publicada' && a.fechaDisponible && !yaDisponibleCliente(a.fechaDisponible, a.horaDisponible)) return 'Programada';
   if (a.estado === 'Publicada' && a.fechaCierre && a.fechaCierre < hoy) return 'Cerrada';
   return a.estado || 'Publicada';
 }
@@ -35,6 +48,14 @@ function fmtTiempo(seg) {
   const m = Math.floor(seg / 60), s = seg % 60;
   return m ? `${m}m ${String(s).padStart(2, '0')}s` : `${s}s`;
 }
+// Mismo criterio e insignias que la tabla de Fichas completadas (ver estadoFechaReciente en
+// lib/constants.js y CeldaFechaReciente en Panel.jsx): hoy aparte, 1-9 días parpadeando.
+function CeldaFechaRecienteAct({ iso }) {
+  const { tipo } = estadoFechaReciente(iso);
+  if (tipo === 'hoy') return <span className="badge-fecha-hoy" title={iso}>🟢 Inscrito hoy</span>;
+  if (tipo === 'nueva') return <span className="badge-fecha-nueva" title={iso}>✨ Ficha nueva</span>;
+  return <span className="sec" title={iso}>{(iso || '').slice(0, 10)}</span>;
+}
 const lbl = { fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 5, color: 'rgb(var(--textSec))' };
 
 // El alta/baja de acceso de docentes se gestiona en una única pantalla, "Equipo Docente"
@@ -53,13 +74,12 @@ const Actividades = forwardRef(function Actividades({ usuario, showToast, puedeG
   useImperativeHandle(ref, () => ({
     nueva: (preseed) => { setPreseedNueva(preseed || null); setSub('lista'); setAbrirNuevaAlEntrar(true); }
   }));
+  // Antes había acá un tab bar interno ("Actividades | Respuestas | Reportes") que duplicaba
+  // navegación que ya existe arriba de todo: "Respuestas" tiene su propia pestaña de nivel
+  // superior (ver Panel.jsx, tab "respuestas", que entra acá con subInicial="respuestas") y
+  // "Reportes" también (tab "reportes") — se saca para no repetir lugares (pedido de Diego).
   return (
     <div>
-      <div className="subtabs">
-        <button className={sub === 'lista' ? 'on' : ''} onClick={() => setSub('lista')}>Actividades</button>
-        <button className={sub === 'respuestas' ? 'on' : ''} onClick={() => setSub('respuestas')}>Respuestas</button>
-        <button onClick={() => irAReportes && irAReportes()}>Reportes</button>
-      </div>
       {sub === 'lista' && <Lista ref={listaRef} usuario={usuario} showToast={showToast} puedeGestionar={puedeGestionar} irABuscador={irABuscador} />}
       {sub === 'respuestas' && <Respuestas usuario={usuario} irABuscador={irABuscador} />}
     </div>
@@ -71,6 +91,7 @@ export default Actividades;
 // sobre todo poder ver por clase dentro de un mismo curso).
 const ORDENES = [
   { v: 'clase', l: 'Curso y clase' },
+  { v: 'manual', l: 'Orden manual (arrastrar)' },
   { v: 'nombre', l: 'Nombre (A-Z)' },
   { v: 'curso', l: 'Curso (A-Z)' },
   { v: 'estado', l: 'Estado' },
@@ -84,6 +105,16 @@ function ordenarActividades(lista, orden) {
   else if (orden === 'curso') arr.sort((a, b) => (a.curso || '').localeCompare(b.curso || '', 'es') || porTitulo(a, b));
   else if (orden === 'estado') arr.sort((a, b) => (a.estado || '').localeCompare(b.estado || '', 'es') || porTitulo(a, b));
   else if (orden === 'preguntas') arr.sort((a, b) => (b.preguntas?.length || 0) - (a.preguntas?.length || 0) || porTitulo(a, b));
+  // "manual": el orden que Diego definió arrastrando filas (campo "orden" guardado por
+  // actividad) — las que todavía no tienen uno asignado (0, el default) quedan al final,
+  // en su orden de siempre (Curso y clase), para no mezclarlas al azar entre las ya ordenadas.
+  else if (orden === 'manual') arr.sort((a, b) => {
+    const oa = a.orden || 0, ob = b.orden || 0;
+    if (oa && ob) return oa - ob;
+    if (oa && !ob) return -1;
+    if (!oa && ob) return 1;
+    return (a.curso || '').localeCompare(b.curso || '', 'es') || claseNum(a) - claseNum(b) || porTitulo(a, b);
+  });
   else arr.sort((a, b) => (a.curso || '').localeCompare(b.curso || '', 'es') || claseNum(a) - claseNum(b) || porTitulo(a, b));
   return arr;
 }
@@ -119,27 +150,61 @@ function validarPreguntas(e) {
   return '';
 }
 
-function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar }) {
+function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otrasActividades, onCerrarAhora, onDespublicar, onEliminar }) {
   const [e, setE] = useState(base);
   const [paso, setPaso] = useState(0);
   const [error, setError] = useState('');
   const [guardando, setGuardando] = useState(false);
+  const [guardadoEstado, setGuardadoEstado] = useState(null); // null | 'guardando' | 'ok' | 'error' — siempre visible, nunca hay que adivinar
+  const [confirmarPublicar, setConfirmarPublicar] = useState(false);
+  const [vistaPrevia, setVistaPrevia] = useState(null); // null | 'desktop' | 'mobile'
+  const [pickerPreguntas, setPickerPreguntas] = useState(false);
+  const [menuAbierto, setMenuAbierto] = useState(false);
+  const menuRef = useRef(null);
   const dragIdx = useRef(null);
+
+  useEffect(() => {
+    if (!menuAbierto) return;
+    const onDoc = (ev) => { if (menuRef.current && !menuRef.current.contains(ev.target)) setMenuAbierto(false); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [menuAbierto]);
 
   const set = (patch) => setE((s) => ({ ...s, ...patch }));
   const preguntas = e.preguntas;
   const setPreg = (i, patch) => set({ preguntas: preguntas.map((p, j) => j === i ? { ...p, ...patch } : p) });
+  const tieneRespuestas = !e._nuevo && (e.totalRespuestas || 0) > 0;
 
   function cambiarTipo(i, tipo) {
+    if (tipo === preguntas[i].tipo) return;
+    // Cambiar el tipo de una pregunta que ya tiene respuestas puede dejar esas respuestas sin
+    // sentido (p. ej. pasarla a Verdadero/Falso cuando alguien ya eligió una opción que ya no
+    // va a existir) — se confirma antes, no se cambia de una.
+    if (tieneRespuestas && !confirm('Esta actividad ya tiene respuestas registradas. Cambiar el tipo de esta pregunta puede dejar esas respuestas sin sentido (no se van a recalcular). ¿Cambiar igual?')) return;
     if (tipo === 'vf') setPreg(i, { tipo, opciones: ['Verdadero', 'Falso'], correcta: preguntas[i].correcta <= 1 ? preguntas[i].correcta : 0 });
     else if (tipo === 'abierta') setPreg(i, { tipo, opciones: [], correcta: undefined });
     else setPreg(i, { tipo, opciones: ['', '', ''], correcta: 0 });
   }
   function agregarPreg() { set({ preguntas: [...preguntas, nuevaPreg()] }); }
-  function eliminarPreg(i) { if (preguntas.length <= 1) return; set({ preguntas: preguntas.filter((_, j) => j !== i) }); }
+  function eliminarPreg(i) {
+    if (preguntas.length <= 1) return;
+    // Si la actividad ya tiene respuestas, eliminar una pregunta puede desalinear el puntaje
+    // ya calculado de quienes ya respondieron (las respuestas guardadas quedan intactas, pero
+    // van a quedar "corridas" respecto de las preguntas que queden) — se confirma antes, en vez
+    // de borrar directo como si la actividad no tuviera nada cargado todavía.
+    if (tieneRespuestas && !confirm('Esta actividad ya tiene respuestas registradas. Eliminar esta pregunta no borra esas respuestas, pero el puntaje ya calculado no se va a recalcular. ¿Eliminar igual?')) return;
+    set({ preguntas: preguntas.filter((_, j) => j !== i) });
+  }
   function duplicarPreg(i) {
     const copia = { ...preguntas[i], opciones: [...preguntas[i].opciones] };
     const arr = preguntas.slice(); arr.splice(i + 1, 0, copia); set({ preguntas: arr });
+  }
+  // Preguntas reutilizables: copia (nunca referencia) una pregunta de OTRA actividad ya
+  // existente — la original queda intacta, esto solo agrega una copia acá.
+  function reutilizarPregunta(p) {
+    const copia = { pregunta: p.pregunta, tipo: p.tipo || 'multiple', opciones: [...(p.opciones || [])], correcta: p.correcta };
+    set({ preguntas: [...preguntas, copia] });
+    setPickerPreguntas(false);
   }
   function moverPreg(i, dir) { const j = i + dir; if (j < 0 || j >= preguntas.length) return; const arr = preguntas.slice(); [arr[i], arr[j]] = [arr[j], arr[i]]; set({ preguntas: arr }); }
   function reordenarPreg(desde, hasta) { if (desde === hasta) return; const arr = preguntas.slice(); const [item] = arr.splice(desde, 1); arr.splice(hasta, 0, item); set({ preguntas: arr }); }
@@ -152,28 +217,41 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar }) {
   }
   function atras() { setError(''); setPaso((p) => Math.max(0, p - 1)); }
 
-  async function guardar() {
+  // "forzarEstado": lo usan los 3 botones principales (Guardar borrador | Publicar) para dejar
+  // bien en claro qué estado va a quedar, sin depender de lo que haya elegido antes en el
+  // selector del paso 1 — Publicar y Guardar borrador son acciones distintas, no la misma.
+  async function guardar(forzarEstado) {
     const msgInfo = !validarInfo(e) ? 'Poné un título para la actividad.' : '';
     const msgPreg = !msgInfo ? validarPreguntas(e) : '';
     const msgFechas = (!msgInfo && !msgPreg && e.fechaDisponible && e.fechaCierre && e.fechaCierre < e.fechaDisponible)
       ? 'La fecha de cierre no puede ser anterior a la de disponibilidad.' : '';
     if (msgInfo || msgPreg || msgFechas) { setError(msgInfo || msgPreg || msgFechas); setPaso(msgInfo ? 0 : msgPreg ? 1 : 2); return; }
-    setGuardando(true); setError('');
+    const estadoFinal = forzarEstado || e.estado;
+    setGuardando(true); setGuardadoEstado('guardando'); setError(''); setConfirmarPublicar(false);
     const slug = e.slug || slugify(e.titulo);
     try {
       const res = await fetch('/api/actividades', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           solicitanteEmail: usuario.email, slug, curso: e.curso, titulo: e.titulo, clase: e.clase,
-          estado: e.estado, edicion: e.edicion, intro: e.intro, fechaDisponible: e.fechaDisponible, fechaCierre: e.fechaCierre,
-          mostrarResultado: e.mostrarResultado !== false, preguntas: e.preguntas
+          estado: estadoFinal, edicion: e.edicion, intro: e.intro, fechaDisponible: e.fechaDisponible, horaDisponible: e.horaDisponible,
+          fechaCierre: e.fechaCierre, mostrarResultado: e.mostrarResultado !== false, orden: e.orden || 0, preguntas: e.preguntas
         })
       });
       const data = await res.json();
-      if (data.ok) { showToast(e.estado === 'Publicada' ? '✓ Actividad publicada' : '✓ Actividad guardada'); onGuardado(); }
-      else setError(data.error || 'No se pudo guardar');
-    } catch { setError('Error de conexión'); }
+      if (data.ok) {
+        setGuardadoEstado('ok');
+        showToast(estadoFinal === 'Publicada' ? '✓ Actividad publicada correctamente' : '✓ Actividad guardada como borrador');
+        onGuardado();
+      } else { setGuardadoEstado('error'); setError(data.error || 'No se pudo guardar'); }
+    } catch { setGuardadoEstado('error'); setError('Error de conexión'); }
     setGuardando(false);
+  }
+  function clickPublicar() {
+    // Confirmación previa (pedido de Diego) solo cuando realmente va a pasar a estar visible
+    // para los estudiantes — si ya estaba Publicada, guardar cambios no necesita este paso.
+    if (e.estado === 'Publicada' && !e._nuevo) { guardar('Publicada'); return; }
+    setConfirmarPublicar(true);
   }
 
   return (
@@ -191,8 +269,27 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar }) {
             </div>
           ))}
         </div>
-        {!e._nuevo && <p className="muted" style={{ fontSize: 11.5, fontFamily: 'monospace', margin: 0, whiteSpace: 'nowrap' }}>{APP_URL}/actividad/{e.slug}</p>}
+        <button className="btn-sm" onClick={() => setVistaPrevia('mobile')} title="Ver cómo lo va a ver el estudiante">👁 Vista previa</button>
+        {!e._nuevo && (
+          <div className="repx-more-wrap" ref={menuRef}>
+            <button className="btn-sm" onClick={() => setMenuAbierto((v) => !v)} title="Más acciones">⋯</button>
+            {menuAbierto && (
+              <div className="repx-more-pop" style={{ minWidth: 180 }}>
+                <button type="button" className="fdrop-opt" onClick={() => { setMenuAbierto(false); onDespublicar && onDespublicar(e); }}>Despublicar</button>
+                <button type="button" className="fdrop-opt" onClick={() => { setMenuAbierto(false); onCerrarAhora && onCerrarAhora(e); }}>Cerrar actividad ahora</button>
+                <button type="button" className="fdrop-opt" style={{ color: 'rgb(248 113 113)' }} onClick={() => { setMenuAbierto(false); onEliminar && onEliminar(e); }}>🗑 Eliminar actividad</button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
+      {!e._nuevo && <p className="muted" style={{ fontSize: 11.5, fontFamily: 'monospace', margin: '-10px 0 14px' }}>{APP_URL}/actividad/{e.slug}</p>}
+
+      {tieneRespuestas && (
+        <div className="note" style={{ margin: '0 0 16px' }}>
+          ⚠ Esta actividad ya tiene <b>{e.totalRespuestas} respuesta{e.totalRespuestas === 1 ? '' : 's'}</b>. Si eliminás o cambiás una pregunta existente (o su opción correcta), el puntaje de las respuestas ya enviadas no se recalcula — las respuestas en sí nunca se borran.
+        </div>
+      )}
 
       {paso === 0 && (
         <div className="wiz-panel">
@@ -266,7 +363,12 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar }) {
               </>)}
             </div>
           ))}
-          <button className="btn-sm solid" onClick={agregarPreg}>+ Agregar pregunta</button>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button className="btn-sm solid" onClick={agregarPreg}>+ Agregar pregunta</button>
+            {otrasActividades && otrasActividades.length > 0 && (
+              <button className="btn-sm" onClick={() => setPickerPreguntas(true)}>⧉ Reutilizar pregunta existente</button>
+            )}
+          </div>
         </div>
       )}
 
@@ -279,8 +381,13 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar }) {
           <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginTop: 18 }}>
             <div>
               <label style={lbl}>Fecha de disponibilidad (opcional)</label>
-              <input className="ctrl" type="date" style={{ maxWidth: 200 }} value={e.fechaDisponible || ''} onChange={(ev) => set({ fechaDisponible: ev.target.value })} />
-              <p className="muted" style={{ fontSize: 12, marginTop: 6, maxWidth: 260 }}>Vacío = disponible apenas la publiques. Con una fecha futura, figura como <b>Programada</b> hasta ese día.</p>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input className="ctrl" type="date" style={{ maxWidth: 160 }} value={e.fechaDisponible || ''} onChange={(ev) => set({ fechaDisponible: ev.target.value })} />
+                {e.fechaDisponible && (
+                  <input className="ctrl" type="time" style={{ maxWidth: 110 }} value={e.horaDisponible || ''} onChange={(ev) => set({ horaDisponible: ev.target.value })} title="Hora de disponibilidad (opcional)" />
+                )}
+              </div>
+              <p className="muted" style={{ fontSize: 12, marginTop: 6, maxWidth: 280 }}>Vacío = disponible apenas la publiques. Con una fecha futura, figura como <b>Programada</b> hasta ese día{e.fechaDisponible ? ' (y esa hora, si la ponés)' : ''}.</p>
             </div>
             <div>
               <label style={lbl}>Fecha de cierre (opcional)</label>
@@ -311,7 +418,7 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar }) {
               <div><div className="k">Clase</div><div className="v">{e.clase || '—'}</div></div>
               <div><div className="k">Estado</div><div className="v">{e.estado}</div></div>
               <div><div className="k">Preguntas</div><div className="v">{preguntas.length} ({preguntas.filter((p) => p.tipo !== 'abierta').length} cerrada{preguntas.filter((p) => p.tipo !== 'abierta').length === 1 ? '' : 's'} · {preguntas.filter((p) => p.tipo === 'abierta').length} abierta{preguntas.filter((p) => p.tipo === 'abierta').length === 1 ? '' : 's'})</div></div>
-              <div><div className="k">Disponible desde</div><div className="v">{e.fechaDisponible || 'Inmediata'}</div></div>
+              <div><div className="k">Disponible desde</div><div className="v">{e.fechaDisponible ? e.fechaDisponible + (e.horaDisponible ? ` ${e.horaDisponible}hs` : '') : 'Inmediata'}</div></div>
               <div><div className="k">Cierra el</div><div className="v">{e.fechaCierre || 'Sin límite'}</div></div>
               <div><div className="k">Muestra resultado</div><div className="v">{e.mostrarResultado !== false ? 'Sí' : 'No'}</div></div>
             </div>
@@ -327,17 +434,11 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar }) {
           </div>
           <div>
             <div className="wiz-grupo-lbl" style={{ marginBottom: 8 }}>Vista previa</div>
-            <div className="wiz-preview-shell">
-              <div className="wiz-preview-hero">
-                <div className="wiz-preview-eyebrow">ACTIVIDAD · {(e.curso || '').toUpperCase()}</div>
-                <div className="wiz-preview-title">{e.titulo || 'Título de la actividad'}</div>
-              </div>
-              <div className="wiz-preview-body">
-                <div style={{ fontSize: 12.5, color: 'rgb(var(--textSec))', marginBottom: 12 }}>Completá tus datos y respondé las {preguntas.length} pregunta{preguntas.length === 1 ? '' : 's'}. Se corrige al enviar.</div>
-                <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 5 }}>Correo *</div>
-                <div className="wiz-preview-input">tunombre@correo.com</div>
-                {e.edicion && <div className="wiz-preview-ed"><div style={{ fontWeight: 700 }}>Edición {e.edicion}</div></div>}
-                <div className="wiz-preview-cta">Comenzar</div>
+            <div className="wiz-preview-shell" style={{ padding: 20, textAlign: 'center' }}>
+              <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>Mostrá exactamente la pantalla que va a ver el estudiante, con estas preguntas tal cual están cargadas.</p>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                <button className="btn-sm solid" onClick={() => setVistaPrevia('mobile')}>📱 Ver en Mobile</button>
+                <button className="btn-sm" onClick={() => setVistaPrevia('desktop')}>🖥 Ver en Desktop</button>
               </div>
             </div>
           </div>
@@ -346,13 +447,80 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar }) {
 
       {error && <div className="err" style={{ display: 'block', margin: '10px 0' }}>{error}</div>}
 
-      <div className="wiz-nav-btns">
+      {confirmarPublicar && (
+        <div className="note" style={{ margin: '0 0 14px', display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+          <span style={{ flex: '1 1 260px' }}>
+            ¿Publicar esta actividad?{e.fechaDisponible && !yaDisponibleCliente(e.fechaDisponible, e.horaDisponible)
+              ? <> Como pusiste una fecha de disponibilidad futura, va a quedar <b>Programada</b> hasta el {e.fechaDisponible}{e.horaDisponible ? ` ${e.horaDisponible}hs` : ''} — recién ahí la va a poder ver el estudiante.</>
+              : <> Va a quedar visible para los estudiantes de inmediato.</>}
+          </span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn-sm" onClick={() => setConfirmarPublicar(false)}>Revisar</button>
+            <button className="btn-sm solid" onClick={() => guardar('Publicada')} disabled={guardando}>Sí, publicar</button>
+          </div>
+        </div>
+      )}
+
+      <div className="wiz-nav-btns" style={{ flexWrap: 'wrap', rowGap: 8 }}>
         {paso > 0 && <button className="btn-sm" onClick={atras} disabled={guardando}>← Atrás</button>}
         <span className="grow" />
-        {paso < PASOS.length - 1
-          ? <button className="btn-sm solid" onClick={siguiente}>Siguiente →</button>
-          : <button className="btn-sm solid" onClick={guardar} disabled={guardando}>{guardando ? 'Guardando…' : e.estado === 'Publicada' ? '✓ Publicar actividad' : '✓ Guardar'}</button>}
+        {guardadoEstado && (
+          <span style={{ fontSize: 12, fontWeight: 700, color: guardadoEstado === 'error' ? 'rgb(248 113 113)' : guardadoEstado === 'guardando' ? 'rgb(var(--textMuted))' : 'rgb(74 222 128)' }}>
+            {guardadoEstado === 'guardando' ? 'Guardando…' : guardadoEstado === 'error' ? '⚠ Error al guardar' : '✓ Guardado'}
+          </span>
+        )}
+        {paso < PASOS.length - 1 && <button className="btn-sm" onClick={siguiente}>Siguiente →</button>}
+        <button className="btn-sm" onClick={() => guardar('Borrador')} disabled={guardando}>Guardar borrador</button>
+        <button className="btn-sm solid" onClick={clickPublicar} disabled={guardando}>✓ Publicar</button>
       </div>
+
+      {vistaPrevia && (
+        <div className="preview-ov" onClick={() => setVistaPrevia(null)}>
+          <div className="preview-card" onClick={(ev) => ev.stopPropagation()} style={{ maxWidth: vistaPrevia === 'mobile' ? 460 : 760 }}>
+            <div className="preview-head">
+              <div style={{ minWidth: 0 }}>
+                <div className="preview-kd">Vista previa · cómo lo ve el estudiante</div>
+                <div className="preview-asunto">{e.titulo || 'Actividad sin título'}</div>
+              </div>
+              <div className="ctor-preview-toggle">
+                <button className={vistaPrevia === 'desktop' ? 'on' : ''} onClick={() => setVistaPrevia('desktop')}>Desktop</button>
+                <button className={vistaPrevia === 'mobile' ? 'on' : ''} onClick={() => setVistaPrevia('mobile')}>Mobile</button>
+              </div>
+              <button className="btn-sm" onClick={() => setVistaPrevia(null)}>✕ Cerrar</button>
+            </div>
+            <div className="preview-body" style={{ padding: 20, display: 'flex', justifyContent: 'center' }}>
+              <IsologoDefs />
+              <div className={vistaPrevia === 'mobile' ? 'ctor-phone-frame' : ''} style={vistaPrevia === 'desktop' ? { width: '100%', maxWidth: 420 } : undefined}>
+                <ActividadForm act={e} modoPreview key={JSON.stringify(e.preguntas) + vistaPrevia} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pickerPreguntas && (
+        <div className="preview-ov" onClick={() => setPickerPreguntas(false)}>
+          <div className="preview-card" onClick={(ev) => ev.stopPropagation()} style={{ maxWidth: 560 }}>
+            <div className="preview-head">
+              <div className="preview-kd">Reutilizar una pregunta de otra actividad</div>
+              <button className="btn-sm" onClick={() => setPickerPreguntas(false)}>✕ Cerrar</button>
+            </div>
+            <div className="preview-body" style={{ padding: 16 }}>
+              {otrasActividades.filter((a) => (a.preguntas || []).length > 0).map((a) => (
+                <div key={a.slug} style={{ marginBottom: 14 }}>
+                  <div className="muted" style={{ fontSize: 12, fontWeight: 700, marginBottom: 6 }}>{a.titulo} · {a.curso}</div>
+                  {a.preguntas.map((p, j) => (
+                    <button type="button" key={j} className="celda-edit-btn" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', marginBottom: 4 }} onClick={() => reutilizarPregunta(p)}>
+                      {p.pregunta || <span className="muted">(sin texto)</span>}
+                    </button>
+                  ))}
+                </div>
+              ))}
+              {otrasActividades.filter((a) => (a.preguntas || []).length > 0).length === 0 && <p className="muted">No hay otras actividades con preguntas todavía.</p>}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -560,7 +728,7 @@ function DetalleActividad({ a, puedeGestionar, showToast, onEditar, onDuplicar, 
             </div>
           </div>
           <div><div className="k">Estado</div><div className="v">{a.estado}</div></div>
-          <div><div className="k">Fecha de disponibilidad</div><div className="v">{a.fechaDisponible || 'Inmediata'}</div></div>
+          <div><div className="k">Fecha de disponibilidad</div><div className="v">{a.fechaDisponible ? a.fechaDisponible + (a.horaDisponible ? ` ${a.horaDisponible}hs` : '') : 'Inmediata'}</div></div>
           <div><div className="k">Fecha de cierre</div><div className="v">{a.fechaCierre || 'Sin límite'}</div></div>
           <div><div className="k">Muestra resultado</div><div className="v">{a.mostrarResultado === false ? 'No' : 'Sí'}</div></div>
           <div><div className="k">Última actualización</div><div className="v">{a.actualizado ? new Date(a.actualizado).toLocaleString('es-AR') : '—'}</div></div>
@@ -646,6 +814,36 @@ const Lista = forwardRef(function Lista({ usuario, showToast, puedeGestionar, ir
   function cerrarModo() { setModo(null); }
   function guardado() { setModo(null); cargar(); }
 
+  // Tres acciones destructivas/sensibles pedidas por Diego para el editor (menú "…"): cerrar
+  // ahora, despublicar y eliminar. Las tres piden confirmación con un mensaje que explica
+  // claramente qué va a pasar (pedido explícito de Diego), y las tres refrescan el listado y
+  // cierran el editor al terminar (no tiene sentido seguir editando algo que ya cambió de estado
+  // o que se borró).
+  async function cerrarAhora(a) {
+    if (!confirm(`¿Cerrar "${a.titulo}" ahora?\n\nA partir de este momento ya no se van a aceptar nuevas respuestas. La actividad va a mostrarse como "Cerrada" para los estudiantes.`)) return;
+    await guardarCampo(a, { fechaCierre: hoyISO() });
+    cerrarModo(); cargar();
+  }
+  async function despublicar(a) {
+    if (!confirm(`¿Despublicar "${a.titulo}"?\n\nVa a volver a estado "Borrador": deja de estar visible para los estudiantes hasta que la publiques de nuevo. Las respuestas que ya tiene no se borran.`)) return;
+    await guardarCampo(a, { estado: 'Borrador' });
+    cerrarModo(); cargar();
+  }
+  async function eliminarActividad(a) {
+    const avisoResp = a.totalRespuestas > 0 ? `\n\nYa tiene ${a.totalRespuestas} respuesta${a.totalRespuestas === 1 ? '' : 's'} registrada${a.totalRespuestas === 1 ? '' : 's'}: esas respuestas NO se borran, quedan en el historial, pero la actividad va a desaparecer del listado.` : '';
+    if (!confirm(`¿Eliminar "${a.titulo}"?\n\nEsta acción no se puede deshacer. La actividad deja de estar disponible para siempre.${avisoResp}`)) return;
+    try {
+      const res = await fetch('/api/actividades', {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ solicitanteEmail: usuario.email, slug: a.slug })
+      });
+      const data = await res.json();
+      if (data.ok) showToast('✓ Actividad eliminada');
+      else showToast(data.error || 'No se pudo eliminar');
+    } catch { showToast('Error de conexión'); }
+    cerrarModo(); cargar();
+  }
+
   // Edición rápida de Edición/Clase directo desde la tabla (sin abrir el editor completo).
   // "Edición" acepta también la palabra "Todas" (la actividad no está atada a una edición puntual).
   async function guardarCampo(a, patch) {
@@ -655,8 +853,8 @@ const Lista = forwardRef(function Lista({ usuario, showToast, puedeGestionar, ir
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           solicitanteEmail: usuario.email, slug: a.slug, curso: a.curso, titulo: a.titulo,
-          clase: a.clase, estado: a.estado, edicion: a.edicion, intro: a.intro, fechaDisponible: a.fechaDisponible, fechaCierre: a.fechaCierre,
-          mostrarResultado: a.mostrarResultado !== false, preguntas: a.preguntas, ...patch
+          clase: a.clase, estado: a.estado, edicion: a.edicion, intro: a.intro, fechaDisponible: a.fechaDisponible, horaDisponible: a.horaDisponible, fechaCierre: a.fechaCierre,
+          mostrarResultado: a.mostrarResultado !== false, orden: a.orden || 0, preguntas: a.preguntas, ...patch
         })
       });
       const data = await res.json();
@@ -668,7 +866,18 @@ const Lista = forwardRef(function Lista({ usuario, showToast, puedeGestionar, ir
   if (!acts) return <div className="spin" />;
 
   if (modo?.tipo === 'editor') {
-    return <EditorActividad usuario={usuario} base={modo.base} showToast={showToast} onGuardado={guardado} onCancelar={cerrarModo} />;
+    // otrasActividades: todas menos la que se está editando (si es nueva, "slug" viene vacío y
+    // no matchea nada, así que quedan todas) — se usa para el picker de "Reutilizar pregunta".
+    const otras = acts.filter((x) => x.slug !== modo.base.slug);
+    return (
+      <EditorActividad
+        usuario={usuario} base={modo.base} showToast={showToast} onGuardado={guardado} onCancelar={cerrarModo}
+        otrasActividades={otras}
+        onCerrarAhora={cerrarAhora}
+        onDespublicar={despublicar}
+        onEliminar={eliminarActividad}
+      />
+    );
   }
   if (modo?.tipo === 'detalle') {
     const actual = acts.find((x) => x.slug === modo.act.slug) || modo.act;
@@ -795,7 +1004,8 @@ function Respuestas({ usuario, irABuscador }) {
       if (fAct && x.actividad !== fAct) return false;
       if (qq && !norm(`${x.nombre} ${x.email}`).includes(qq)) return false;
       return true;
-    });
+      // Más recientes primero, mismo criterio que la tabla de Fichas completadas (pedido de Diego).
+    }).sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
   }, [r, q, fCurso, fEd, fAct]);
   if (!data) return <div className="spin" />;
 
@@ -814,22 +1024,25 @@ function Respuestas({ usuario, irABuscador }) {
       {data.alcance === 'docente' && <p className="muted" style={{ fontSize: 12, marginTop: -4, marginBottom: 10 }}>Mostrando solo tus cursos/ediciones asignados.</p>}
       {filtradas.length === 0 ? <div className="empty"><div className="ico">📭</div><h3>Sin respuestas</h3><p>No hay respuestas para estos filtros.</p></div> : (
         <div className="tablewrap"><table>
+          {/* Mismo orden que la tabla de Fichas completadas (Nombre, Curso, Edición, ...) —
+              antes empezaba por Fecha, pedido de Diego para que las dos tablas se lean igual. */}
           <thead><tr>
-            <th style={{ minWidth: 92 }}>Fecha</th><th style={{ minWidth: 150 }}>Estudiante</th><th style={{ minWidth: 180 }}>Email</th>
-            <th style={{ minWidth: 130 }}>Curso</th><th style={{ minWidth: 78 }}>Edición</th><th style={{ minWidth: 160 }}>Actividad</th><th style={{ minWidth: 90 }}>Tiempo</th><th style={{ minWidth: 80, textAlign: 'right' }}>Puntaje</th><th style={{ minWidth: 70 }}></th>
+            <th style={{ minWidth: 150 }}>Estudiante</th><th style={{ minWidth: 130 }}>Curso</th><th style={{ minWidth: 78 }}>Edición</th>
+            <th style={{ minWidth: 160 }}>Actividad</th><th style={{ minWidth: 180 }}>Email</th><th style={{ minWidth: 90 }}>Tiempo</th>
+            <th style={{ minWidth: 80, textAlign: 'right' }}>Puntaje</th><th style={{ minWidth: 120 }}>Fecha</th><th style={{ minWidth: 70 }}></th>
           </tr></thead>
           <tbody>{filtradas.map((x) => {
             const abiertas = (x.detalle || []).filter((d) => d.tipo === 'abierta');
             return (
             <tr key={x.id}>
-              <td className="sec">{(x.fecha || '').slice(0, 10)}</td>
               <td><b>{x.nombre || '—'}</b></td>
-              <td className="sec">{x.email}</td>
-              <td>{x.curso}</td>
+              <td><span style={{ color: colorCurso(x.curso), fontWeight: 600 }}>{x.curso}</span></td>
               <td>{x.edicion || '—'}</td>
               <td>{x.actividad}</td>
+              <td className="sec">{x.email}</td>
               <td className="sec">{fmtTiempo(x.duracion)}</td>
               <td style={{ textAlign: 'right' }}><b>{x.puntaje}/{x.total}</b></td>
+              <td><CeldaFechaRecienteAct iso={x.fecha} /></td>
               <td>{abiertas.length > 0 && <button className="btn-sm" onClick={() => setDetalleAbierto(x)} title="Ver respuestas abiertas">✎ Ver ({abiertas.length})</button>}</td>
             </tr>
             );
