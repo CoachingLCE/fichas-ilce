@@ -28,6 +28,19 @@ const REINTENTABLES = new Set([
   'Confirmación inscripción', 'Aviso equipo', 'Resultado actividad', 'Aviso actividad docente', 'Resumen viernes'
 ]);
 
+// Pedido de Diego (referencia: disponibilidad-zoom/emails): que la columna "Tipo" se distinga
+// de un vistazo por color, un color fijo por tipo — no decorativo, mismo criterio que ya se usa
+// en el resto de la app (colorCurso, estados). No se toca el estilo base de .tagchip (se usa en
+// muchos otros lugares): acá se le pisa el color puntualmente para esta tabla.
+const TIPO_COLOR = {
+  'Confirmación inscripción': { bg: 'rgba(34,211,238,.14)', fg: 'rgb(34 211 238)' },
+  'Aviso equipo': { bg: 'rgba(124,58,237,.16)', fg: 'rgb(167 139 250)' },
+  'Credenciales acceso': { bg: 'rgba(251,191,36,.15)', fg: 'rgb(251 191 36)' },
+  'Resultado actividad': { bg: 'rgba(74,222,128,.14)', fg: 'rgb(74 222 128)' },
+  'Aviso actividad docente': { bg: 'rgba(192,38,211,.15)', fg: 'rgb(224 110 236)' },
+  'Resumen viernes': { bg: 'rgba(59,130,246,.15)', fg: 'rgb(96 165 250)' }
+};
+
 const AUTOMATIZACIONES = [
   { evento: 'Se completa una ficha de inscripción', para: 'Al estudiante (con botón de WhatsApp)', remitente: 'Instituto ILCE', cc: '—', asunto: '¡Recibimos tu inscripción a [curso]! 🎉', tipo: 'Confirmación inscripción' },
   { evento: 'Se completa una ficha de inscripción', para: 'Macarena, Alexander y Jesabel', remitente: 'Plataforma ILCE', cc: '—', asunto: '📥 Nueva inscripción · [nombre] · [curso]', tipo: 'Aviso equipo' },
@@ -163,7 +176,7 @@ export default function EmailsPanel({ usuario }) {
                   <td className="sec">{a.para}</td>
                   <td className="sec">{a.remitente}{a.cc && a.cc !== '—' ? ` · cc: ${a.cc}` : ''}</td>
                   <td className="sec">{a.asunto}</td>
-                  <td><span className="tagchip">{a.tipo}</span>{verMas && <span style={{ marginLeft: 8, fontSize: 12.5, fontWeight: 700, color: 'rgb(var(--accentTeal))' }}>👁 Ver correo</span>}</td>
+                  <td><span className="tagchip" style={TIPO_COLOR[a.tipo] ? { background: TIPO_COLOR[a.tipo].bg, color: TIPO_COLOR[a.tipo].fg, borderColor: 'transparent' } : undefined}>{a.tipo}</span>{verMas && <span style={{ marginLeft: 8, fontSize: 12.5, fontWeight: 700, color: 'rgb(var(--accentTeal))' }}>👁 Ver correo</span>}</td>
                 </tr>
               );
             })}</tbody>
@@ -217,7 +230,7 @@ export default function EmailsPanel({ usuario }) {
                     <div>{fmt(e.fecha)}</div>
                     {esEnvioReciente(e.fecha) && <span className="badge-enviado-reciente">Enviado recientemente</span>}
                   </td>
-                  <td><span className="tagchip">{e.tipo}</span></td>
+                  <td><span className="tagchip" style={TIPO_COLOR[e.tipo] ? { background: TIPO_COLOR[e.tipo].bg, color: TIPO_COLOR[e.tipo].fg, borderColor: 'transparent' } : undefined}>{e.tipo}</span></td>
                   <td className="sec">{e.para}</td>
                   <td>{e.asunto}</td>
                   <td><span className={'badge ' + (e.estado === 'Enviado' ? 'b-Aprobada' : 'b-Observada')}>{e.estado}</span></td>

@@ -179,7 +179,9 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
             return (
               <tr key={d.slug}>
                 <td className="ins-name" style={{ borderLeft: `4px solid ${colorCurso(d.curso)}` }}>
-                  <div className="curso-cell">
+                  {/* Pedido de Diego: hacer clic acá (el nombre del curso) tiene que abrir
+                      directamente la edición/ficha en el Constructor, no solo el botón "Editar". */}
+                  <div className="curso-cell" style={puedeEditar ? { cursor: 'pointer' } : undefined} onClick={puedeEditar ? () => onEditar(d.slug) : undefined} title={puedeEditar ? 'Editar esta ficha' : undefined}>
                     <span className="curso-avatar" style={{ background: colorCurso(d.curso) + '22', color: colorCurso(d.curso) }}>{inicialesCurso(d.curso)}</span>
                     <span style={{ color: colorCurso(d.curso), fontWeight: 400 }}>{d.curso}</span>
                   </div>

@@ -467,17 +467,30 @@ export default function Reportes({ usuario, rows, puedeActividades, puedeFormula
     { key: 'mod', label: 'Modalidad de cursada' },
     { key: 'med', label: 'Medio de contacto preferido' }
   ];
+  // "¿Cómo llegaste a nosotros?" arrastra datos históricos de antes de fichas-ilce (importados
+  // de planillas viejas) con formatos distintos para la misma opción: con un "✓ " adelante, o
+  // con el detalle de quién recomendó pegado ("Recomendación de estudiante: ..."). Sin agrupar,
+  // cada variante aparecía como su propia barra separada — se ve "horrible" y además subestima
+  // cada opción real. Se agrupa por la opción canónica de la ficha actual (mismo criterio que ya
+  // se usaba para "Otro: <detalle>"), sin perder ni un registro: solo cambia cómo se agrupan.
+  const OPCIONES_ORIGEN = ['Facebook', 'Google', 'Instagram', 'LinkedIn', 'Recomendación'];
+  function normalizarValorCampo(key, raw) {
+    let v = raw.replace(/^[✓✔•]\s*/, '').trim();
+    if (/^otro\s*:/i.test(v)) return 'Otro';
+    if (key === 'origen') {
+      const canon = OPCIONES_ORIGEN.find((o) => v.toLowerCase().startsWith(o.toLowerCase()));
+      if (canon) return canon;
+    }
+    return v;
+  }
   const camposDistribucion = useMemo(() => {
     return CAMPOS_SELECCION.map((c) => {
       const conteo = {};
       let sinDato = 0;
       rowsF.forEach((r) => {
-        let v = (r[c.key] || '').toString().trim();
-        if (!v) { sinDato++; return; }
-        // "Modalidad" guarda el detalle que escribió la persona como "Otro: <lo que sea>" — se
-        // agrupa como una sola opción "Otro" (si no, cada respuesta libre sería su propia
-        // barra de 1, en vez de una distribución legible de las opciones reales).
-        if (/^otro:/i.test(v)) v = 'Otro';
+        const crudo = (r[c.key] || '').toString().trim();
+        if (!crudo) { sinDato++; return; }
+        const v = normalizarValorCampo(c.key, crudo);
         conteo[v] = (conteo[v] || 0) + 1;
       });
       const total = rowsF.length;

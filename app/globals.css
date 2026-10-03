@@ -54,7 +54,8 @@ body {
   background: rgb(var(--bg));
   color: rgb(var(--text));
   font-family: 'Dosis', system-ui, sans-serif;
-  font-weight: 500;
+  font-weight: 400; /* Pedido de Diego: todo el texto de la app heredaba 500 (semi-negrita)
+                       de esta regla global — bajado a 400 (normal) en toda la app. */
   -webkit-font-smoothing: antialiased;
 }
 h1, h2, h3, .font-display { font-family: 'Dosis', system-ui, sans-serif; letter-spacing: .2px; }
@@ -330,7 +331,12 @@ tbody tr{cursor:pointer}tbody tr:hover{background:rgb(var(--surface2))}
 .topnav-oculto{transform:translateY(-100%)}
 .topnav-inner{max-width:1560px;margin:0 auto;padding:0 24px;width:100%;display:flex;align-items:center;flex-wrap:wrap;column-gap:14px;row-gap:10px}
 [data-theme="light"] .topnav{background:rgba(255,255,255,.92)}
-.topnav-brand{display:flex;align-items:center;gap:10px;flex:0 0 auto;order:1}
+/* El "order:1" de acá era de cuando .topnav-brand vivía como hermano directo de .topnav-tabs
+   dentro de .topnav-inner. Ahora el logo está anidado como PRIMER hijo DENTRO de .topnav-tabs
+   (pedido de Diego: a la izquierda de "+Crear", en la misma fila) — con order:1 quedaba
+   después de sus hermanos (que tienen order:0 por default), por eso terminaba al final de
+   la fila en vez de al principio. El orden de aparición en el DOM ya lo deja primero. */
+.topnav-brand{display:flex;align-items:center;gap:10px;flex:0 0 auto}
 .topnav-tabs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;order:3;flex-basis:100%;min-width:0;padding-top:2px}
 .tnav{height:36px;display:inline-flex;align-items:center;padding:0 15px;border-radius:10px;font-size:14px;font-weight:600;
   white-space:nowrap;cursor:pointer;border:1px solid rgb(var(--border));background:rgb(var(--surface2));color:rgb(var(--textSec));transition:.15s}
@@ -663,6 +669,11 @@ tr.clickable:hover{background:rgb(var(--surface2))}
 
 /* ── Etiquetas de grupo en la zona de filtros ── */
 .fgroup-label{font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:rgb(var(--textMuted));font-weight:700;margin:0 0 6px}
+/* Pedido de Diego: "Filtros rápidos" y "Estado" van uno al lado del otro, no apilados
+   uno abajo del otro — así el bloque de filtros ocupa mucha menos altura. */
+.fgroup-row{display:flex;gap:28px;flex-wrap:wrap;margin-bottom:12px}
+.fgroup-col{min-width:0}
+.fgroup-col .fchips{margin-bottom:0}
 
 /* ── Fichas completadas: tabla más moderna + chips en celdas ── */
 .ins-name{font-weight:700;color:rgb(var(--text))}
@@ -853,7 +864,7 @@ tr.clickable:hover{background:rgb(var(--surface2))}
 .ctor-list-head{display:flex;flex-direction:column;gap:2px;margin-bottom:8px}
 .ctor-list-title{font-family:'Dosis';font-size:11px;letter-spacing:1.5px;color:rgb(var(--textMuted));text-transform:uppercase;margin-top:8px}
 .ctor-list-buscar{font-size:12.5px;padding:7px 10px;margin-bottom:6px}
-.ctor-list-item{text-align:left;background:transparent;border:0;border-radius:9px;padding:8px 9px;font-size:13.5px;font-weight:600;color:rgb(var(--textSec));cursor:pointer;transition:.15s;display:flex;align-items:center;gap:8px;width:100%}
+.ctor-list-item{text-align:left;background:transparent;border:0;border-radius:9px;padding:8px 9px;font-size:13.5px;font-weight:400;color:rgb(var(--textSec));cursor:pointer;transition:.15s;display:flex;align-items:center;gap:8px;width:100%}
 .ctor-list-item:hover{background:rgb(var(--surface2));color:rgb(var(--text))}
 /* Pedido de Diego: el nombre de cada curso usa su propio color (colorCurso, inline en el
    JSX) en vez de un color genérico — acá solo se marca la fila activa con un fondo neutro,

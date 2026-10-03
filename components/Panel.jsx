@@ -441,40 +441,33 @@ export default function Panel() {
                 else if (t === 'mes') { const d = new Date(); setFDesde(iso(new Date(d.getFullYear(), d.getMonth(), 1))); setFHasta(hoy); }
                 setMasFiltros(true);
               };
-              return (<>
-                <div className="fgroup-label">Filtros rápidos</div>
-                <div className="fchips" style={{ marginBottom: 10 }}>
-                  <button className="pill" onClick={() => setPeriodo('hoy')}>Hoy</button>
-                  <button className="pill" onClick={() => setPeriodo('sem')}>Esta semana</button>
-                  <button className="pill" onClick={() => setPeriodo('mes')}>Este mes</button>
-                  <button className={'pill' + (fPais === 'Argentina' ? ' on-teal' : '')} onClick={() => setFPais(fPais === 'Argentina' ? '' : 'Argentina')}>Argentina</button>
-                  <button className={'pill' + (fExterior ? ' on-teal' : '')} onClick={() => { setFExterior(!fExterior); setFPais(''); }}>Exterior</button>
+              {/* Pedido de Diego: un solo tipo de filtro (chips) — se sacaron los combos de
+                  Curso/Edición/País y los selectores de fecha. Los dos grupos de chips van
+                  uno al lado del otro para no ocupar tanta altura. */}
+              return (
+                <div className="fgroup-row">
+                  <div className="fgroup-col">
+                    <div className="fgroup-label">Filtros rápidos</div>
+                    <div className="fchips">
+                      <button className="pill" onClick={() => setPeriodo('hoy')}>Hoy</button>
+                      <button className="pill" onClick={() => setPeriodo('sem')}>Esta semana</button>
+                      <button className="pill" onClick={() => setPeriodo('mes')}>Este mes</button>
+                      <button className={'pill' + (fPais === 'Argentina' ? ' on-teal' : '')} onClick={() => setFPais(fPais === 'Argentina' ? '' : 'Argentina')}>Argentina</button>
+                      <button className={'pill' + (fExterior ? ' on-teal' : '')} onClick={() => { setFExterior(!fExterior); setFPais(''); }}>Exterior</button>
+                    </div>
+                  </div>
+                  <div className="fgroup-col">
+                    <div className="fgroup-label">Estado</div>
+                    <div className="fchips">
+                      <button className={'fchip' + (fEstado === '' ? ' on' : '')} onClick={() => setFEstado('')}>Todas <span className="cnt">{baseParaChips.length}</span></button>
+                      {ESTADOS.filter((e) => baseParaChips.some((r) => r.estado === e)).map((e) => (
+                        <button key={e} className={'fchip' + (fEstado === e ? ' on' : '')} onClick={() => setFEstado(fEstado === e ? '' : e)}>{e} <span className="cnt">{baseParaChips.filter((r) => r.estado === e).length}</span></button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </>);
+              );
             })()}
-            <div className="fgroup-label">Estado</div>
-            <div className="fchips">
-              <button className={'fchip' + (fEstado === '' ? ' on' : '')} onClick={() => setFEstado('')}>Todas <span className="cnt">{baseParaChips.length}</span></button>
-              {ESTADOS.filter((e) => baseParaChips.some((r) => r.estado === e)).map((e) => (
-                <button key={e} className={'fchip' + (fEstado === e ? ' on' : '')} onClick={() => setFEstado(fEstado === e ? '' : e)}>{e} <span className="cnt">{baseParaChips.filter((r) => r.estado === e).length}</span></button>
-              ))}
-            </div>
-            <div className="fgroup-label">Filtros</div>
-            <div className="filters" style={{ marginBottom: 8, flexWrap: 'wrap' }}>
-              <SelectDropdown placeholder="Curso: todos" searchable value={fCurso} onChange={setFCurso}
-                options={cursos.map((x) => ({ value: x, label: x }))} />
-              {ediciones.length > 0 && <SelectDropdown placeholder="Edición: todas" searchable value={fEd} onChange={setFEd}
-                options={ediciones.map((x) => ({ value: x, label: 'Ed. ' + x }))} />}
-              <button className="btn-sm" onClick={() => setMasFiltros(!masFiltros)}>{masFiltros ? '– Menos filtros' : '+ Más filtros (país y fechas)'}</button>
-            </div>
-            {masFiltros && (
-              <div className="filters" style={{ marginBottom: 8, flexWrap: 'wrap' }}>
-                <SelectDropdown placeholder="País: todos" searchable value={fPais} onChange={setFPais}
-                  options={paises.map((x) => ({ value: x, label: x }))} />
-                <input type="date" className="fsel" value={fDesde} onChange={(e) => setFDesde(e.target.value)} title="Desde" />
-                <input type="date" className="fsel" value={fHasta} onChange={(e) => setFHasta(e.target.value)} title="Hasta" />
-              </div>
-            )}
             <div className="filters">
               <span className="spacer" />
               <button className="btn-sm" onClick={() => setColModal(true)}>▦ Columnas</button>
