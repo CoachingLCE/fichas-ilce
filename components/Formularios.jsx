@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
-import { APP_URL, estadoFechaReciente } from '../lib/constants';
+import { APP_URL, estadoFechaReciente, colorCurso } from '../lib/constants';
 import { SelectDropdown } from './SelectDropdown';
+import { tienePermisoEliminarRespuestas } from '../lib/permisos';
 
 const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
@@ -85,7 +86,7 @@ function Lista({ usuario, showToast }) {
               <td>{f.tipo ? <span className="cchip">{f.tipo}</span> : '—'}</td>
               <td><span className={'fstate ' + (f.estado === 'Publicada' ? 'pub' : 'bor')}><span className="d" />{f.estado}</span></td>
               <td className="sec">{f.campos.length}</td>
-              <td>{nResp(f) === null ? <span className="sec">…</span> : (nResp(f) > 0 ? <span className="cnt" style={{ fontWeight: 700 }}>{nResp(f)}</span> : <span className="sec">0</span>)}</td>
+              <td>{nResp(f) === null ? <span className="sec">…</span> : (nResp(f) > 0 ? <span className="cnt" style={{ fontWeight: 500 }}>{nResp(f)}</span> : <span className="sec">0</span>)}</td>
               <td className="sec">/formulario/{f.slug}</td>
               <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                 <button className="btn-sm" onClick={() => { navigator.clipboard?.writeText(`${APP_URL}/formulario/${f.slug}`); showToast('✓ Enlace copiado'); }}>Copiar</button>{' '}
@@ -132,6 +133,23 @@ function Respuestas({ usuario, showToast }) {
   const [abierto, setAbierto] = useState(null);
   const [importarAbierto, setImportarAbierto] = useState(false);
   const [orden, setOrden] = useState({ col: 'fecha', dir: 'desc' });
+  const puedeEliminar = tienePermisoEliminarRespuestas(usuario);
+
+  // Pedido de Diego ("agregar eliminar acá"): mismo criterio y UX que ya usa el borrado de
+  // respuestas de actividades (confirmación + baja lógica desde la API).
+  async function eliminarRespuesta(x) {
+    if (!confirm(`¿Eliminar la respuesta de ${x.nombre || x.email || 'esta persona'} en "${x.formulario}"?\n\nEsta acción no se puede deshacer.`)) return;
+    try {
+      const res = await fetch('/api/formularios/respuestas', {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ solicitanteEmail: usuario.email, id: x.id })
+      });
+      const d = await res.json();
+      if (!d.ok) throw new Error(d.error || 'No se pudo eliminar');
+      setData((arr) => arr.filter((r) => r.id !== x.id));
+      showToast && showToast('✓ Respuesta eliminada');
+    } catch (e) { showToast && showToast('⚠ ' + (e.message || 'No se pudo eliminar')); }
+  }
 
   async function cargar() {
     try {
@@ -191,6 +209,7 @@ function Respuestas({ usuario, showToast }) {
             <th style={{ minWidth: 70, cursor: 'pointer' }} onClick={() => ordenarPor('edicion')}>Edic.{flecha('edicion')}</th>
             <th style={{ minWidth: 160, cursor: 'pointer' }} onClick={() => ordenarPor('formulario')}>Formulario{flecha('formulario')}</th>
             <th style={{ minWidth: 70 }}></th>
+            {puedeEliminar && <th style={{ minWidth: 40 }}></th>}
           </tr></thead>
           <tbody>{ordenadas.map((x) => (
             <>
@@ -200,14 +219,27 @@ function Respuestas({ usuario, showToast }) {
                 <td className="sec">{x.email}</td>
                 <td>{x.curso || '—'}</td>
                 <td>{x.edicion || '—'}</td>
-                <td>{x.formulario}</td>
-                <td className="teal" style={{ color: 'rgb(var(--accentTeal))', fontWeight: 700 }}>{abierto === x.id ? 'Ocultar' : 'Ver'}</td>
+                {/* Pedido de Diego: diferenciar los formularios por color — mismo color del
+                    curso (colorCurso) que ya usa Actividades, para que las dos tablas de
+                    Respuestas sigan el mismo criterio. */}
+                <td style={{ color: colorCurso(x.curso) }}>{x.formulario}</td>
+                <td className="teal" style={{ color: 'rgb(var(--accentTeal))', fontWeight: 500 }}>{abierto === x.id ? 'Ocultar' : 'Ver'}</td>
+                {/* Pedido de Diego: "agregar eliminar acá" — mismo permiso y UX que el borrado
+                    de respuestas de actividades. stopPropagation para no disparar el toggle
+                    de Ver/Ocultar de la fila al hacer clic en el tacho. */}
+                {puedeEliminar && <td><button className="btn-sm" style={{ color: 'rgb(248 113 113)' }} onClick={(e) => { e.stopPropagation(); eliminarRespuesta(x); }} title="Eliminar esta respuesta">🗑</button></td>}
               </tr>
               {abierto === x.id && (
-                <tr><td colSpan={7} style={{ background: 'rgb(var(--surface2))' }}>
-                  <div style={{ padding: '10px 6px', display: 'grid', gap: 8 }}>
+                <tr><td colSpan={puedeEliminar ? 8 : 7} style={{ background: 'rgb(var(--surface2))' }}>
+                  {/* Pedido de Diego: "cuando se abre que se ponga todo en una línea" — cada
+                      campo (etiqueta: valor) en un renglón, en vez de etiqueta arriba y valor
+                      abajo como antes. */}
+                  <div style={{ padding: '10px 6px', display: 'grid', gap: 6 }}>
                     {Object.entries(x.r || {}).filter(([k]) => !['email', 'nombre', 'curso', 'edicion', 'importadoDe'].includes(k)).map(([k, v]) => (
-                      <div key={k}><div style={{ fontSize: 11.5, color: 'rgb(var(--textMuted))', textTransform: 'capitalize' }}>{k}</div><div style={{ fontSize: 13.5 }}>{String(v)}</div></div>
+                      <div key={k} style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 11.5, color: 'rgb(var(--textMuted))', textTransform: 'capitalize', flex: '0 0 160px' }}>{k}</span>
+                        <span style={{ fontSize: 13.5 }}>{String(v)}</span>
+                      </div>
                     ))}
                   </div>
                 </td></tr>

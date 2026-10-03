@@ -35,7 +35,7 @@ export default function PausaSemanal() {
       background: 'rgb(var(--surface2))', opacity: 0.75, border: '1px solid rgb(var(--border))'
     }}>
       <span style={{ fontSize: 11, fontWeight: 600, color: 'rgb(var(--textMuted))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.titulo}</span>
-      <a href={LINK_BLOG} target="_blank" rel="noopener noreferrer" style={{ marginLeft: 'auto', flex: 'none', color: 'rgb(var(--accentTeal))', fontWeight: 700, fontSize: 11, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+      <a href={LINK_BLOG} target="_blank" rel="noopener noreferrer" style={{ marginLeft: 'auto', flex: 'none', color: 'rgb(var(--accentTeal))', fontWeight: 500, fontSize: 11, textDecoration: 'none', whiteSpace: 'nowrap' }}>
         Leer una nota →
       </a>
     </div>

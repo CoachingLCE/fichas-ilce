@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { readSheet, updateRow } from '../../../../lib/sheets';
 import { TABS } from '../../../../lib/constants';
-import { findUsuario, tienePermisoActividades, tienePermisoVerTodasRespuestas, tienePermisoEliminarRespuestas } from '../../../../lib/auth';
+import { findUsuario, tienePermisoVerRespuestasActividades, tienePermisoVerTodasRespuestas, tienePermisoEliminarRespuestas } from '../../../../lib/auth';
 import { registrarAccion } from '../../../../lib/auditoria';
 
 export const dynamic = 'force-dynamic';
@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const usuario = await findUsuario(searchParams.get('solicitanteEmail'));
-  if (!usuario || !tienePermisoActividades(usuario)) return NextResponse.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+  if (!usuario || !tienePermisoVerRespuestasActividades(usuario)) return NextResponse.json({ ok: false, error: 'No autorizado' }, { status: 403 });
 
   // Definiciones (para poder mostrar, por fila, cada pregunta con lo que respondió ese
   // estudiante — antes esta pantalla solo mostraba el puntaje total, sin forma de leer las

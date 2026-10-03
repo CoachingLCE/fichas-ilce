@@ -48,7 +48,7 @@ export function SelectDropdown({ label, value, options, onChange, placeholder = 
 
 export function FiltroChip({ label, onClear }) {
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(5,149,173,.12)', border: '1px solid rgba(5,149,173,.35)', color: 'rgb(var(--accentTeal))', borderRadius: 999, padding: '5px 10px', fontSize: 12.5, fontWeight: 700 }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(5,149,173,.12)', border: '1px solid rgba(5,149,173,.35)', color: 'rgb(var(--accentTeal))', borderRadius: 999, padding: '5px 10px', fontSize: 12.5, fontWeight: 500 }}>
       {label}
       <button onClick={onClear} aria-label="Quitar filtro" style={{ background: 'none', border: 0, color: 'inherit', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>×</button>
     </span>

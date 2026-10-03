@@ -22,7 +22,7 @@ function Tarjeta({ h }) {
       className="bg-surface border border-border rounded-2xl px-5 py-4 flex items-center gap-3 transition-all hover:-translate-y-0.5"
       style={{ textDecoration: 'none' }}>
       <span style={{ width: 40, height: 40, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 auto', fontSize: 20, background: `${h.color || '#0595ad'}22` }}>{h.icono}</span>
-      <span style={{ fontSize: 14, fontWeight: 700 }}>{h.nombre}</span>
+      <span style={{ fontSize: 14, fontWeight: 500 }}>{h.nombre}</span>
     </a>
   );
 }

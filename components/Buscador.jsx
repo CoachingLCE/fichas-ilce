@@ -116,7 +116,7 @@ export default function Buscador({ usuario, irA, setQInscripciones }) {
         <div style={{ display: 'grid', gap: 22 }}>
           {recientes.length > 0 && (
             <div>
-              <div className="muted" style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>Últimas búsquedas</div>
+              <div className="muted" style={{ fontSize: 12, fontWeight: 500, marginBottom: 8 }}>Últimas búsquedas</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {recientes.map((r) => (
                   <button key={r} className="btn-sm" onClick={() => setQ(r)}>🔍 {r}</button>
@@ -125,7 +125,7 @@ export default function Buscador({ usuario, irA, setQInscripciones }) {
             </div>
           )}
           <div>
-            <div className="muted" style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>Últimos vistos</div>
+            <div className="muted" style={{ fontSize: 12, fontWeight: 500, marginBottom: 8 }}>Últimos vistos</div>
             {vistos.length === 0 ? (
               <p className="muted" style={{ fontSize: 13 }}>Todavía no abriste ningún resultado desde el buscador.</p>
             ) : (
@@ -137,7 +137,7 @@ export default function Buscador({ usuario, irA, setQInscripciones }) {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <IconoTipo tipo={v.tipo} size={16} />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 700, fontSize: 13.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.titulo}</div>
+                        <div style={{ fontWeight: 500, fontSize: 13.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.titulo}</div>
                         <div className="muted" style={{ fontSize: 11.5 }}>{v.tipo}{v.sub ? ` · ${v.sub}` : ''}</div>
                       </div>
                     </div>
@@ -161,7 +161,7 @@ export default function Buscador({ usuario, irA, setQInscripciones }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <IconoTipo tipo={r.tipo} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14 }}><Resaltado texto={r.titulo} q={q} /></div>
+                  <div style={{ fontWeight: 500, fontSize: 14 }}><Resaltado texto={r.titulo} q={q} /></div>
                   <div className="muted" style={{ fontSize: 12 }}>{r.sub}{r.extra ? ` · ${r.extra}` : ''}</div>
                 </div>
                 <span className="tagchip">{r.tipo}</span>

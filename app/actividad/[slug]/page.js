@@ -24,7 +24,7 @@ export default async function ActividadPublica({ params }) {
     // ni con "no publicada") — cada estado efectivo tiene su propio título y texto.
     const titulo = efectivo === 'Programada' ? 'Todavía no disponible' : efectivo === 'Cerrada' ? 'Actividad cerrada' : 'Actividad no disponible';
     const mensaje = efectivo === 'Programada'
-      ? `Esta actividad va a estar disponible a partir del ${fechaLegible(act.fechaDisponible)}. Volvé a entrar ese día.`
+      ? `Esta actividad va a estar disponible a partir del ${fechaLegible(act.fechaDisponible)}${act.horaDisponible ? ` a las ${act.horaDisponible}` : ''}. Volvé a entrar ese día${act.horaDisponible ? ', después de esa hora' : ''}.`
       : efectivo === 'Cerrada'
       ? `El período para completar esta actividad finalizó el ${fechaLegible(act.fechaCierre)}.`
       : 'Esta actividad todavía no está publicada. Volvé más tarde.';
@@ -35,7 +35,7 @@ export default async function ActividadPublica({ params }) {
           <div style={{ width: 394, maxWidth: '100%', background: 'rgb(var(--surface))', border: '1px solid rgb(var(--border))', borderRadius: 30, overflow: 'hidden' }}>
             <div style={{ padding: '24px 22px', color: '#fff', background: 'linear-gradient(120deg,#01233f,#065f74 55%,#0595ad)' }}>
               <div style={{ fontFamily: 'Jost', letterSpacing: 4, fontSize: 11, opacity: .85 }}>ACTIVIDAD</div>
-              <div style={{ fontFamily: 'Jost', fontWeight: 700, fontSize: 24, marginTop: 6 }}>{act.curso}</div>
+              <div style={{ fontFamily: 'Jost', fontWeight: 500, fontSize: 24, marginTop: 6 }}>{act.curso}</div>
             </div>
             <div style={{ padding: 26, textAlign: 'center' }}>
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}><Isologo size={30} /></div>

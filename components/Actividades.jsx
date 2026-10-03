@@ -76,7 +76,7 @@ function fmtFechaCorta(iso) {
   if (isNaN(d)) return String(iso).slice(0, 10);
   return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
 }
-const lbl = { fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 5, color: 'rgb(var(--textSec))' };
+const lbl = { fontSize: 12, fontWeight: 500, display: 'block', marginBottom: 5, color: 'rgb(var(--textSec))' };
 
 // El alta/baja de acceso de docentes se gestiona en una única pantalla, "Equipo Docente"
 // (ver Equipo.jsx); antes había una pestaña "Docentes" duplicada acá adentro con el mismo
@@ -485,7 +485,7 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
         {paso > 0 && <button className="btn-sm" onClick={atras} disabled={guardando}>← Atrás</button>}
         <span className="grow" />
         {guardadoEstado && (
-          <span style={{ fontSize: 12, fontWeight: 700, color: guardadoEstado === 'error' ? 'rgb(248 113 113)' : guardadoEstado === 'guardando' ? 'rgb(var(--textMuted))' : 'rgb(74 222 128)' }}>
+          <span style={{ fontSize: 12, fontWeight: 500, color: guardadoEstado === 'error' ? 'rgb(248 113 113)' : guardadoEstado === 'guardando' ? 'rgb(var(--textMuted))' : 'rgb(74 222 128)' }}>
             {guardadoEstado === 'guardando' ? 'Guardando…' : guardadoEstado === 'error' ? '⚠ Error al guardar' : '✓ Guardado'}
           </span>
         )}
@@ -528,7 +528,7 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
             <div className="preview-body" style={{ padding: 16 }}>
               {otrasActividades.filter((a) => (a.preguntas || []).length > 0).map((a) => (
                 <div key={a.slug} style={{ marginBottom: 14 }}>
-                  <div className="muted" style={{ fontSize: 12, fontWeight: 700, marginBottom: 6 }}>{a.titulo} · {a.curso}</div>
+                  <div className="muted" style={{ fontSize: 12, fontWeight: 500, marginBottom: 6 }}>{a.titulo} · {a.curso}</div>
                   {a.preguntas.map((p, j) => (
                     <button type="button" key={j} className="celda-edit-btn" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', marginBottom: 4 }} onClick={() => reutilizarPregunta(p)}>
                       {p.pregunta || <span className="muted">(sin texto)</span>}
@@ -634,7 +634,7 @@ function TablaActividades({ items, puedeGestionar, onEditar, onDuplicar, onDetal
         const badge = ESTADO_ICO[efectivo] || ESTADO_ICO.Publicada;
         return (
           <tr key={a.slug}>
-            <td className="ins-name"><button className="acts-titlelink" onClick={() => onDetalle(a)}>{a.titulo}</button> <BadgeCreado iso={a.creado} /></td>
+            <td className="ins-name acts-titlelink-cell"><button className="acts-titlelink" onClick={() => onDetalle(a)}>{a.titulo}</button> <BadgeCreado iso={a.creado} /></td>
             <td>{a.curso ? <CursoConPunto curso={a.curso} /> : ''}</td>
             <td>
               <CeldaEditable
@@ -649,7 +649,7 @@ function TablaActividades({ items, puedeGestionar, onEditar, onDuplicar, onDetal
                 onGuardar={(v) => onGuardarCampo(a, { clase: v })}
               />
             </td>
-            <td><span className={'fstate ' + badge.cls}><span className="d" />{efectivo}</span></td>
+            <td><span className={'fstate fstate-liviana ' + badge.cls}><span className="d" />{efectivo}</span></td>
             <td className="sec">{a.preguntas.length}</td>
             <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
               <a className="btn-sm" href={`${APP_URL}/actividad/${a.slug}`} target="_blank" rel="noreferrer" title="Abrir actividad">👁</a>{' '}
@@ -1083,7 +1083,7 @@ function Respuestas({ usuario, irABuscador, showToast }) {
               a la izquierda de todo, Fecha y después Nombre/Estudiante (Formularios.jsx ya
               tenía este orden; acá y en Fichas completadas se alinean a ese mismo criterio). */}
           <thead><tr>
-            <th style={{ minWidth: 120 }}>Fecha</th><th style={{ minWidth: 150 }}>Estudiante</th><th style={{ minWidth: 130 }}>Curso</th><th style={{ minWidth: 78 }}>Edición</th>
+            <th style={{ minWidth: 120 }}>Fecha</th><th style={{ minWidth: 150 }}>Nombre</th><th style={{ minWidth: 130 }}>Curso</th><th style={{ minWidth: 78 }}>Edición</th>
             <th style={{ minWidth: 160 }}>Actividad</th><th style={{ minWidth: 180 }}>Email</th><th style={{ minWidth: 90 }}>Tiempo</th>
             <th style={{ minWidth: 80, textAlign: 'right' }}>Puntaje</th><th style={{ minWidth: 70 }}></th>{puedeEliminar && <th style={{ minWidth: 40 }}></th>}
           </tr></thead>
@@ -1095,11 +1095,17 @@ function Respuestas({ usuario, irABuscador, showToast }) {
               <td>{x.nombre || '—'}</td>
               <td><span style={{ color: colorCurso(x.curso) }}>{x.curso}</span></td>
               <td>{x.edicion || '—'}</td>
-              <td>{x.actividad}</td>
+              {/* Pedido de Diego: diferenciar las actividades por color — se reutiliza el
+                  mismo color del curso (colorCurso) que ya tiñe la columna "Curso", para no
+                  inventar una paleta nueva por actividad. */}
+              <td style={{ color: colorCurso(x.curso) }}>{x.actividad}</td>
               <td className="sec">{x.email}</td>
               <td className="sec">{fmtTiempo(x.duracion)}</td>
               <td style={{ textAlign: 'right' }}><b style={{ color: colorPorPuntaje(x.puntaje, x.total) }}>{x.puntaje}/{x.total}</b></td>
-              <td>{abiertas.length > 0 && <button className="btn-sm" onClick={() => setDetalleAbierto(x)} title="Ver respuestas abiertas">✎ Ver ({abiertas.length})</button>}</td>
+              {/* Pedido de Diego: "acá falta que se pueda ver" — antes el botón "Ver" solo
+                  aparecía si la actividad tenía preguntas abiertas; ahora siempre está para
+                  poder revisar el detalle (el modal ya avisa cuando no hay abiertas). */}
+              <td><button className="btn-sm" onClick={() => setDetalleAbierto(x)} title="Ver detalle de la respuesta">✎ Ver{abiertas.length > 0 ? ` (${abiertas.length})` : ''}</button></td>
               {/* Pedido de Diego: "Super Admin puede eliminar rtas" — solo visible con permiso
                   (tienePermisoEliminarRespuestas, hoy equivale a rol Admin). */}
               {puedeEliminar && <td><button className="btn-sm" style={{ color: 'rgb(248 113 113)' }} onClick={() => eliminarRespuesta(x)} title="Eliminar esta respuesta">🗑</button></td>}

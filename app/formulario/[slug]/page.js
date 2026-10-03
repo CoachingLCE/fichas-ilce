@@ -16,7 +16,7 @@ export default async function FormularioPublico({ params }) {
           <div style={{ width: 560, maxWidth: '100%', background: 'rgb(var(--surface))', border: '1px solid rgb(var(--border))', borderRadius: 22, overflow: 'hidden' }}>
             <div style={{ padding: '22px 26px', color: '#fff', background: 'linear-gradient(120deg,#01233f,#065f74 55%,#0595ad)' }}>
               <div style={{ fontFamily: 'Jost', letterSpacing: 4, fontSize: 11, opacity: .85 }}>FORMULARIO</div>
-              <div style={{ fontFamily: 'Jost', fontWeight: 700, fontSize: 22, marginTop: 6 }}>{form.titulo}</div>
+              <div style={{ fontFamily: 'Jost', fontWeight: 500, fontSize: 22, marginTop: 6 }}>{form.titulo}</div>
             </div>
             <div style={{ padding: 26, textAlign: 'center' }}>
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}><Isologo size={30} /></div>

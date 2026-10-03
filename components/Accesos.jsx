@@ -68,7 +68,7 @@ export default function Accesos({ usuario }) {
   return (
     <div>
       <div className="panel">
-        <p style={{ fontSize: 14, fontWeight: 700, margin: '0 0 10px' }}>🔐 Permisos por rol</p>
+        <p style={{ fontSize: 14, fontWeight: 500, margin: '0 0 10px' }}>🔐 Permisos por rol</p>
         <table style={{ fontSize: 12.5 }}>
           <tbody>
             {[
@@ -80,7 +80,7 @@ export default function Accesos({ usuario }) {
               ['Académico', 'Lectura de inscripciones, Dashboard y Reportes; gestiona Actividades (Postwork) y Formularios (puede crearlos, no solo verlos). No asigna docentes ni ve Accesos.']
             ].map(([r, d]) => (
               <tr key={r} style={{ borderBottom: '1px solid rgb(var(--border))' }}>
-                <td style={{ padding: '7px 10px 7px 0', fontWeight: 700, whiteSpace: 'nowrap', verticalAlign: 'top' }}>{r}</td>
+                <td style={{ padding: '7px 10px 7px 0', fontWeight: 500, whiteSpace: 'nowrap', verticalAlign: 'top' }}>{r}</td>
                 <td style={{ padding: '7px 0', color: 'rgb(var(--textSec))' }}>{d}</td>
               </tr>
             ))}
@@ -97,7 +97,7 @@ export default function Accesos({ usuario }) {
             {usuarios.map((u, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: '1px solid rgb(var(--border))', fontSize: 14, flexWrap: 'wrap', opacity: u.Activo ? 1 : 0.5 }}>
                 <div style={{ flex: 1, minWidth: 160 }}>
-                  <p style={{ fontWeight: 700, margin: 0 }}>{u.Nombre}</p>
+                  <p style={{ fontWeight: 500, margin: 0 }}>{u.Nombre}</p>
                   <p style={{ color: 'rgb(var(--textMuted))', fontSize: 12, margin: 0 }}>{u.Email}</p>
                 </div>
                 {editandoRoles === u.Email ? (
@@ -133,7 +133,7 @@ export default function Accesos({ usuario }) {
         )}
 
         <hr style={{ border: 0, borderTop: '1px solid rgb(var(--border))', margin: '4px 0 16px' }} />
-        <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Agregar nuevo usuario</p>
+        <p style={{ fontSize: 14, fontWeight: 500, marginBottom: 12 }}>Agregar nuevo usuario</p>
         <form onSubmit={agregarUsuario} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
           <div><label style={lbl}>Email</label><input required type="email" className="ctrl" value={nuevoEmail} onChange={(e) => setNuevoEmail(e.target.value)} placeholder="nombre@institutoilce.com" /></div>
           <div><label style={lbl}>Nombre</label><input required className="ctrl" value={nuevoNombre} onChange={(e) => setNuevoNombre(e.target.value)} /></div>
@@ -157,7 +157,7 @@ export default function Accesos({ usuario }) {
       {confirmarEliminar && (
         <div className="mwrap on">
           <div className="modal">
-            <p style={{ fontWeight: 700, marginTop: 0 }}>¿Eliminar este usuario?</p>
+            <p style={{ fontWeight: 500, marginTop: 0 }}>¿Eliminar este usuario?</p>
             <p style={{ color: 'rgb(var(--textSec))', fontSize: 14 }}>{confirmarEliminar.Nombre} ({confirmarEliminar.Email}) — no se puede deshacer.</p>
             <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
               <button className="btn-sm" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setConfirmarEliminar(null)}>Cancelar</button>
@@ -169,4 +169,4 @@ export default function Accesos({ usuario }) {
     </div>
   );
 }
-const lbl = { fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 5, color: 'rgb(var(--textSec))' };
+const lbl = { fontSize: 12, fontWeight: 500, display: 'block', marginBottom: 5, color: 'rgb(var(--textSec))' };

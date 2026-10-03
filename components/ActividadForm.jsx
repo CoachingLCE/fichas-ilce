@@ -25,9 +25,28 @@ function leerDraft(slug) {
 }
 function borrarDraft(slug) { try { localStorage.removeItem(draftKey(slug)); } catch { /* */ } }
 
-export default function ActividadForm({ act }) {
+// Corrección mínima, SOLO para la Vista previa del Constructor (modoPreview): no se puede
+// importar lib/actividades.js acá (usa googleapis, server-only), así que se repite la cuenta
+// más chica posible — nunca pisa ni duplica la lógica real de corrección del servidor, que
+// sigue siendo la única que cuenta para una respuesta real.
+function corregirLocal(preguntas, resp) {
+  let puntaje = 0, total = 0;
+  preguntas.forEach((p, i) => {
+    if (p.tipo === 'abierta') return;
+    total++;
+    if (resp[i] != null && Number(resp[i]) === Number(p.correcta)) puntaje++;
+  });
+  return { puntaje, total };
+}
+
+// modoPreview: lo usa el Constructor de actividades para mostrar "cómo lo va a ver el
+// estudiante" ANTES de publicar, con el componente real (misma estructura exacta) pero sin
+// tocar la Sheet ni el localStorage del navegador: no verifica "ya completada", no envía nada
+// al servidor (corrige localmente nomás, para mostrar una pantalla final de ejemplo) y no lee
+// ni escribe ningún borrador real.
+export default function ActividadForm({ act, modoPreview = false }) {
   const draftInicial = useRef(null);
-  if (draftInicial.current === null) draftInicial.current = leerDraft(act.slug) || {};
+  if (draftInicial.current === null) draftInicial.current = modoPreview ? {} : (leerDraft(act.slug) || {});
 
   const [step, setStep] = useState(draftInicial.current.step || 0); // 0 = datos, 1..N = preguntas
   const [email, setEmail] = useState(draftInicial.current.email || '');
@@ -62,6 +81,7 @@ export default function ActividadForm({ act }) {
   // nada (step 0 recién abierto, sin draft previo) para no mostrar "Guardando…" de la nada.
   const autosavePrimerCambio = useRef(draftInicial.current && Object.keys(draftInicial.current).length > 0);
   useEffect(() => {
+    if (modoPreview) return; // la vista previa nunca toca el localStorage real del navegador
     if (resultado || yaCompletada) return;
     if (step === 0 && !email && !nombre && Object.keys(resp).length === 0 && !autosavePrimerCambio.current) return;
     autosavePrimerCambio.current = true;
@@ -74,12 +94,13 @@ export default function ActividadForm({ act }) {
     }, 350);
     return () => clearTimeout(t);
     /* eslint-disable-next-line */
-  }, [step, email, nombre, edicion, resp]);
+  }, [step, email, nombre, edicion, resp, modoPreview]);
 
   async function siguiente() {
     if (esDatos) {
       if (!validarEmail(email)) { setError('Ingresá un correo válido.'); return; }
       setError('');
+      if (modoPreview) { setStep(1); return; } // en preview nunca hay "ya completada" que chequear
       setVerificando(true);
       try {
         const res = await fetch(`/api/actividad?slug=${encodeURIComponent(act.slug)}&email=${encodeURIComponent(email)}`);
@@ -106,6 +127,15 @@ export default function ActividadForm({ act }) {
 
   async function enviar() {
     setEnviando(true); setError('');
+    if (modoPreview) {
+      // Nunca se manda nada al servidor desde la vista previa — se corrige localmente nomás,
+      // para que quien está armando la actividad vea una pantalla final representativa.
+      const { puntaje, total } = corregirLocal(act.preguntas, resp);
+      setResultado({ ok: true, puntaje, total, emailOk: true });
+      setConfirmarEnvio(false);
+      setEnviando(false);
+      return;
+    }
     try {
       const res = await fetch('/api/actividad', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -149,7 +179,7 @@ export default function ActividadForm({ act }) {
             <p className="muted" style={{ fontSize: 14 }}>La respondiste el {new Date(yaCompletada.fecha).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}.</p>
           ) : null}
           {(act.mostrarResultado !== false && yaCompletada.total > 0) && (
-            <div style={{ fontFamily: 'Jost', fontWeight: 700, fontSize: 40, color: 'rgb(var(--accentTeal))', margin: '10px 0' }}>{yaCompletada.puntaje} / {yaCompletada.total}</div>
+            <div style={{ fontFamily: 'Jost', fontWeight: 500, fontSize: 40, color: 'rgb(var(--accentTeal))', margin: '10px 0' }}>{yaCompletada.puntaje} / {yaCompletada.total}</div>
           )}
           <p className="muted" style={{ fontSize: 13, marginTop: 14 }}>Ya no podés volver a enviarla ni modificar tus respuestas.</p>
         </div>
@@ -175,7 +205,7 @@ export default function ActividadForm({ act }) {
             <p className="muted" style={{ fontSize: 14 }}>Registramos tus respuestas de <b>{act.titulo}</b>{resultado.emailOk ? ` y te enviamos el detalle a ${email}` : ''}.</p>
           ) : (<>
             <p className="muted" style={{ fontSize: 14 }}>Tu resultado en <b>{act.titulo}</b>:</p>
-            <div style={{ fontFamily: 'Jost', fontWeight: 700, fontSize: 48, color: 'rgb(var(--accentTeal))', margin: '6px 0' }}>{resultado.puntaje} / {resultado.total}</div>
+            <div style={{ fontFamily: 'Jost', fontWeight: 500, fontSize: 48, color: 'rgb(var(--accentTeal))', margin: '6px 0' }}>{resultado.puntaje} / {resultado.total}</div>
             <p className="muted" style={{ fontSize: 14 }}>{pct}% correctas{resultado.emailOk ? ` · te enviamos el detalle a ${email}` : ''}</p>
             {cantAbiertas > 0 && <p className="muted" style={{ fontSize: 12.5 }}>({cantAbiertas} pregunta{cantAbiertas === 1 ? '' : 's'} de desarrollo no {cantAbiertas === 1 ? 'entra' : 'entran'} en este puntaje — el equipo la{cantAbiertas === 1 ? '' : 's'} revisa aparte.)</p>}
           </>)}

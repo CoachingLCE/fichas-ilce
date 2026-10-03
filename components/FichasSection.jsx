@@ -29,7 +29,9 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
   const [vista, setVista] = useState('lista');
   useEffect(() => { try { const v = localStorage.getItem('ilce-fichas-vista'); if (v === 'cards' || v === 'lista') setVista(v); } catch { /* */ } }, []);
   const cambiarVista = (v) => { setVista(v); try { localStorage.setItem('ilce-fichas-vista', v); } catch { /* */ } };
-  const [orden, setOrden] = useState('nombre');
+  // Pedido de Diego ("saca este filtro"): se sacó el combo "Ordenar: Nombre / Más recientes /
+  // Más inscripciones" de la UI — la lista queda siempre alfabética por curso.
+  const orden = 'nombre';
   const [menuAbierto, setMenuAbierto] = useState(null);
   const [copiado, setCopiado] = useState(null);
   // "Crear edición" (menú ⋮, vista tarjetas): en vez de abrir el Constructor completo de
@@ -148,21 +150,16 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
           <button key={c} className={'fchip' + (chip === c ? ' on' : '')} onClick={() => setChip(c)}>{c} <span className="cnt">{n}</span></button>
         ))}
       </div>
-      <div className="fbar">
+      <div className="fbar fbar-fichas">
         {/* El buscador de texto libre queda solo en la pestaña "Buscador" (busca en toda la
             app), igual que en Actividades — acá ya quedan los chips de estado de arriba. */}
         <span style={{ flex: 1 }} />
-        <select className="fsel" value={orden} onChange={(e) => setOrden(e.target.value)}>
-          <option value="nombre">Ordenar: Nombre</option>
-          <option value="recientes">Ordenar: Más recientes</option>
-          <option value="inscripciones">Ordenar: Más inscripciones</option>
-        </select>
         <div className="vista-toggle">
           <button className={vista === 'cards' ? 'on' : ''} onClick={() => cambiarVista('cards')} title="Ver en tarjetas">▦</button>
           <button className={vista === 'lista' ? 'on' : ''} onClick={() => cambiarVista('lista')} title="Ver en lista">☰</button>
         </div>
       </div>
-      <p className="count">{filtradas.length} ficha{filtradas.length === 1 ? '' : 's'} encontrada{filtradas.length === 1 ? '' : 's'}</p>
+      <p className="count count-fichas">{filtradas.length} ficha{filtradas.length === 1 ? '' : 's'} encontrada{filtradas.length === 1 ? '' : 's'}</p>
 
       {filtradas.length === 0 ? (
         <div className="empty empty-sm"><p>No encontramos fichas con estos filtros. <button className="linklike" onClick={() => { setQ(''); setChip('Todas'); }}>Limpiar filtros</button></p></div>

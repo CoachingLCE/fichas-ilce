@@ -54,8 +54,11 @@ export default function EmailsPanel({ usuario }) {
   const [emails, setEmails] = useState(null);
   const [q, setQ] = useState('');
   const [fTipo, setFTipo] = useState(''); const [fEstado, setFEstado] = useState('');
-  const [periodo, setPeriodo] = useState('todo');
-  const [fDesde, setFDesde] = useState(''); const [fHasta, setFHasta] = useState('');
+  // Pedido de Diego ("deja las del mes, luego que diga ver el resto"): antes arrancaba
+  // mostrando TODO el historial de una — ahora arranca acotado a este mes, con un enlace para
+  // traer el resto si hace falta (ver "verTodo" más abajo).
+  const [periodo, setPeriodo] = useState('mes');
+  const [fDesde, setFDesde] = useState(primerDiaMes()); const [fHasta, setFHasta] = useState(hace(0));
   const [preview, setPreview] = useState(null); // { tipo, asunto, html, loading, error, ejemplo }
   const [detalle, setDetalle] = useState(null); // { fecha, tipo, para, asunto, detalle }
   const [reintentando, setReintentando] = useState(null); // índice de fila en curso
@@ -106,6 +109,10 @@ export default function EmailsPanel({ usuario }) {
       setPreview({ tipo, error: e.message || 'Error inesperado' });
     }
   }
+
+  // Hay envíos más viejos que el recorte de "Este mes" por default — habilita el enlace "Ver
+  // el resto" (independiente de los otros filtros, solo mira la fecha).
+  const hayMasAfuera = periodo === 'mes' && (emails || []).some((e) => (e.fecha || '').slice(0, 10) < fDesde);
 
   const tipos = useMemo(() => [...new Set((emails || []).map((e) => e.tipo).filter(Boolean))].sort(), [emails]);
   const filtrados = useMemo(() => {
@@ -176,7 +183,7 @@ export default function EmailsPanel({ usuario }) {
                   <td className="sec">{a.para}</td>
                   <td className="sec">{a.remitente}{a.cc && a.cc !== '—' ? ` · cc: ${a.cc}` : ''}</td>
                   <td className="sec">{a.asunto}</td>
-                  <td><span className="tagchip" style={TIPO_COLOR[a.tipo] ? { background: TIPO_COLOR[a.tipo].bg, color: TIPO_COLOR[a.tipo].fg, borderColor: 'transparent' } : undefined}>{a.tipo}</span>{verMas && <span style={{ marginLeft: 8, fontSize: 12.5, fontWeight: 700, color: 'rgb(var(--accentTeal))' }}>👁 Ver correo</span>}</td>
+                  <td><span className="tagchip" style={TIPO_COLOR[a.tipo] ? { background: TIPO_COLOR[a.tipo].bg, color: TIPO_COLOR[a.tipo].fg, borderColor: 'transparent' } : undefined}>{a.tipo}</span>{verMas && <span style={{ marginLeft: 8, fontSize: 12.5, fontWeight: 500, color: 'rgb(var(--accentTeal))' }}>👁 Ver correo</span>}</td>
                 </tr>
               );
             })}</tbody>
@@ -189,6 +196,7 @@ export default function EmailsPanel({ usuario }) {
         <div className="sechead">
           <span className="htitle">Registro de envíos</span>
           <span className="hcount">{emails ? filtrados.length : 0} envío(s)</span>
+          {hayMasAfuera && <button className="linklike" style={{ fontSize: 12 }} onClick={() => aplicarPeriodo('todo')}>Ver el resto (fuera de este mes) →</button>}
           <span className="grow" />
           <div className="fsearch" style={{ maxWidth: 240, flex: 'none' }}>🔎 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar…" /></div>
           <button className="btn-sm" disabled={!emails || filtrados.length === 0} onClick={exportarEnvios}>⬇ Exportar CSV</button>
@@ -218,8 +226,13 @@ export default function EmailsPanel({ usuario }) {
         {!emails ? <div className="spin" /> : filtrados.length === 0 ? (
           <div className="empty"><div className="ico">✉️</div><h3>Sin envíos registrados</h3><p>Cuando el sistema mande un correo, va a aparecer acá.</p></div>
         ) : (
-          <div className="tablewrap"><table>
-            <thead><tr><th style={{ minWidth: 160 }}>Fecha</th><th style={{ minWidth: 150 }}>Tipo</th><th style={{ minWidth: 200 }}>Para</th><th style={{ minWidth: 220 }}>Asunto</th><th style={{ minWidth: 90 }}>Estado</th><th style={{ minWidth: 160 }}>Acciones</th></tr></thead>
+          /* Pedido de Diego: "bajale tamaño a la letra así entra en una línea y achicala un
+             poco en ancho" (antes necesitaba scroll horizontal) — clase propia con tipografía
+             más chica, columnas más angostas y "Para"/"Asunto" truncados con "…" (el texto
+             completo queda disponible al pasar el mouse, por el title). Altura del contenedor
+             también un poco más alta ("agrandar un poco más la tabla"). */
+          <div className="tablewrap tablewrap-emailslog" style={{ maxHeight: '72vh' }}><table>
+            <thead><tr><th style={{ minWidth: 120 }}>Fecha</th><th style={{ minWidth: 110 }}>Tipo</th><th style={{ minWidth: 160 }}>Para</th><th style={{ minWidth: 170 }}>Asunto</th><th style={{ minWidth: 72 }}>Estado</th><th style={{ minWidth: 120 }}>Acciones</th></tr></thead>
             <tbody>{filtrados.map((e, i) => {
               const fallo = e.estado !== 'Enviado';
               const puedeReintentar = fallo && REINTENTABLES.has(e.tipo) && e.payload;
@@ -231,8 +244,8 @@ export default function EmailsPanel({ usuario }) {
                     {esEnvioReciente(e.fecha) && <span className="badge-enviado-reciente">Enviado recientemente</span>}
                   </td>
                   <td><span className="tagchip" style={TIPO_COLOR[e.tipo] ? { background: TIPO_COLOR[e.tipo].bg, color: TIPO_COLOR[e.tipo].fg, borderColor: 'transparent' } : undefined}>{e.tipo}</span></td>
-                  <td className="sec">{e.para}</td>
-                  <td>{e.asunto}</td>
+                  <td className="sec tablewrap-emailslog-trunc" title={e.para}>{e.para}</td>
+                  <td className="tablewrap-emailslog-trunc" title={e.asunto}>{e.asunto}</td>
                   <td><span className={'badge ' + (e.estado === 'Enviado' ? 'b-Aprobada' : 'b-Observada')}>{e.estado}</span></td>
                   <td>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>

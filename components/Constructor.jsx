@@ -151,7 +151,7 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
   if (errorCarga) {
     return (
       <div className="empty" style={{ textAlign: 'center', padding: '40px 20px' }}>
-        <p style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>⚠️ No se pudo abrir el Constructor</p>
+        <p style={{ fontSize: 15, fontWeight: 500, marginBottom: 6 }}>⚠️ No se pudo abrir el Constructor</p>
         <p className="muted" style={{ marginBottom: 16 }}>{errorCarga}</p>
         <button className="btn-sm solid" onClick={() => { setErrorCarga(''); setDefs(null); window.location.reload(); }}>Reintentar</button>
         {onVolver && <button className="btn-sm" style={{ marginLeft: 8 }} onClick={onVolver}>← Volver</button>}
@@ -625,20 +625,20 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
                   {d.estado === 'Cerrada' ? '🔒 Inscripciones cerradas' : '📝 Ficha en borrador (no visible al público)'}
                 </div>
               ) : (<>
-                <div style={{ fontFamily: 'Jost', fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{d.titulo || 'Ficha de inscripción'}</div>
+                <div style={{ fontFamily: 'Jost', fontWeight: 500, fontSize: 15, marginBottom: 4 }}>{d.titulo || 'Ficha de inscripción'}</div>
                 <div style={{ fontSize: 12.5, color: 'rgb(var(--textSec))', marginBottom: 12 }}>{d.bienvenida || '¡Nos alegra tenerte acá!'}</div>
                 {eds.length > 0 && (
                   <div style={{ marginBottom: 10 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 5 }}>Elegí día de cursada</div>
+                    <div style={{ fontSize: 12, fontWeight: 500, marginBottom: 5 }}>Elegí día de cursada</div>
                     {eds.slice(0, 3).map((e, i) => (
                       <div key={i} className="wiz-preview-ed">
-                        <div style={{ fontWeight: 700 }}>{e.label || 'Edición'}</div>
+                        <div style={{ fontWeight: 500 }}>{e.label || 'Edición'}</div>
                         {e.horarios && <div style={{ fontSize: 11, color: 'rgb(var(--textMuted))' }}>{e.horarios}</div>}
                       </div>
                     ))}
                   </div>
                 )}
-                <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 5 }}>Correo *</div>
+                <div style={{ fontSize: 12, fontWeight: 500, marginBottom: 5 }}>Correo *</div>
                 <div className="wiz-preview-input">tunombre@correo.com</div>
                 <div className="wiz-preview-cta">Comenzar</div>
               </>)}

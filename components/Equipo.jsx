@@ -47,7 +47,7 @@ export default function Equipo({ usuario }) {
     <div>
       <div className="note" style={{ marginBottom: 16 }}>
         📋 Esta pantalla es solo de consulta: acá <b>no se dan de alta ni de baja</b> accesos de docentes. El equipo, su curso/edición y la contraseña se gestionan en{' '}
-        <a href={LINK_PRESENTISMO} target="_blank" rel="noopener noreferrer" style={{ color: 'rgb(var(--accentTeal))', fontWeight: 700 }}>Presentismo ILCE</a>
+        <a href={LINK_PRESENTISMO} target="_blank" rel="noopener noreferrer" style={{ color: 'rgb(var(--accentTeal))', fontWeight: 500 }}>Presentismo ILCE</a>
         {' '}— lo que ves acá es lo que ya está asignado en <b>Fichas</b> (Constructor → Ediciones → Docentes).
       </div>
 
