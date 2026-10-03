@@ -1,17 +1,28 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
-import { APP_URL } from '../lib/constants';
+import { APP_URL, estadoFechaReciente } from '../lib/constants';
 
 const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-export default function Formularios({ usuario, showToast }) {
-  const [sub, setSub] = useState('lista');
+// Mismo criterio y motivo que en Actividades (ver BadgeCreado en Actividades.jsx): "Creado" se
+// escribe una sola vez al crear el formulario, por eso sirve para esto y "Actualizado" no.
+function BadgeCreado({ iso }) {
+  const { tipo } = estadoFechaReciente(iso, 10);
+  if (tipo === 'hoy') return <span className="badge-fecha-hoy" title={'Cargado el ' + iso}>\ud83d\udfe2 Cargado hoy</span>;
+  if (tipo === 'nueva') return <span className="badge-fecha-nueva" title={'Cargado el ' + iso}>\u2728 Nuevo</span>;
+  return null;
+}
+
+// "subInicial" lo usa Panel.jsx para abrir directo en "Respuestas" cuando se entra desde la
+// pestaña superior "Respuestas de fichas, actividades y formularios" → "Respuestas formularios".
+// Antes había acá adentro una pestaña "Respuestas" propia que duplicaba exactamente ese mismo
+// lugar (pedido de Diego: "SACA RESPUESTAS DE ACA", "evitemos botones innecesarios y
+// repetidos") — se saca; "Formularios" (listado) sigue siendo la vista de esta sección cuando
+// se entra desde "Actividades y formularios".
+export default function Formularios({ usuario, showToast, subInicial }) {
+  const sub = subInicial || 'lista';
   return (
     <div>
-      <div className="subtabs">
-        <button className={sub === 'lista' ? 'on' : ''} onClick={() => setSub('lista')}>Formularios</button>
-        <button className={sub === 'respuestas' ? 'on' : ''} onClick={() => setSub('respuestas')}>Respuestas</button>
-      </div>
       {sub === 'lista' && <Lista usuario={usuario} showToast={showToast} />}
       {sub === 'respuestas' && <Respuestas usuario={usuario} showToast={showToast} />}
     </div>
@@ -69,7 +80,7 @@ function Lista({ usuario, showToast }) {
           <thead><tr><th>Formulario</th><th>Tipo</th><th>Estado</th><th>Campos</th><th>Respuestas</th><th>Enlace</th><th></th></tr></thead>
           <tbody>{forms.map((f) => (
             <tr key={f.slug}>
-              <td className="ins-name">{f.titulo}</td>
+              <td className="ins-name">{f.titulo} <BadgeCreado iso={f.creado} /></td>
               <td>{f.tipo ? <span className="cchip">{f.tipo}</span> : '—'}</td>
               <td><span className={'fstate ' + (f.estado === 'Publicada' ? 'pub' : 'bor')}><span className="d" />{f.estado}</span></td>
               <td className="sec">{f.campos.length}</td>
@@ -94,6 +105,7 @@ function Lista({ usuario, showToast }) {
               <div className="pcard-title" title={f.titulo} style={{ fontSize: 16.5, whiteSpace: 'normal', lineHeight: 1.25 }}>{f.titulo}</div>
               <div className="pcard-datos">
                 <span>{f.campos.length} campos{nResp(f) !== null ? ` · ${nResp(f)} respuesta${nResp(f) === 1 ? '' : 's'}` : ''}</span>
+                <BadgeCreado iso={f.creado} />
               </div>
               <div className="pcard-url">
                 <span className="pcard-url-txt">/formulario/{f.slug}</span>

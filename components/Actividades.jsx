@@ -48,13 +48,32 @@ function fmtTiempo(seg) {
   const m = Math.floor(seg / 60), s = seg % 60;
   return m ? `${m}m ${String(s).padStart(2, '0')}s` : `${s}s`;
 }
+// Pedido de Diego (03/10/2026): colorear el puntaje según la nota, para que se vea de un
+// vistazo quién tuvo un buen resultado sin tener que leer el número. Rangos sobre una escala
+// de 1 a 10 (se normaliza el puntaje real/total a /10 por si una actividad no es sobre 10):
+// 1-3 rojo, 4-5 naranja, 6-8 amarillo, 9-10 verde. No cambia el cálculo del puntaje, solo el color.
+function colorPorPuntaje(puntaje, total) {
+  if (puntaje == null || !total) return undefined;
+  const sobreDiez = (puntaje / total) * 10;
+  if (sobreDiez <= 3) return '#f87171';
+  if (sobreDiez <= 5) return '#fb923c';
+  if (sobreDiez <= 8) return '#fbbf24';
+  return '#4ade80';
+}
 // Mismo criterio e insignias que la tabla de Fichas completadas (ver estadoFechaReciente en
 // lib/constants.js y CeldaFechaReciente en Panel.jsx): hoy aparte, 1-9 días parpadeando.
 function CeldaFechaRecienteAct({ iso }) {
   const { tipo } = estadoFechaReciente(iso);
   if (tipo === 'hoy') return <span className="badge-fecha-hoy" title={iso}>🟢 Inscrito hoy</span>;
   if (tipo === 'nueva') return <span className="badge-fecha-nueva" title={iso}>✨ Ficha nueva</span>;
-  return <span className="sec" title={iso}>{(iso || '').slice(0, 10)}</span>;
+  // Pedido de Diego (03/10/2026): formato D/M/AAAA (sin ceros adelante) en vez de AAAA-MM-DD.
+  return <span className="sec" title={iso}>{fmtFechaCorta(iso)}</span>;
+}
+function fmtFechaCorta(iso) {
+  if (!iso) return '—';
+  const d = new Date(String(iso).length <= 10 ? `${String(iso).slice(0, 10)}T00:00:00` : iso);
+  if (isNaN(d)) return String(iso).slice(0, 10);
+  return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
 }
 const lbl = { fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 5, color: 'rgb(var(--textSec))' };
 
@@ -594,6 +613,17 @@ function CursoConPunto({ curso }) {
   );
 }
 
+// Pedido de Diego (03/10/2026): marcar cuándo se cargó la actividad/formulario — "cargada
+// hoy" el mismo día, "nueva" entre el día 1 y 10 (distinto del criterio de 1-9 de Fichas, por
+// eso el segundo parámetro). Usa "Creado" (ver lib/constants.js), que a diferencia de
+// "Actualizado" se escribe una sola vez y no cambia con cada edición posterior.
+function BadgeCreado({ iso }) {
+  const { tipo } = estadoFechaReciente(iso, 10);
+  if (tipo === 'hoy') return <span className="badge-fecha-hoy" title={'Cargada el ' + iso}>🟢 Cargada hoy</span>;
+  if (tipo === 'nueva') return <span className="badge-fecha-nueva" title={'Cargada el ' + iso}>✨ Nueva</span>;
+  return null;
+}
+
 function TablaActividades({ items, puedeGestionar, onEditar, onDuplicar, onDetalle, onGuardarCampo }) {
   return (
     <div className="tablewrap"><table>
@@ -603,7 +633,7 @@ function TablaActividades({ items, puedeGestionar, onEditar, onDuplicar, onDetal
         const badge = ESTADO_ICO[efectivo] || ESTADO_ICO.Publicada;
         return (
           <tr key={a.slug}>
-            <td className="ins-name"><button className="acts-titlelink" onClick={() => onDetalle(a)}>{a.titulo}</button></td>
+            <td className="ins-name"><button className="acts-titlelink" onClick={() => onDetalle(a)}>{a.titulo}</button> <BadgeCreado iso={a.creado} /></td>
             <td>{a.curso ? <CursoConPunto curso={a.curso} /> : ''}</td>
             <td>
               <CeldaEditable
@@ -653,6 +683,7 @@ function GridActividades({ items, puedeGestionar, onEditar, onDuplicar, onDetall
             <div className="pcard-sub" title={sub}>{sub}</div>
             <div className="pcard-datos">
               <span className="pcard-datos-destacado">{a.preguntas.length} pregunta{a.preguntas.length === 1 ? '' : 's'}</span>
+              <BadgeCreado iso={a.creado} />
             </div>
             <div className="pcard-url">
               <span className="pcard-url-txt">/actividad/{a.slug}</span>
@@ -906,10 +937,11 @@ const Lista = forwardRef(function Lista({ usuario, showToast, puedeGestionar, ir
       <div className="sechead">
         <span className="hcount">{filtradas.length} actividad{filtradas.length === 1 ? '' : 'es'}</span>
         <span className="grow" />
-        {/* El buscador de texto libre queda solo en la pestaña "Buscador" (busca en toda la
-            app: fichas, inscripciones, actividades y formularios) — acá quedan los filtros
-            propios de esta lista (Curso/Edición/Estado), que el buscador global no cubre. */}
-        {irABuscador && <button className="btn-sm" onClick={irABuscador}>🔎 Buscar</button>}
+        {/* El buscador de texto libre queda solo en el ícono 🔎 de arriba del todo (pestaña
+            Buscador, busca en toda la app) — antes había acá un botón "Buscar" que lo
+            duplicaba (pedido de Diego: "ES INNECESARIO ESTA ARRIBA", "evitemos botones
+            innecesarios y repetidos"); quedan solo los filtros propios de esta lista
+            (Curso/Edición/Estado), que el buscador global no cubre. */}
         <SelectDropdown placeholder="Curso: todos" searchable value={fCurso} onChange={setFCurso} options={cursosDisp.map((c) => ({ value: c, label: c }))} />
         <SelectDropdown placeholder="Edición: todas" searchable value={fEd} onChange={setFEd} options={edicionesDisp.map((ed) => ({ value: ed, label: 'Ed. ' + ed }))} />
         <SelectDropdown placeholder="Estado: todos" value={fEstado} onChange={setFEstado} options={['Publicada', 'Programada', 'Borrador', 'Archivada'].map((x) => ({ value: x, label: x }))} />
@@ -1015,7 +1047,8 @@ function Respuestas({ usuario, irABuscador }) {
   return (
     <>
       <div className="filters">
-        {irABuscador && <button className="btn-sm" onClick={irABuscador}>🔎 Buscar</button>}
+        {/* Mismo motivo que en la lista de Actividades: el buscador de texto libre ya está en
+            el ícono 🔎 de arriba del todo, este botón local lo duplicaba. */}
         <SelectDropdown placeholder="Curso: todos" searchable value={fCurso} onChange={setFCurso} options={cursos.map((x) => ({ value: x, label: x }))} />
         <SelectDropdown placeholder="Edición: todas" searchable value={fEd} onChange={setFEd} options={ediciones.map((x) => ({ value: x, label: 'Ed. ' + x }))} />
         <select className="fsel" value={fAct} onChange={(e) => setFAct(e.target.value)}><option value="">Actividad: todas</option>{actividades.map((x) => <option key={x}>{x}</option>)}</select>
@@ -1035,13 +1068,13 @@ function Respuestas({ usuario, irABuscador }) {
             const abiertas = (x.detalle || []).filter((d) => d.tipo === 'abierta');
             return (
             <tr key={x.id}>
-              <td><b>{x.nombre || '—'}</b></td>
-              <td><span style={{ color: colorCurso(x.curso), fontWeight: 600 }}>{x.curso}</span></td>
+              <td>{x.nombre || '—'}</td>
+              <td><span style={{ color: colorCurso(x.curso) }}>{x.curso}</span></td>
               <td>{x.edicion || '—'}</td>
               <td>{x.actividad}</td>
               <td className="sec">{x.email}</td>
               <td className="sec">{fmtTiempo(x.duracion)}</td>
-              <td style={{ textAlign: 'right' }}><b>{x.puntaje}/{x.total}</b></td>
+              <td style={{ textAlign: 'right' }}><b style={{ color: colorPorPuntaje(x.puntaje, x.total) }}>{x.puntaje}/{x.total}</b></td>
               <td><CeldaFechaRecienteAct iso={x.fecha} /></td>
               <td>{abiertas.length > 0 && <button className="btn-sm" onClick={() => setDetalleAbierto(x)} title="Ver respuestas abiertas">✎ Ver ({abiertas.length})</button>}</td>
             </tr>

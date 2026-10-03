@@ -14,7 +14,7 @@ export async function GET(req) {
     const filas = await readSheet(TABS.FORMULARIOS);
     const formularios = filas.filter((f) => f.Slug).map((f) => {
       const { campos, cursoFijo } = parseCampos(f['Campos JSON']);
-      return { slug: f.Slug, titulo: f['Título'], tipo: f.Tipo, estado: f.Estado || 'Publicada', campos, cursoFijo, actualizado: f.Actualizado };
+      return { slug: f.Slug, titulo: f['Título'], tipo: f.Tipo, estado: f.Estado || 'Publicada', campos, cursoFijo, actualizado: f.Actualizado, creado: f['Creado'] || '' };
     });
     return NextResponse.json({ ok: true, formularios });
   } catch (e) {
@@ -32,9 +32,11 @@ export async function POST(req) {
   if (!usuario || !tienePermisoFormularios(usuario)) return NextResponse.json({ ok: false, error: 'Sin permiso' }, { status: 403 });
   const { slug, titulo, tipo, estado, campos } = body || {};
   if (!slug || !titulo) return NextResponse.json({ ok: false, error: 'Faltan datos' }, { status: 400 });
-  const fila = [slug, titulo, tipo || '', estado || 'Publicada', JSON.stringify(campos || []), new Date().toISOString()];
   const filas = await readSheet(TABS.FORMULARIOS, { noCache: true });
   const ex = filas.find((f) => f.Slug === slug);
+  // "Creado" se escribe una sola vez: se conserva si ya existía, se marca ahora si es nuevo.
+  const creado = ex ? (ex['Creado'] || '') : new Date().toISOString();
+  const fila = [slug, titulo, tipo || '', estado || 'Publicada', JSON.stringify(campos || []), new Date().toISOString(), creado];
   if (ex) await updateRow(TABS.FORMULARIOS, ex._rowIndex, fila);
   else await appendRow(TABS.FORMULARIOS, fila);
   return NextResponse.json({ ok: true });

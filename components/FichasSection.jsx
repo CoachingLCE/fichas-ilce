@@ -181,7 +181,7 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
                 <td className="ins-name" style={{ borderLeft: `4px solid ${colorCurso(d.curso)}` }}>
                   <div className="curso-cell">
                     <span className="curso-avatar" style={{ background: colorCurso(d.curso) + '22', color: colorCurso(d.curso) }}>{inicialesCurso(d.curso)}</span>
-                    <span style={{ color: colorCurso(d.curso) }}>{d.curso}</span>
+                    <span style={{ color: colorCurso(d.curso), fontWeight: 400 }}>{d.curso}</span>
                   </div>
                 </td>
                 <td><span className={'fstate ' + meta.cls}><span className="d" />{meta.label}</span></td>
@@ -544,7 +544,9 @@ function proximaEdicion(eds) {
   const futura = conFecha.find((e) => e.fecha >= hoyISO);
   const e = futura || conFecha[conFecha.length - 1];
   const dt = new Date(e.fecha + 'T00:00:00');
-  const txt = isNaN(dt) ? e.fecha : dt.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+  // Pedido de Diego (03/10/2026): formato de fecha D/M/AAAA (sin ceros adelante, año completo),
+  // igual en todo el panel.
+  const txt = isNaN(dt) ? e.fecha : dt.toLocaleDateString('es-AR', { day: 'numeric', month: 'numeric', year: 'numeric' });
   return futura ? txt : `${txt} (pasada)`;
 }
 
@@ -568,5 +570,6 @@ function fmtFecha(iso) {
   if (isNaN(d)) return null;
   const hoy = new Date();
   if (d.toDateString() === hoy.toDateString()) return 'hoy';
-  return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  // Pedido de Diego (03/10/2026): formato de fecha D/M/AAAA (sin ceros adelante).
+  return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'numeric', year: 'numeric' });
 }

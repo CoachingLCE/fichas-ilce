@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { APP_URL, cantidadClasesFija, esAsincronica, calcularFechaFinEdicion } from '../lib/constants';
+import { APP_URL, cantidadClasesFija, esAsincronica, calcularFechaFinEdicion, colorCurso } from '../lib/constants';
 import { generarHorarios } from '../lib/husos';
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -33,8 +33,55 @@ const CAMPOS_LIB = [
 ];
 const GRUPOS = ['Datos personales', 'Contacto', 'Cursada'];
 
+// Navegación interna del editor (pedido de Diego: "Campos" y "Configuración" quedaban
+// escondidas dentro de <details> y pasaban desapercibidas — ahora son secciones siempre
+// visibles del mismo editor, con un link arriba que hace scroll directo a cada una).
+const SECCIONES = [
+  { id: 'info', label: 'Información' },
+  { id: 'ediciones', label: 'Ediciones' },
+  { id: 'campos', label: 'Campos' },
+  { id: 'config', label: 'Configuración' }
+];
+
+// Estado de publicación: mismos 3 valores y mismos colores que ya usa la lista de Fichas
+// (fstate pub/bor/cer), ahora como selector visual en vez de un <select> de toda la vida.
+const ESTADOS_FICHA = [
+  { v: 'Borrador', cls: 'bor', dot: '🟡', explicacion: 'No es visible públicamente.' },
+  { v: 'Publicada', cls: 'pub', dot: '🟢', explicacion: 'Permite completar el formulario.' },
+  { v: 'Cerrada', cls: 'cer', dot: '🔴', explicacion: 'Sigue visible, pero no permite nuevas inscripciones.' }
+];
+
 function camposIniciales() {
   return CAMPOS_LIB.map((c) => ({ ...c, activo: true, personalizado: false }));
+}
+
+// Estado de una edición EN CURSO/PRÓXIMA/FINALIZADA — se calcula a partir de la fecha de
+// inicio y la fecha de fin (que ya se calculaba), no es un dato nuevo que haya que cargar:
+// es solo una lectura del calendario contra hoy, para ubicarse de un vistazo en la tarjeta.
+function estadoEdicion(e, asincronica) {
+  if (asincronica || !e.fecha) return null;
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  const inicio = new Date(e.fecha + 'T00:00:00');
+  if (isNaN(inicio)) return null;
+  if (inicio > hoy) return { txt: 'Próxima', cls: 'prog', dot: '📅' };
+  if (e.cantidadClases) {
+    const finIso = calcularFechaFinEdicion(e.fecha, e.cantidadClases);
+    const fin = finIso ? new Date(finIso + 'T00:00:00') : null;
+    if (fin && fin < hoy) return { txt: 'Finalizada', cls: 'arch', dot: '⚪' };
+  }
+  return { txt: 'En curso', cls: 'pub', dot: '🟢' };
+}
+
+function relativo(ts, _tick) {
+  if (!ts) return '';
+  const seg = Math.round((Date.now() - ts) / 1000);
+  if (seg < 10) return 'recién';
+  if (seg < 60) return `hace ${seg}s`;
+  const min = Math.round(seg / 60);
+  if (min < 60) return `hace ${min} min`;
+  const horas = Math.round(min / 60);
+  if (horas < 24) return `hace ${horas} h`;
+  return 'hace un rato';
 }
 
 export default function Constructor({ usuario, initialSlug, showToast, onVolver, volverLabel }) {
@@ -44,13 +91,24 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
   const [dirty, setDirty] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [guardadoAt, setGuardadoAt] = useState(null);
+  const [errorGuardado, setErrorGuardado] = useState('');
   const [tick, setTick] = useState(0);
   const [edAbierta, setEdAbierta] = useState(null); // id de la edición expandida
   const [edMenu, setEdMenu] = useState(null);
   const [campoNuevo, setCampoNuevo] = useState({ nombre: '', tipo: 'Texto' });
+  const [agregandoCampo, setAgregandoCampo] = useState(false);
   const [destNuevo, setDestNuevo] = useState('');
+  const [camposAbierto, setCamposAbierto] = useState(false);
+  const [configAbierto, setConfigAbierto] = useState(false);
+  const [vistaPreview, setVistaPreview] = useState('desktop'); // 'desktop' | 'mobile'
+  const [buscarFicha, setBuscarFicha] = useState('');
   const dragIdx = useRef(null);
   const saveTimer = useRef(null);
+  const refInfo = useRef(null);
+  const refEdiciones = useRef(null);
+  const refCampos = useRef(null);
+  const refConfig = useRef(null);
+  const REFS = { info: refInfo, ediciones: refEdiciones, campos: refCampos, config: refConfig };
 
   useEffect(() => { (async () => {
     try {
@@ -113,7 +171,7 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
     if (!Array.isArray(d.campos) || d.campos.length === 0) {
       setDefs((old) => old.map((x, j) => j === i ? { ...x, campos: camposIniciales() } : x));
     }
-    setSel(i); setDirty(false); setEdAbierta(null);
+    setSel(i); setDirty(false); setEdAbierta(null); setErrorGuardado('');
   }
   function cambiarFicha(i) {
     if (dirty && !confirm('Tenés cambios sin guardar. ¿Cambiar de ficha sin guardar?')) return;
@@ -122,6 +180,9 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
   function volver() {
     if (dirty && !confirm('Tenés cambios sin guardar. ¿Volver sin guardar?')) return;
     if (onVolver) onVolver();
+  }
+  function irASeccion(id) {
+    REFS[id]?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   const d = defs[sel] || defs[0];
@@ -159,6 +220,7 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
     const id = 'custom_' + Date.now();
     upd({ campos: [...campos, { id, nombre: campoNuevo.nombre.trim(), tipo: campoNuevo.tipo, requerido: false, grupo: 'Personalizados', activo: true, personalizado: true }] });
     setCampoNuevo({ nombre: '', tipo: 'Texto' });
+    setAgregandoCampo(false);
   }
   function eliminarCampoPersonalizado(id) { upd({ campos: campos.filter((c) => c.id !== id) }); }
 
@@ -194,33 +256,57 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
       });
       const data = await res.json();
       if (!data.ok) throw new Error(data.error);
-      setDirty(false); setGuardadoAt(Date.now());
+      setDirty(false); setGuardadoAt(Date.now()); setErrorGuardado('');
+      // Reflejo optimista de "Última modificación": el campo persistido (d.actualizado, que
+      // viene de la columna "Actualizado" de la Sheet) recién se actualizaría en el próximo
+      // GET — esto evita mostrar una fecha vieja hasta tanto se recargue la página.
+      setDefs((arr) => arr.map((x, i) => i === sel ? { ...x, actualizado: new Date().toISOString() } : x));
       if (!silencioso) showToast?.('✓ Cambios guardados');
     } catch (e) {
       // Antes el toast era siempre genérico, sin importar la causa real (timeout de
       // Sheets, cuota, JSON cortado, etc.) — mostrar el motivo ayuda a distinguir un
-      // problema puntual/transitorio de uno que se repite siempre igual.
+      // problema puntual/transitorio de uno que se repite siempre igual. Además, ahora
+      // queda un estado persistente (no solo el toast, que desaparece solo) para que el
+      // 🔴 "Error al guardar" + "Reintentar" sigan visibles hasta que se resuelva.
+      setErrorGuardado(e.message || 'Error al guardar');
       showToast?.('⚠ No pudimos guardar los cambios' + (e.message ? ': ' + e.message : ''));
     }
     setGuardando(false);
   }
 
   const estadoGuardado = guardando
-    ? { txt: 'Guardando…', cls: 'bor' }
-    : dirty ? { txt: '● Cambios sin guardar', cls: 'cer' }
-      : guardadoAt ? { txt: '✓ Cambios guardados ' + haceTexto(guardadoAt, tick), cls: 'pub' }
-        : { txt: '● Sin cambios', cls: 'pub' };
+    ? { txt: 'Guardando…', cls: 'bor', dot: '🟡' }
+    : errorGuardado ? { txt: 'Error al guardar', cls: 'cer', dot: '🔴' }
+      : dirty ? { txt: 'Cambios sin guardar', cls: 'prog', dot: '🟠' }
+        : guardadoAt ? { txt: 'Guardado ' + relativo(guardadoAt, tick), cls: 'pub', dot: '🟢' }
+          : d.actualizado ? { txt: 'Guardado ' + relativo(new Date(d.actualizado).getTime(), tick), cls: 'pub', dot: '🟢' }
+            : { txt: 'Sin cambios', cls: 'pub', dot: '🟢' };
 
+  const ultimaModTexto = (() => {
+    const ts = guardadoAt || (d.actualizado ? new Date(d.actualizado).getTime() : null);
+    return ts ? relativo(ts, tick) : '';
+  })();
+
+  // Para cursos largos (ej: 48 clases semanales) el inicio y el fin pueden caer en años
+  // distintos — sin el año, una fecha de fin de marzo podía leerse como "antes" que un
+  // inicio de mayo. Se agrega el año SOLO cuando no es el actual, para no alargar las
+  // fechas de todos los días con un año que ya se sobreentiende.
   const fechaLegible = (iso) => {
     if (!iso) return '';
     const dt = new Date(iso + 'T00:00:00');
     if (isNaN(dt)) return iso;
-    return dt.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const opciones = { weekday: 'long', day: 'numeric', month: 'long' };
+    if (dt.getFullYear() !== new Date().getFullYear()) opciones.year = 'numeric';
+    return dt.toLocaleDateString('es-AR', opciones);
   };
   // calcularFechaFinEdicion ahora vive en lib/constants.js (para que el modal de "Nueva
   // edición" rápida use exactamente la misma cuenta) — acá queda solo el alias corto.
   const calcularFechaFin = calcularFechaFinEdicion;
 
+  const estadoActual = ESTADOS_FICHA.find((x) => x.v === (d.estado || 'Publicada')) || ESTADOS_FICHA[1];
+  const defsFiltrados = buscarFicha.trim()
+    ? defs.map((x, i) => ({ x, i })).filter(({ x }) => x.curso.toLowerCase().includes(buscarFicha.trim().toLowerCase()))
+    : defs.map((x, i) => ({ x, i }));
 
   return (
     <div className="ctor3" onClick={() => edMenu !== null && setEdMenu(null)}>
@@ -230,36 +316,67 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
           <button className="linklike" onClick={volver}>{volverLabel || '← Volver'}</button>
           <div className="ctor-list-title">Fichas</div>
         </div>
-        {defs.map((x, i) => (
-          <button key={x.slug} className={'ctor-list-item' + (i === sel ? ' on' : '')} onClick={() => cambiarFicha(i)}>
-            {x.curso}
-          </button>
-        ))}
+        {defs.length > 5 && (
+          <input className="ctrl ctor-list-buscar" placeholder="Buscar ficha…" value={buscarFicha} onChange={(e) => setBuscarFicha(e.target.value)} />
+        )}
+        {defsFiltrados.map(({ x, i }) => {
+          const em = ESTADOS_FICHA.find((s) => s.v === (x.estado || 'Publicada')) || ESTADOS_FICHA[1];
+          const activa = i === sel;
+          return (
+            <button key={x.slug} className={'ctor-list-item' + (activa ? ' on' : '')} onClick={() => cambiarFicha(i)}>
+              <span className={'ctor-list-dot ' + em.cls} />
+              {/* Pedido de Diego: los nombres de curso acá tienen que usar el mismo color por
+                  curso (colorCurso) que ya se usa en toda la app (Fichas, Actividades, etc.),
+                  en vez de un color genérico parejo para todos. */}
+              <span className="ctor-list-nm" style={{ color: colorCurso(x.curso) }}>{x.curso}</span>
+              {activa && dirty && <span className="ctor-list-dirty" title="Cambios sin guardar">●</span>}
+            </button>
+          );
+        })}
+        {defsFiltrados.length === 0 && <p className="muted" style={{ fontSize: 12.5, padding: '0 4px' }}>Sin resultados.</p>}
         <p className="muted" style={{ fontSize: 11, marginTop: 10, padding: '0 4px' }}>Agregar formaciones nuevas llega en el próximo lote.</p>
       </div>
 
       {/* CENTRO — editor */}
       <div className="ctor-editor">
-        <div className="ctor-topbar">
-          <span className="ctor-path muted">/inscripcion/{d.slug}</span>
-          <span className={'fstate ' + estadoGuardado.cls} style={{ marginLeft: 'auto' }}><span className="d" />{estadoGuardado.txt}</span>
-          <button className="btn-sm solid" onClick={() => guardar()} disabled={guardando || !dirty}>Guardar</button>
+        <div className="ctor-head">
+          <div className="ctor-head-main">
+            <div className="ctor-head-eyebrow">Constructor</div>
+            <div className="ctor-head-title">{d.curso}</div>
+            <div className="muted ctor-head-sub">Ficha de inscripción{ultimaModTexto && ` · Última modificación ${ultimaModTexto}`}</div>
+          </div>
+          <div className="ctor-head-actions">
+            <span className={'fstate ' + estadoGuardado.cls}><span className="d" />{estadoGuardado.txt}</span>
+            {errorGuardado && <button className="btn-sm" onClick={() => guardar()}>Reintentar</button>}
+            <a className="btn-sm" href={`${APP_URL}/inscripcion/${d.slug}`} target="_blank" rel="noreferrer">Ver ficha pública ↗</a>
+            <button className="btn-sm solid" onClick={() => guardar()} disabled={guardando || !dirty}>Guardar</button>
+          </div>
         </div>
 
-        <div className="ctor-section">
-          <div className="ctor-section-lbl">Información</div>
+        <div className="ctor-secnav">
+          {SECCIONES.map((s) => (
+            <button key={s.id} className="ctor-secnav-item" onClick={() => irASeccion(s.id)}>{s.label}</button>
+          ))}
+        </div>
+
+        <div className="ctor-section" ref={refInfo} id="info">
+          <div className="ctor-section-lbl">Información de la ficha</div>
           <label style={lbl}>Título</label>
           <input className="ctrl" value={d.titulo || ''} onChange={(e) => upd({ titulo: e.target.value })} placeholder={`Ficha de inscripción — ${d.curso}`} />
           <label style={{ ...lbl, marginTop: 12 }}>Mensaje de bienvenida</label>
           <textarea className="ctrl" value={d.bienvenida || ''} onChange={(e) => upd({ bienvenida: e.target.value })} placeholder="¡Nos alegra tenerte acá! Completá tu ficha, se guarda sola." />
-          <label style={{ ...lbl, marginTop: 12 }}>Estado</label>
-          <select className="fsel" value={d.estado || 'Publicada'} onChange={(e) => upd({ estado: e.target.value })}>
-            <option>Borrador</option><option>Publicada</option><option>Cerrada</option>
-          </select>
-          <p className="muted" style={{ fontSize: 11.5, marginTop: 6 }}>Solo <b>Publicada</b> deja completar el formulario público.</p>
+          <label style={{ ...lbl, marginTop: 12 }}>Estado de publicación</label>
+          <div className="ctor-estado-sel">
+            {ESTADOS_FICHA.map((op) => (
+              <button key={op.v} type="button" className={'ctor-estado-opt ' + op.cls + (estadoActual.v === op.v ? ' on' : '')} onClick={() => upd({ estado: op.v })}>
+                <span className="d" />{op.v}
+              </button>
+            ))}
+          </div>
+          <p className="muted" style={{ fontSize: 11.5, marginTop: 8 }}>{estadoActual.explicacion}</p>
         </div>
 
-        <div className="ctor-section">
+        <div className="ctor-section" ref={refEdiciones} id="ediciones">
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
             <div className="ctor-section-lbl" style={{ margin: 0 }}>Ediciones</div>
             <button className="btn-sm" style={{ marginLeft: 'auto' }} onClick={addEd}>+ Agregar edición</button>
@@ -274,16 +391,34 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
                 const abierta = edAbierta === e.id;
                 const asincronica = esAsincronica(e.label);
                 const fija = cantidadClasesFija(d.curso);
+                const est = estadoEdicion(e, asincronica);
                 return (
                   <div className="ctor-ed-card" key={e.id || i}>
                     <div className="ctor-ed-head">
                       <div className="ctor-ed-titulo">
-                        <b>{e.label || `Edición ${i + 1}`}</b>
-                        {!asincronica && e.fecha && <span className="muted"> · {fechaLegible(e.fecha)}</span>}
-                        {!asincronica && e.fecha && e.cantidadClases && <span className="muted"> → {fechaLegible(calcularFechaFin(e.fecha, e.cantidadClases))}</span>}
-                        {e.docente && <span className="muted"> · Docente: {e.docente}</span>}
+                        <div className="ctor-ed-titulo-top">
+                          <span className="ctor-ed-nombre">{e.label || `Edición ${i + 1}`}</span>
+                          {est && <span className={'fstate ' + est.cls}><span className="d" />{est.txt}</span>}
+                        </div>
+                        <div className="ctor-ed-meta">
+                          {asincronica ? (
+                            <span>🔵 Cursada asincrónica</span>
+                          ) : e.fecha ? (
+                            <>
+                              {/* Pedido de Diego: que se entienda cuál fecha es el inicio y cuál
+                                  el fin — antes era "fecha → fecha" sin aclarar cuál era cuál. */}
+                              <span>📅 Inicio: {fechaLegible(e.fecha)}</span>
+                              {e.cantidadClases && <span>🏁 Fin: {fechaLegible(calcularFechaFin(e.fecha, e.cantidadClases))}</span>}
+                            </>
+                          ) : (
+                            <span className="muted">Sin fecha cargada</span>
+                          )}
+                          {!asincronica && (e.horaIni || e.horaFin) && <span>🕐 {e.horaIni || '—'}–{e.horaFin || '—'}</span>}
+                          {e.docente && <span>👩‍🏫 Docente: {e.docente}</span>}
+                          {(e.cantidadClases || fija) && <span>{e.cantidadClases || fija} clases</span>}
+                        </div>
                       </div>
-                      <button className="linklike" onClick={() => setEdAbierta(abierta ? null : e.id)}>{abierta ? 'cerrar' : 'editar'}</button>
+                      <button className="linklike ctor-ed-editar" onClick={() => setEdAbierta(abierta ? null : e.id)}>{abierta ? 'cerrar' : 'editar'}</button>
                       <div className="ctor-ed-menu-wrap">
                         <button className="btn-sm fmenu-btn" onClick={(ev) => { ev.stopPropagation(); setEdMenu(edMenu === i ? null : i); }}>⋮</button>
                         {edMenu === i && (
@@ -298,43 +433,39 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
                     </div>
                     {abierta && (
                       <div className="ctor-ed-body">
-                        <input className="ctrl" style={{ fontWeight: 700 }} value={e.label} onChange={(ev) => updEd(i, { label: ev.target.value })} placeholder="Ej: Edición 17 — Lunes 5 de mayo (o 'Cursada Asincrónica')" />
-                        <input className="ctrl" style={{ marginTop: 8 }} value={e.docente || ''} onChange={(ev) => updEd(i, { docente: ev.target.value })} placeholder="Docente (texto libre)" />
+                        <div className="ctor-ed-sub-lbl">Identificación</div>
+                        <input className="ctrl" value={e.label} onChange={(ev) => updEd(i, { label: ev.target.value })} placeholder="Ej: Edición 17 — Lunes 5 de mayo (o 'Cursada Asincrónica')" />
+
+                        <div className="ctor-ed-sub-lbl">Docencia</div>
+                        <input className="ctrl" value={e.docente || ''} onChange={(ev) => updEd(i, { docente: ev.target.value })} placeholder="Docente (texto libre)" />
+
+                        <div className="ctor-ed-sub-lbl">Cursada</div>
                         {asincronica ? (
-                          <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>Es una cursada asincrónica: no tiene día ni horario fijo, así que esos campos no aplican acá.</p>
+                          <p className="muted" style={{ fontSize: 12, marginTop: -4 }}>Es una cursada asincrónica: no tiene día ni horario fijo, así que esos campos no aplican acá.</p>
                         ) : (
                           <>
-                            <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', marginTop: 8 }}>
+                            <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                               <input className="ctrl" type="date" style={{ maxWidth: 160 }} value={e.fecha || ''} onChange={(ev) => updEd(i, { fecha: ev.target.value })} title="Fecha de la primera clase (hora de Argentina)" />
                               <input className="ctrl" type="time" style={{ maxWidth: 120 }} value={e.horaIni || ''} onChange={(ev) => updEd(i, { horaIni: ev.target.value })} title="Desde (hora AR)" />
                               <input className="ctrl" type="time" style={{ maxWidth: 120 }} value={e.horaFin || ''} onChange={(ev) => updEd(i, { horaFin: ev.target.value })} title="Hasta (hora AR)" />
-                              <button className="btn-sm solid" onClick={() => updEd(i, { horarios: generarHorarios(e.fecha, e.horaIni, e.horaFin) })} disabled={!e.fecha || !e.horaIni || !e.horaFin} title="Calcula el horario en otros países a partir de la hora de Argentina">⚙ Calcular husos</button>
                             </div>
-                            <input className="ctrl" style={{ marginTop: 8 }} value={e.horarios || ''} onChange={(ev) => updEd(i, { horarios: ev.target.value })} placeholder="Horarios por país (se completan al calcular, o escribilos a mano)" />
-                          </>
-                        )}
-                        {/* Fecha de fin: opcional y se calcula sola a partir de la fecha de inicio +
-                            cantidad de clases (siempre semanales) — así no hay que ir a buscar un
-                            calendario aparte. Para los cursos de cadencia fija, la cantidad de
-                            clases también se completa sola (ver cantidadClasesFija). */}
-                        {!asincronica && (
-                          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', marginTop: 10 }}>
                             {fija ? (
-                              <input className="ctrl" disabled style={{ maxWidth: 200 }} value={`${e.cantidadClases || fija} clases (fijo para este curso)`} title="Este curso siempre tiene la misma cantidad de clases — se completa solo." />
+                              <input className="ctrl" disabled style={{ maxWidth: 260, marginTop: 8 }} value={`${e.cantidadClases || fija} clases (fijo para este curso)`} title="Este curso siempre tiene la misma cantidad de clases — se completa solo." />
                             ) : (
-                              <input className="ctrl" type="number" min="1" style={{ maxWidth: 130 }} value={e.cantidadClases || ''}
+                              <input className="ctrl" type="number" min="1" style={{ maxWidth: 160, marginTop: 8 }} value={e.cantidadClases || ''}
                                 onChange={(ev) => { const cantidadClases = ev.target.value; updEd(i, { cantidadClases, fechaFin: calcularFechaFin(e.fecha, cantidadClases) }); }}
                                 placeholder="Cant. de clases" title="Cantidad de encuentros de esta edición" />
                             )}
-                            {e.fecha && e.cantidadClases ? (
-                              <span className="muted" style={{ fontSize: 12.5 }}>
-                                Termina el {fechaLegible(calcularFechaFin(e.fecha, e.cantidadClases))}
-                                {' '}(calculado: {e.cantidadClases} clases semanales desde el {fechaLegible(e.fecha)})
-                              </span>
-                            ) : (
-                              <span className="muted" style={{ fontSize: 12.5 }}>Completá fecha de inicio{fija ? '' : ' y cantidad de clases'} para calcular la fecha de fin</span>
+                            {e.fecha && e.cantidadClases && (
+                              <div className="ctor-fin-destacado">📅 Finaliza el {fechaLegible(calcularFechaFin(e.fecha, e.cantidadClases))}</div>
                             )}
-                          </div>
+
+                            <div className="ctor-ed-sub-lbl">Horarios internacionales</div>
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                              <button className="btn-sm solid" onClick={() => updEd(i, { horarios: generarHorarios(e.fecha, e.horaIni, e.horaFin) })} disabled={!e.fecha || !e.horaIni || !e.horaFin}>⚙ Calcular horarios</button>
+                            </div>
+                            <input className="ctrl" style={{ marginTop: 8 }} value={e.horarios || ''} onChange={(ev) => updEd(i, { horarios: ev.target.value })} placeholder="Horarios por país (se completan al calcular, o escribilos a mano)" />
+                          </>
                         )}
                       </div>
                     )}
@@ -345,138 +476,181 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
           )}
         </div>
 
-        <details className="ctor-section ctor-collapse">
-          <summary>Campos de la ficha <span className="muted">· {activos.length} activos</span></summary>
-          <p className="muted" style={{ fontSize: 12.5, margin: '10px 0' }}>Elegí qué campos van a aparecer en el formulario y en qué orden (arrastrando).</p>
-          {GRUPOS.map((g) => (
-            <div key={g} style={{ marginBottom: 14 }}>
-              <div className="wiz-grupo-lbl">{g}</div>
-              {campos.filter((c) => c.grupo === g).map((c) => (
-                <label className="wiz-campo-check" key={c.id}>
-                  <input type="checkbox" checked={c.activo} onChange={() => toggleCampo(c.id)} />
-                  <div><div className="nm">{c.nombre}</div><div className="tp">{c.tipo}</div></div>
-                  {c.requerido && <span className="req">Obligatorio</span>}
-                </label>
-              ))}
+        <div className="ctor-section" ref={refCampos} id="campos">
+          <div className="ctor-resumen-row">
+            <div>
+              <div className="ctor-section-lbl" style={{ margin: 0 }}>Campos del formulario</div>
+              <p className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>{activos.length} activos · {campos.filter((c) => c.personalizado).length} personalizados</p>
             </div>
-          ))}
-          {campos.some((c) => c.personalizado) && (
-            <div style={{ marginBottom: 14 }}>
-              <div className="wiz-grupo-lbl">Personalizados</div>
-              {campos.filter((c) => c.personalizado).map((c) => (
-                <label className="wiz-campo-check" key={c.id}>
-                  <input type="checkbox" checked={c.activo} onChange={() => toggleCampo(c.id)} />
-                  <div><div className="nm">{c.nombre}</div><div className="tp">{c.tipo}</div></div>
-                  <button className="btn-sm" style={{ color: 'rgb(248 113 113)' }} onClick={(e) => { e.preventDefault(); eliminarCampoPersonalizado(c.id); }} title="Eliminar campo">🗑</button>
-                </label>
-              ))}
-            </div>
-          )}
-          <div className="wiz-campo-nuevo">
-            <input className="ctrl" placeholder="Nombre del campo nuevo" value={campoNuevo.nombre} onChange={(e) => setCampoNuevo({ ...campoNuevo, nombre: e.target.value })} />
-            <select className="fsel" value={campoNuevo.tipo} onChange={(e) => setCampoNuevo({ ...campoNuevo, tipo: e.target.value })}>
-              <option>Texto</option><option>Texto largo</option><option>Selección única</option><option>Fecha</option>
-            </select>
-            <button className="btn-sm solid" onClick={agregarCampoPersonalizado} disabled={!campoNuevo.nombre.trim()}>+ Agregar campo</button>
+            <button className="btn-sm" onClick={() => setCamposAbierto((v) => !v)}>{camposAbierto ? 'Ocultar campos' : 'Editar campos'}</button>
           </div>
 
-          {activos.length > 0 && (
-            <>
-              <div className="wiz-grupo-lbl" style={{ marginTop: 18 }}>Orden (arrastrá para reordenar)</div>
-              <div className="wiz-orden-list">
-                {activos.map((c, i) => (
-                  <div
-                    key={c.id}
-                    className="wiz-orden-card"
-                    draggable
-                    onDragStart={() => { dragIdx.current = i; }}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={() => { if (dragIdx.current !== null) reordenar(dragIdx.current, i); dragIdx.current = null; }}
-                  >
-                    <span className="wiz-orden-handle">☰</span>
-                    <div style={{ flex: 1 }}><div className="nm">{c.nombre}</div><div className="tp">{c.grupo} · {c.tipo}</div></div>
-                    <button className="btn-sm" onClick={() => moverCampo(i, -1)} title="Subir" disabled={i === 0}>↑</button>
-                    <button className="btn-sm" onClick={() => moverCampo(i, 1)} title="Bajar" disabled={i === activos.length - 1}>↓</button>
+          {camposAbierto && (
+            <div style={{ marginTop: 16 }}>
+              <p className="muted" style={{ fontSize: 12.5, marginBottom: 10 }}>Elegí qué campos van a aparecer en el formulario y en qué orden (arrastrando).</p>
+              {GRUPOS.map((g) => (
+                <div key={g} style={{ marginBottom: 14 }}>
+                  <div className="wiz-grupo-lbl">{g}</div>
+                  {campos.filter((c) => c.grupo === g).map((c) => (
+                    <label className="wiz-campo-check" key={c.id}>
+                      <input type="checkbox" checked={c.activo} onChange={() => toggleCampo(c.id)} />
+                      <div><div className="nm">{c.nombre}</div><div className="tp">{c.tipo}</div></div>
+                      {c.requerido && <span className="req">Obligatorio</span>}
+                    </label>
+                  ))}
+                </div>
+              ))}
+              {campos.some((c) => c.personalizado) && (
+                <div style={{ marginBottom: 14 }}>
+                  <div className="wiz-grupo-lbl">Personalizados</div>
+                  {campos.filter((c) => c.personalizado).map((c) => (
+                    <label className="wiz-campo-check" key={c.id}>
+                      <input type="checkbox" checked={c.activo} onChange={() => toggleCampo(c.id)} />
+                      <div><div className="nm">{c.nombre}</div><div className="tp">{c.tipo}</div></div>
+                      <button className="btn-sm" style={{ color: 'rgb(248 113 113)' }} onClick={(e) => { e.preventDefault(); eliminarCampoPersonalizado(c.id); }} title="Eliminar campo">🗑</button>
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              {!agregandoCampo ? (
+                <button className="btn-sm" style={{ marginTop: 4 }} onClick={() => setAgregandoCampo(true)}>+ Nuevo campo personalizado</button>
+              ) : (
+                <div className="ctor-campo-nuevo-box">
+                  <label style={lbl}>Nombre del campo</label>
+                  <input className="ctrl" placeholder="Ej: Empresa donde trabajás" value={campoNuevo.nombre} onChange={(e) => setCampoNuevo({ ...campoNuevo, nombre: e.target.value })} autoFocus />
+                  <label style={{ ...lbl, marginTop: 10 }}>Tipo de campo</label>
+                  <select className="fsel" style={{ width: '100%' }} value={campoNuevo.tipo} onChange={(e) => setCampoNuevo({ ...campoNuevo, tipo: e.target.value })}>
+                    <option>Texto</option><option>Texto largo</option><option>Selección única</option><option>Fecha</option>
+                  </select>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                    <button className="btn-sm solid" onClick={agregarCampoPersonalizado} disabled={!campoNuevo.nombre.trim()}>Agregar campo</button>
+                    <button className="btn-sm" onClick={() => { setAgregandoCampo(false); setCampoNuevo({ nombre: '', tipo: 'Texto' }); }}>Cancelar</button>
                   </div>
+                </div>
+              )}
+
+              {activos.length > 0 && (
+                <>
+                  <div className="wiz-grupo-lbl" style={{ marginTop: 18 }}>Orden</div>
+                  <p className="muted" style={{ fontSize: 12, marginTop: -4, marginBottom: 8 }}>Arrastrá los campos para cambiar el orden en que aparecerán en la ficha.</p>
+                  <div className="wiz-orden-list">
+                    {activos.map((c, i) => (
+                      <div
+                        key={c.id}
+                        className="wiz-orden-card"
+                        draggable
+                        onDragStart={() => { dragIdx.current = i; }}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={() => { if (dragIdx.current !== null) reordenar(dragIdx.current, i); dragIdx.current = null; }}
+                      >
+                        <span className="wiz-orden-handle">☰</span>
+                        <div style={{ flex: 1 }}><div className="nm">{c.nombre}</div><div className="tp">{c.grupo} · {c.tipo}</div></div>
+                        <button className="btn-sm" onClick={() => moverCampo(i, -1)} title="Subir" disabled={i === 0}>↑</button>
+                        <button className="btn-sm" onClick={() => moverCampo(i, 1)} title="Bajar" disabled={i === activos.length - 1}>↓</button>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="ctor-section" ref={refConfig} id="config">
+          <div className="ctor-resumen-row">
+            <div>
+              <div className="ctor-section-lbl" style={{ margin: 0 }}>Configuración</div>
+              <p className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>
+                {(cfg.destinatarios || []).length} destinatario{(cfg.destinatarios || []).length === 1 ? '' : 's'} · Notificaciones {cfg.notificar ? 'activadas' : 'desactivadas'} · Mensaje de confirmación {cfg.mensajePost ? 'configurado' : 'sin configurar'}
+              </p>
+            </div>
+            <button className="btn-sm" onClick={() => setConfigAbierto((v) => !v)}>{configAbierto ? 'Ocultar' : 'Editar configuración'}</button>
+          </div>
+
+          {configAbierto && (
+            <div style={{ marginTop: 16 }}>
+              <div className="wiz-grupo-lbl">Notificaciones</div>
+              <label style={lbl}>Destinatarios de las respuestas</label>
+              <div className="wiz-dest-list">
+                {(cfg.destinatarios || []).length === 0 && <p className="muted" style={{ fontSize: 12.5 }}>Sin destinatarios cargados todavía.</p>}
+                {(cfg.destinatarios || []).map((e) => (
+                  <span className="tagchip" key={e}>{e} <button onClick={() => quitarDest(e)} title="Quitar">✕</button></span>
                 ))}
               </div>
-            </>
-          )}
-        </details>
+              <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                <input className="ctrl" placeholder="correo@equipo.com" value={destNuevo} onChange={(e) => setDestNuevo(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && agregarDest()} />
+                <button className="btn-sm solid" onClick={agregarDest} disabled={!destNuevo.trim()}>+ Agregar</button>
+              </div>
+              <label className="wiz-check-inline" style={{ marginTop: 16 }}>
+                <input type="checkbox" checked={!!cfg.notificar} onChange={(e) => updCfg({ notificar: e.target.checked })} />
+                ¿Notificar por correo al completar la ficha?
+              </label>
 
-        <details className="ctor-section ctor-collapse">
-          <summary>Configuración</summary>
-          <label style={{ ...lbl, marginTop: 12 }}>Destinatarios de las respuestas</label>
-          <div className="wiz-dest-list">
-            {(cfg.destinatarios || []).length === 0 && <p className="muted" style={{ fontSize: 12.5 }}>Sin destinatarios cargados todavía.</p>}
-            {(cfg.destinatarios || []).map((e) => (
-              <span className="tagchip" key={e}>{e} <button onClick={() => quitarDest(e)} title="Quitar">✕</button></span>
-            ))}
-          </div>
-          <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-            <input className="ctrl" placeholder="correo@equipo.com" value={destNuevo} onChange={(e) => setDestNuevo(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && agregarDest()} />
-            <button className="btn-sm solid" onClick={agregarDest} disabled={!destNuevo.trim()}>+ Agregar</button>
-          </div>
-          <label className="wiz-check-inline" style={{ marginTop: 16 }}>
-            <input type="checkbox" checked={!!cfg.notificar} onChange={(e) => updCfg({ notificar: e.target.checked })} />
-            ¿Notificar por correo al completar la ficha?
-          </label>
-          <label style={{ ...lbl, marginTop: 14 }}>Mensaje post-completar</label>
-          <textarea className="ctrl" value={cfg.mensajePost || ''} onChange={(e) => updCfg({ mensajePost: e.target.value })} placeholder="¡Listo! Ya tenemos tu ficha, en breve te contactamos." />
-          <details className="wiz-avanzado">
-            <summary>⚙ Configuración avanzada</summary>
-            <label style={lbl}>URL de redirección tras completar (opcional)</label>
-            <input className="ctrl" value={cfg.avanzado?.redireccion || ''} onChange={(e) => updCfg({ avanzado: { ...cfg.avanzado, redireccion: e.target.value } })} placeholder="https://..." />
-          </details>
-        </details>
+              <div className="wiz-grupo-lbl" style={{ marginTop: 18 }}>Confirmación</div>
+              <label style={lbl}>Mensaje que verá la persona después de completar</label>
+              <textarea className="ctrl" value={cfg.mensajePost || ''} onChange={(e) => updCfg({ mensajePost: e.target.value })} placeholder="¡Listo! Ya tenemos tu ficha, en breve te contactamos." />
+
+              <details className="wiz-avanzado">
+                <summary>⚙ Avanzado</summary>
+                <label style={lbl}>URL de redirección tras completar (opcional)</label>
+                <input className="ctrl" value={cfg.avanzado?.redireccion || ''} onChange={(e) => updCfg({ avanzado: { ...cfg.avanzado, redireccion: e.target.value } })} placeholder="https://..." />
+              </details>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* DERECHA — vista previa en vivo */}
       <div className="ctor-preview-col">
-        <div className="wiz-grupo-lbl" style={{ marginBottom: 8 }}>Vista previa</div>
-        <div className="wiz-preview-shell">
-          <div className="wiz-preview-hero">
-            <div className="wiz-preview-eyebrow">FORMACIÓN EN</div>
-            <div className="wiz-preview-title">{d.curso}</div>
+        <div className="ctor-preview-head">
+          <div>
+            <div className="wiz-grupo-lbl" style={{ marginBottom: 2 }}>Vista previa de la ficha</div>
+            <span className="ctor-preview-live">● Vista previa en vivo</span>
           </div>
-          <div className="wiz-preview-body">
-            {d.estado !== 'Publicada' ? (
-              <div style={{ textAlign: 'center', padding: '20px 6px', color: 'rgb(var(--textSec))', fontSize: 13.5 }}>
-                {d.estado === 'Cerrada' ? '🔒 Inscripciones cerradas' : '📝 Ficha en borrador (no visible al público)'}
-              </div>
-            ) : (<>
-              <div style={{ fontFamily: 'Jost', fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{d.titulo || 'Ficha de inscripción'}</div>
-              <div style={{ fontSize: 12.5, color: 'rgb(var(--textSec))', marginBottom: 12 }}>{d.bienvenida || '¡Nos alegra tenerte acá!'}</div>
-              {eds.length > 0 && (
-                <div style={{ marginBottom: 10 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 5 }}>Elegí día de cursada</div>
-                  {eds.slice(0, 3).map((e, i) => (
-                    <div key={i} className="wiz-preview-ed">
-                      <div style={{ fontWeight: 700 }}>{e.label || 'Edición'}</div>
-                      {e.horarios && <div style={{ fontSize: 11, color: 'rgb(var(--textMuted))' }}>{e.horarios}</div>}
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 5 }}>Correo *</div>
-              <div className="wiz-preview-input">tunombre@correo.com</div>
-              <div className="wiz-preview-cta">Comenzar</div>
-            </>)}
+          <div className="ctor-preview-toggle">
+            <button className={vistaPreview === 'desktop' ? 'on' : ''} onClick={() => setVistaPreview('desktop')}>Desktop</button>
+            <button className={vistaPreview === 'mobile' ? 'on' : ''} onClick={() => setVistaPreview('mobile')}>Mobile</button>
           </div>
         </div>
-        <a className="btn-sm" style={{ marginTop: 10, display: 'inline-flex' }} href={`${APP_URL}/inscripcion/${d.slug}`} target="_blank" rel="noreferrer">↗ Abrir ficha pública</a>
+        <div className={vistaPreview === 'mobile' ? 'ctor-phone-frame' : ''}>
+          <div className="wiz-preview-shell">
+            <div className="wiz-preview-hero">
+              <div className="wiz-preview-eyebrow">FORMACIÓN EN</div>
+              <div className="wiz-preview-title">{d.curso}</div>
+            </div>
+            <div className="wiz-preview-body">
+              {d.estado !== 'Publicada' ? (
+                <div style={{ textAlign: 'center', padding: '20px 6px', color: 'rgb(var(--textSec))', fontSize: 13.5 }}>
+                  {d.estado === 'Cerrada' ? '🔒 Inscripciones cerradas' : '📝 Ficha en borrador (no visible al público)'}
+                </div>
+              ) : (<>
+                <div style={{ fontFamily: 'Jost', fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{d.titulo || 'Ficha de inscripción'}</div>
+                <div style={{ fontSize: 12.5, color: 'rgb(var(--textSec))', marginBottom: 12 }}>{d.bienvenida || '¡Nos alegra tenerte acá!'}</div>
+                {eds.length > 0 && (
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 5 }}>Elegí día de cursada</div>
+                    {eds.slice(0, 3).map((e, i) => (
+                      <div key={i} className="wiz-preview-ed">
+                        <div style={{ fontWeight: 700 }}>{e.label || 'Edición'}</div>
+                        {e.horarios && <div style={{ fontSize: 11, color: 'rgb(var(--textMuted))' }}>{e.horarios}</div>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 5 }}>Correo *</div>
+                <div className="wiz-preview-input">tunombre@correo.com</div>
+                <div className="wiz-preview-cta">Comenzar</div>
+              </>)}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-const lbl = { fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 5, color: 'rgb(var(--textSec))' };
-
-function haceTexto(ts, _tick) {
-  const seg = Math.round((Date.now() - ts) / 1000);
-  if (seg < 10) return 'recién';
-  if (seg < 60) return `hace ${seg}s`;
-  const min = Math.round(seg / 60);
-  if (min < 60) return `hace ${min} min`;
-  return 'hace un rato';
-}
+// Nivel 3 de la jerarquía tipográfica (pedido de Diego): los labels de campo tienen que
+// pesar MENOS que el contenido que etiquetan, no competir con él — antes estaban en
+// weight 700, igual de "gritones" que los títulos.
+const lbl = { fontSize: 12.5, fontWeight: 500, display: 'block', marginBottom: 5, color: 'rgb(var(--textMuted))' };

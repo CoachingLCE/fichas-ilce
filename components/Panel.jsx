@@ -327,10 +327,13 @@ export default function Panel() {
       {navMenu && <div className="navoverlay" onClick={() => setNavMenu(null)} />}
       <header className={'topnav' + (navOculto ? ' topnav-oculto' : '')}>
         <div className="topnav-inner">
-        <div className="topnav-brand">
-          <Isologo size={32} />
-        </div>
         <nav className="topnav-tabs">
+          {/* Pedido de Diego: el logo va a la izquierda de "+ Crear", en la misma fila — antes
+              estaba en su propia fila arriba (su propio contenedor con "order"), separado de
+              toda la barra de navegación. Ahora es el primer elemento de esta misma fila. */}
+          <div className="topnav-brand">
+            <Isologo size={32} />
+          </div>
           {/* "+ Crear" va primero, antes que Fichas — es el punto de entrada único para dar de
               alta una Inscripción, Actividad o Formulario (ver el selector más abajo). */}
           {(tienePermisoConstructor(usuario) || tienePermisoGestionActividades(usuario) || tienePermisoFormularios(usuario)) && (
@@ -360,11 +363,13 @@ export default function Panel() {
             <span className="navgroup-label">Configuración</span>
             <button className={'tnav' + (tab === 'accesos' ? ' on' : '') + (tienePermisoAccesos(usuario) ? '' : ' dim')} onClick={() => setTab('accesos')}>Accesos</button>
             <button className={'tnav' + (tab === 'auditoria' ? ' on' : '') + (tienePermisoAuditoria(usuario) ? '' : ' dim')} onClick={() => setTab('auditoria')}>Historial de acciones</button>
+            {/* Pedido de Diego: el buscador y el selector de tema van a la derecha de "Historial
+                de acciones" — antes vivían sueltos en la esquina superior derecha (topnav-right). */}
+            <button data-tour="nav-buscador" className={'iconbtn' + (tab === 'buscador' ? ' on' : '')} title="Buscar en fichas, inscripciones, actividades y formularios" aria-label="Buscar" onClick={() => setTab('buscador')}>🔎</button>
+            <ThemeSelector />
           </div>
         </nav>
         <div className="topnav-right">
-          <button data-tour="nav-buscador" className={'iconbtn' + (tab === 'buscador' ? ' on' : '')} title="Buscar en fichas, inscripciones, actividades y formularios" aria-label="Buscar" onClick={() => setTab('buscador')}>🔎</button>
-          <ThemeSelector />
           {puedeVerComoOtro(usuarioReal) && (verComo
             ? <div data-tour="ver-como" className="vercomo-chip">👁 {verComo.nombre}<button onClick={() => setVerComo(null)} title="Salir del modo vista">✕</button></div>
             : (
@@ -393,14 +398,10 @@ export default function Panel() {
       <div className="main">
         <div className="topbar">
           <div>{(() => { const DESC = { fichas: 'Aquí encontrás las fichas de inscripción de cada curso: sus ediciones y las páginas públicas donde se anotan los estudiantes.', inscripciones: 'Aquí encontrás todas las inscripciones cargadas. Buscalas, filtralas y cambiá su estado.', reportes: 'Aquí encontrás el resumen general y las métricas y el análisis de inscripciones, actividades y cursos.', emails: 'Aquí están los correos automáticos que envía el sistema y sus plantillas.', actividadesyformularios: 'Aquí gestionás las actividades y postworks de cada curso, y los formularios públicos (encuestas, inscripciones y trámites).', respuestas: 'Aquí encontrás las respuestas ya cargadas de actividades y de formularios.', equipo: 'Aquí encontrás al equipo docente y su asignación a cursos y ediciones.', constructor: 'Aquí armás y editás las fichas de inscripción de cada curso.', herramientas: 'Herramientas internas del sistema.', accesos: 'Aquí gestionás quién entra al sistema y con qué permisos.', auditoria: 'Aquí encontrás el historial de acciones realizadas en el sistema.', buscador: 'Aquí buscás inscripciones en todos los cursos a la vez.' }; return <p className="section-lead">{DESC[tab] || ''}</p>; })()}</div>
-          {/* El buscador de texto libre vive en un solo lugar: la pestaña Buscador (🔎 arriba a
-              la derecha). Antes había un segundo cuadro de búsqueda acá mismo, duplicando esa
-              función — se saca para que quede un único buscador en toda la app. Si "q" ya viene
-              cargado (por ejemplo, al llegar acá desde un resultado del Buscador), se muestra
-              como un filtro activo más, con su propio botón para sacarlo. */}
-          {tab === 'inscripciones' && (
-            <button className="btn-sm" onClick={() => setTab('buscador')}>🔎 Buscar</button>
-          )}
+          {/* El buscador de texto libre vive en un solo lugar: el ícono 🔎 de arriba del todo
+              (pestaña Buscador, busca en toda la app). Acá había un botón "Buscar" que lo
+              duplicaba — se saca (pedido de Diego: "evitemos botones innecesarios y
+              repetidos"), mismo criterio ya aplicado en Actividades y Formularios. */}
         </div>
 
         {/* Antes había acá un selector "Fichas de inscripción / Fichas completadas" — "Fichas
@@ -446,8 +447,8 @@ export default function Panel() {
                   <button className="pill" onClick={() => setPeriodo('hoy')}>Hoy</button>
                   <button className="pill" onClick={() => setPeriodo('sem')}>Esta semana</button>
                   <button className="pill" onClick={() => setPeriodo('mes')}>Este mes</button>
-                  <button className={'pill' + (fPais === 'Argentina' ? ' on' : '')} onClick={() => setFPais(fPais === 'Argentina' ? '' : 'Argentina')}>Argentina</button>
-                  <button className={'pill' + (fExterior ? ' on' : '')} onClick={() => { setFExterior(!fExterior); setFPais(''); }}>Exterior</button>
+                  <button className={'pill' + (fPais === 'Argentina' ? ' on-teal' : '')} onClick={() => setFPais(fPais === 'Argentina' ? '' : 'Argentina')}>Argentina</button>
+                  <button className={'pill' + (fExterior ? ' on-teal' : '')} onClick={() => { setFExterior(!fExterior); setFPais(''); }}>Exterior</button>
                 </div>
               </>);
             })()}
@@ -653,8 +654,9 @@ function fechaAmigable(iso) {
   if (diff === 0) return 'Hoy';
   if (diff === 1) return 'Ayer';
   if (diff > 1 && diff < 7) return `Hace ${diff} días`;
-  const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-  return `${d.getDate()} ${meses[d.getMonth()]} ${d.getFullYear()}`;
+  // Pedido de Diego (03/10/2026): fechas en formato D/M/AAAA (sin ceros adelante) en vez de
+  // "31 ago 2026".
+  return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
 }
 function celda(r, k) {
   if (k === 'nom') return <span className="ins-name">{[r.nom, r.ape].filter(Boolean).join(' ') || '—'}</span>;

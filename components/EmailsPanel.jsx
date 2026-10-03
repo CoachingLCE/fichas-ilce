@@ -1,7 +1,19 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
+import { FiltroChip } from './SelectDropdown';
+import { exportarCSV } from '../lib/exportUtils';
 
 const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+// Mismo criterio de rangos r\u00e1pidos que ya usa Reportes (Per\u00edodo), para que el registro de
+// env\u00edos se pueda acotar sin tener que revisar meses de historial cada vez.
+const iso = (d) => d.toISOString().slice(0, 10);
+const hace = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return iso(d); };
+const primerDiaMes = () => { const d = new Date(); d.setDate(1); return iso(d); };
+const PERIODOS = [
+  { v: 'todo', l: 'Todo' }, { v: 'hoy', l: 'Hoy' }, { v: '7d', l: '7 d\u00edas' },
+  { v: '30d', l: '30 d\u00edas' }, { v: 'mes', l: 'Este mes' },
+];
 
 // Correos que ya tienen vista previa (usan la misma plantilla que se envía).
 const PREVIEWABLES = new Set([
@@ -29,10 +41,21 @@ export default function EmailsPanel({ usuario }) {
   const [emails, setEmails] = useState(null);
   const [q, setQ] = useState('');
   const [fTipo, setFTipo] = useState(''); const [fEstado, setFEstado] = useState('');
+  const [periodo, setPeriodo] = useState('todo');
+  const [fDesde, setFDesde] = useState(''); const [fHasta, setFHasta] = useState('');
   const [preview, setPreview] = useState(null); // { tipo, asunto, html, loading, error, ejemplo }
   const [detalle, setDetalle] = useState(null); // { fecha, tipo, para, asunto, detalle }
   const [reintentando, setReintentando] = useState(null); // índice de fila en curso
   const [avisoReintento, setAvisoReintento] = useState(null); // { i, ok, msg }
+
+  function aplicarPeriodo(v) {
+    setPeriodo(v);
+    if (v === 'todo') { setFDesde(''); setFHasta(''); }
+    else if (v === 'hoy') { setFDesde(hace(0)); setFHasta(hace(0)); }
+    else if (v === '7d') { setFDesde(hace(6)); setFHasta(hace(0)); }
+    else if (v === '30d') { setFDesde(hace(29)); setFHasta(hace(0)); }
+    else if (v === 'mes') { setFDesde(primerDiaMes()); setFHasta(hace(0)); }
+  }
 
   async function cargarEmails() {
     const res = await fetch('/api/emails?solicitanteEmail=' + encodeURIComponent(usuario.email));
@@ -77,18 +100,57 @@ export default function EmailsPanel({ usuario }) {
     return (emails || []).filter((e) => {
       if (fTipo && e.tipo !== fTipo) return false;
       if (fEstado && e.estado !== fEstado) return false;
+      if (fDesde && (e.fecha || '').slice(0, 10) < fDesde) return false;
+      if (fHasta && (e.fecha || '').slice(0, 10) > fHasta) return false;
       if (qq && !norm(`${e.para} ${e.asunto} ${e.tipo}`).includes(qq)) return false;
       return true;
     });
-  }, [emails, q, fTipo, fEstado]);
+  }, [emails, q, fTipo, fEstado, fDesde, fHasta]);
 
-  const fmt = (iso) => { const d = new Date(iso); return isNaN(d) ? iso : d.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }); };
+  // KPIs del registro de envíos ya filtrado — para que de un vistazo se vea si algo se está
+  // rompiendo, sin tener que contar filas a mano. No toca ninguna métrica de Reportes.
+  const kpis = useMemo(() => {
+    const total = filtrados.length;
+    const fallidos = filtrados.filter((e) => e.estado !== 'Enviado').length;
+    const tasa = total ? Math.round(((total - fallidos) / total) * 100) : null;
+    return { total, fallidos, tasa };
+  }, [filtrados]);
+
+  const hayFiltros = !!(q || fTipo || fEstado || periodo !== 'todo');
+  function limpiarFiltros() { setQ(''); setFTipo(''); setFEstado(''); aplicarPeriodo('todo'); }
+  const chips = [];
+  if (fTipo) chips.push(['Tipo: ' + fTipo, () => setFTipo('')]);
+  if (fEstado) chips.push(['Estado: ' + fEstado, () => setFEstado('')]);
+  if (periodo !== 'todo') chips.push(['Período: ' + (PERIODOS.find((p) => p.v === periodo)?.l || periodo), () => aplicarPeriodo('todo')]);
+
+  // Formato D/M/AAAA (pedido de Diego para las fechas de todo fichas-ilce), con hora — acá
+  // importa la hora exacta de envío, no solo el día.
+  const fmt = (fechaIso) => { const d = new Date(fechaIso); return isNaN(d) ? fechaIso : d.toLocaleString('es-AR', { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }); };
+  // Pedido de Diego (03/10/2026): marcar los envíos de las últimas 48 horas con "Enviado
+  // recientemente" — a diferencia del criterio de Fichas/Actividades (por día calendario), acá
+  // es una ventana de horas reales desde el envío, así que a las 48hs exactas desaparece sola,
+  // sin esperar al cambio de día.
+  const esEnvioReciente = (fechaIso) => {
+    const d = new Date(fechaIso);
+    if (isNaN(d)) return false;
+    const horas = (Date.now() - d.getTime()) / 3600000;
+    return horas >= 0 && horas <= 48;
+  };
+
+  function exportarEnvios() {
+    exportarCSV('registro-emails.csv', [
+      ['fecha', 'Fecha'], ['tipo', 'Tipo'], ['para', 'Para'], ['asunto', 'Asunto'], ['estado', 'Estado']
+    ], filtrados.map((e) => ({ ...e, fecha: fmt(e.fecha) })));
+  }
 
   return (
     <div>
       {/* Automatizaciones */}
       <div className="panel">
-        <h3>Mails automáticos que genera el sistema</h3>
+        <div className="sechead">
+          <span className="htitle">Mails automáticos que genera el sistema</span>
+          <span className="hcount">{AUTOMATIZACIONES.length} automatización(es)</span>
+        </div>
         <p className="muted" style={{ fontSize: 12.5, margin: '0 0 10px' }}>Tocá un correo con 👁 para ver una vista previa de lo que recibe la persona.</p>
         <div className="tablewrap" style={{ maxHeight: 'none' }}>
           <table>
@@ -116,24 +178,45 @@ export default function EmailsPanel({ usuario }) {
           <span className="hcount">{emails ? filtrados.length : 0} envío(s)</span>
           <span className="grow" />
           <div className="fsearch" style={{ maxWidth: 240, flex: 'none' }}>🔎 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar…" /></div>
+          <button className="btn-sm" disabled={!emails || filtrados.length === 0} onClick={exportarEnvios}>⬇ Exportar CSV</button>
+        </div>
+
+        {emails && emails.length > 0 && (
+          <div className="metrica-grid">
+            <div className="metrica"><div className="metrica-val">{kpis.total}</div><div className="metrica-lbl">Envíos (con los filtros de abajo)</div></div>
+            <div className="metrica"><div className={'metrica-val' + (kpis.fallidos > 0 ? ' bad' : '')}>{kpis.fallidos}</div><div className="metrica-lbl">Fallidos</div></div>
+            <div className="metrica"><div className={'metrica-val' + (kpis.tasa === null ? '' : kpis.tasa === 100 ? ' good' : kpis.tasa < 80 ? ' bad' : ' warn')}>{kpis.tasa === null ? '—' : kpis.tasa + '%'}</div><div className="metrica-lbl">Tasa de éxito</div></div>
+          </div>
+        )}
+
+        <div className="fchips" style={{ margin: '0 0 10px' }}>
+          {PERIODOS.map((p) => <button key={p.v} className={'fchip' + (periodo === p.v ? ' on' : '')} onClick={() => aplicarPeriodo(p.v)}>{p.l}</button>)}
         </div>
         <div className="filters">
           <select className="fsel" value={fTipo} onChange={(e) => setFTipo(e.target.value)}><option value="">Tipo: todos</option>{tipos.map((t) => <option key={t}>{t}</option>)}</select>
           <select className="fsel" value={fEstado} onChange={(e) => setFEstado(e.target.value)}><option value="">Estado: todos</option><option>Enviado</option><option>Falló</option></select>
-          {(q || fTipo || fEstado) && <button className="btn-sm" onClick={() => { setQ(''); setFTipo(''); setFEstado(''); }}>Limpiar</button>}
+          {hayFiltros && <button className="btn-sm" onClick={limpiarFiltros}>Limpiar filtros</button>}
         </div>
+        {chips.length > 0 && (
+          <div className="repx-chips-row">
+            {chips.map(([lbl, clear], i) => <FiltroChip key={i} label={lbl} onClear={clear} />)}
+          </div>
+        )}
         {!emails ? <div className="spin" /> : filtrados.length === 0 ? (
           <div className="empty"><div className="ico">✉️</div><h3>Sin envíos registrados</h3><p>Cuando el sistema mande un correo, va a aparecer acá.</p></div>
         ) : (
           <div className="tablewrap"><table>
-            <thead><tr><th style={{ minWidth: 120 }}>Fecha</th><th style={{ minWidth: 150 }}>Tipo</th><th style={{ minWidth: 200 }}>Para</th><th style={{ minWidth: 220 }}>Asunto</th><th style={{ minWidth: 90 }}>Estado</th><th style={{ minWidth: 160 }}>Acciones</th></tr></thead>
+            <thead><tr><th style={{ minWidth: 160 }}>Fecha</th><th style={{ minWidth: 150 }}>Tipo</th><th style={{ minWidth: 200 }}>Para</th><th style={{ minWidth: 220 }}>Asunto</th><th style={{ minWidth: 90 }}>Estado</th><th style={{ minWidth: 160 }}>Acciones</th></tr></thead>
             <tbody>{filtrados.map((e, i) => {
               const fallo = e.estado !== 'Enviado';
               const puedeReintentar = fallo && REINTENTABLES.has(e.tipo) && e.payload;
               const aviso = avisoReintento && avisoReintento.i === i ? avisoReintento : null;
               return (
                 <tr key={i}>
-                  <td className="sec">{fmt(e.fecha)}</td>
+                  <td className="sec">
+                    <div>{fmt(e.fecha)}</div>
+                    {esEnvioReciente(e.fecha) && <span className="badge-enviado-reciente">Enviado recientemente</span>}
+                  </td>
                   <td><span className="tagchip">{e.tipo}</span></td>
                   <td className="sec">{e.para}</td>
                   <td>{e.asunto}</td>
