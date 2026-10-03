@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { findUsuario } from '../../../../lib/auth';
 import { verifyPassword } from '../../../../lib/passwords';
 import { registrarAccion } from '../../../../lib/auditoria';
+import { clasificarErrorSheets } from '../../../../lib/erroresSheets';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +19,12 @@ export async function POST(request) {
   try {
     usuario = await findUsuario(body.email);
   } catch (err) {
-    return NextResponse.json({ error: 'No se pudo conectar con la base de datos (Google Sheets no respondió a tiempo). Probá de nuevo en un minuto.' }, { status: 503 });
+    // Antes TODO error terminaba en el mismo cartel de "no respondió a tiempo", aunque la causa
+    // real fuera otra (credenciales, permisos, cuota, pestaña inexistente). Ahora se clasifica, y
+    // el error crudo queda en los Logs de Vercel para poder verlo completo.
+    console.error('[login] falló la lectura de Usuarios:', err?.message || err, 'código:', err?.code || err?.status || '-');
+    const { tipo, mensaje } = clasificarErrorSheets(err);
+    return NextResponse.json({ error: mensaje, motivo: tipo }, { status: 503 });
   }
   if (!usuario) return NextResponse.json({ error: 'Email no autorizado' }, { status: 403 });
   if (!usuario.activo) {
