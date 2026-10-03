@@ -38,12 +38,18 @@ function Resaltado({ texto, q }) {
   return (<>{texto.slice(0, idx)}<b style={{ color: 'rgb(var(--accentTeal))' }}>{texto.slice(idx, idx + q.length)}</b>{texto.slice(idx + q.length)}</>);
 }
 
+const TIPOS_FILTRO = ['Inscripción', 'Ficha', 'Actividad', 'Formulario'];
+const PLURAL_TIPO = { 'Inscripción': 'Inscripciones', 'Ficha': 'Fichas', 'Actividad': 'Actividades', 'Formulario': 'Formularios' };
+
 export default function Buscador({ usuario, irA, setQInscripciones }) {
   const [q, setQ] = useState('');
   const [resultados, setResultados] = useState([]);
   const [cargando, setCargando] = useState(false);
   const [recientes, setRecientes] = useState([]);
   const [vistos, setVistos] = useState([]);
+  // Pedido de Diego ("placeholder inteligente"): chips para filtrar rápido por tipo de
+  // resultado, sin tener que repetir la búsqueda — se filtra sobre lo que ya trajo la API.
+  const [tipoFiltro, setTipoFiltro] = useState('Todos');
   const timer = useRef(null);
 
   useEffect(() => { setRecientes(leer(CLAVE_BUSQUEDAS)); setVistos(leer(CLAVE_VISTOS)); }, []);
@@ -51,7 +57,7 @@ export default function Buscador({ usuario, irA, setQInscripciones }) {
   useEffect(() => {
     if (timer.current) clearTimeout(timer.current);
     const texto = q.trim();
-    if (texto.length < 2) { setResultados([]); return; }
+    if (texto.length < 2) { setResultados([]); setTipoFiltro('Todos'); return; }
     timer.current = setTimeout(async () => {
       setCargando(true);
       try {
@@ -66,6 +72,10 @@ export default function Buscador({ usuario, irA, setQInscripciones }) {
     // eslint-disable-next-line
   }, [q]);
 
+  const porTipo = {};
+  resultados.forEach((r) => { porTipo[r.tipo] = (porTipo[r.tipo] || 0) + 1; });
+  const resultadosFiltrados = tipoFiltro === 'Todos' ? resultados : resultados.filter((r) => r.tipo === tipoFiltro);
+
   function abrir(r) {
     guardarVisto({ tipo: r.tipo, id: r.id, titulo: r.titulo, sub: r.sub });
     setVistos(leer(CLAVE_VISTOS));
@@ -77,9 +87,30 @@ export default function Buscador({ usuario, irA, setQInscripciones }) {
     <div style={{ maxWidth: 760 }}>
       <div className="busc-hero">
         <span className="busc-hero-ico">🔎</span>
-        <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar fichas, inscripciones, actividades, formularios…" />
+        <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, email, teléfono, DNI o curso…" />
         {q && <button className="busc-hero-clear" onClick={() => setQ('')} title="Limpiar">✕</button>}
       </div>
+      {q.trim().length < 2 && (
+        <p className="muted busc-hint">Ejemplos: María González · 11 5555-5555 · Coaching Ontológico</p>
+      )}
+
+      {/* Pedido de Diego: chips para filtrar rápido por tipo de resultado, una vez que ya hay
+          resultados — no repiten la búsqueda, solo recortan lo que ya trajo la API. */}
+      {q.trim().length >= 2 && !cargando && resultados.length > 0 && (
+        <div className="busc-chips">
+          <button className={'fchip' + (tipoFiltro === 'Todos' ? ' on' : '')} onClick={() => setTipoFiltro('Todos')}>Todos <span className="cnt">{resultados.length}</span></button>
+          {TIPOS_FILTRO.filter((t) => porTipo[t] > 0).map((t) => (
+            <button key={t} className={'fchip' + (tipoFiltro === t ? ' on' : '')} onClick={() => setTipoFiltro(t)}>{ICONO_TIPO[t]} {PLURAL_TIPO[t]} <span className="cnt">{porTipo[t]}</span></button>
+          ))}
+        </div>
+      )}
+      {q.trim().length >= 2 && !cargando && (
+        <p className="muted busc-cnt">
+          {resultados.length === 0 ? '0 resultados' : tipoFiltro === 'Todos'
+            ? `${resultados.length} resultado${resultados.length === 1 ? '' : 's'} encontrado${resultados.length === 1 ? '' : 's'}`
+            : `Mostrando ${resultadosFiltrados.length} de ${resultados.length} resultados`}
+        </p>
+      )}
 
       {q.trim().length < 2 ? (
         <div style={{ display: 'grid', gap: 22 }}>
@@ -119,10 +150,12 @@ export default function Buscador({ usuario, irA, setQInscripciones }) {
       ) : cargando ? (
         <div className="spin" />
       ) : resultados.length === 0 ? (
-        <div className="empty"><div className="ico">🔎</div><h3>Sin resultados</h3><p>Probá con otro nombre, email o curso.</p></div>
+        <div className="empty empty-sm"><p>No encontramos resultados para "{q.trim()}". Probá con otro nombre, email, teléfono o curso.</p></div>
+      ) : resultadosFiltrados.length === 0 ? (
+        <div className="empty empty-sm"><p>No hay resultados de este tipo. <button className="linklike" onClick={() => setTipoFiltro('Todos')}>Ver todos</button></p></div>
       ) : (
         <div style={{ display: 'grid', gap: 8 }}>
-          {resultados.map((r, i) => (
+          {resultadosFiltrados.map((r, i) => (
             <div key={r.tipo + r.id + i} className="busc-card"
               style={{ borderLeft: `3px solid rgb(${COLOR_TIPO[r.tipo] || 'var(--border)'} / .7)` }} onClick={() => abrir(r)}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

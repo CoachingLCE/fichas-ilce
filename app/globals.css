@@ -1444,3 +1444,61 @@ tr.clickable .repx-cellbar:hover .fl{filter:brightness(1.15)}
    del mes") y la insignia "×N" de los inicios de sesión agrupados. */
 .aud-mes-row td{padding:10px 13px 6px;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:rgb(var(--textMuted));background:transparent;border-bottom:1px solid rgb(var(--border))}
 .aud-x-cnt{font-size:11px;font-weight:700;color:rgb(var(--textMuted));margin-left:4px}
+
+/* Pedido de Diego: "Sincrónica"/"Asincrónica" (lista de Fichas) sin negrita — clase propia para
+   no tocar .fstate de base (Estado Publicada/Borrador/Cerrada sí siguen en negrita). */
+.fstate.fstate-liviana{font-weight:500}
+
+/* Pedido de Diego: el nombre del curso en la lista de Fichas ahora es clickeable (abre la
+   edición) — al pasar el mouse se subraya para que se note. Clase propia: .curso-cell también
+   se usa en Reportes (no clickeable ahí), así que no se puede tocar la clase base. */
+.curso-cell.curso-cell-link{cursor:pointer}
+.curso-cell.curso-cell-link:hover span{text-decoration:underline}
+.curso-cell.curso-cell-link:hover .curso-avatar{text-decoration:none}
+
+/* ═══════════ Nav en una sola línea (pedido de Diego: "QUIERO QUE ESTE EN UNA LINEA. DE
+   ULTIMA BAJALE EL TAMAÑO") ═══════════
+   Sacar el order/flex-basis viejo no alcanzaba: a los anchos reales de pantalla de Diego
+   (notebook, ~1366-1536px) la fila de tabs + "Ver como/usuario/Salir" seguía siendo más
+   ancha que el viewport y envolvía. Achicar todo el cluster (texto, padding, gaps) en vez de
+   solo reordenar. Última definición de cada selector = la que gana la cascada. */
+.topnav-inner{column-gap:10px}
+.topnav-tabs{gap:5px}
+.tnav{height:29px;padding:0 10px;font-size:12.5px}
+.topnav-right{gap:7px}
+.fdrop-vercomo{width:132px}
+.iconbtn{width:29px;height:29px}
+.topnav-user{font-size:12.5px}
+
+/* ═══════════ Rediseño de densidad/tipografía — tab=fichas y tab=respuestas (pedido de
+   Diego, spec de 22 puntos): menos negrita, tipografías más chicas, menos espacio vacío,
+   tarjetas y filas más compactas. Solo visual: no cambia funcionalidades, filtros, acciones
+   ni responsive — misma técnica de "última definición gana" que el resto del archivo, para
+   no tener que tocar cada regla original una por una. */
+thead th{font-weight:600;padding:8px 12px}
+.tablewrap-fichas table td,.tablewrap-fichas table th{padding-top:9px;padding-bottom:9px}
+.tablewrap table td{padding-top:9px;padding-bottom:9px}
+.topbar{gap:10px;margin-bottom:12px}
+.section-lead{font-size:13px;font-weight:400;color:rgb(var(--textMuted))}
+.panel{padding:14px 16px;margin-bottom:12px}
+.pcard{padding:16px;gap:9px}
+.pcard-title{font-size:14px}
+.badge{font-weight:600}
+.chipfilt{font-weight:600}
+.curso-avatar{font-weight:700}
+.pcard-dot{font-weight:700}
+
+/* Spec de 22 puntos: estados vacíos más chicos — sin ilustración grande, un solo renglón de
+   texto gris y, cuando corresponde, una acción para salir del estado ("Ver todos"). Clase
+   aparte (.empty-sm) para no tocar el .empty de base (sigue usándose con ícono + título en
+   otros lugares de la app). */
+.empty.empty-sm{padding:22px 16px;text-align:left}
+.empty.empty-sm p{font-size:13px;margin:0}
+
+/* ═══════════ Buscador: "placeholder inteligente" (pedido de Diego) ═══════════
+   Hint de ejemplos debajo del input, chips para filtrar por tipo de resultado una vez que ya
+   hay resultados, y contador de resultados — la búsqueda en sí (texto libre, tolerante a
+   errores de tipeo) ya vivía en /api/buscador. */
+.busc-hint{font-size:12px;margin:-14px 0 18px 2px}
+.busc-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.busc-cnt{font-size:12px;margin:0 0 10px 2px}

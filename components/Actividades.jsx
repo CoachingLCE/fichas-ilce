@@ -966,7 +966,7 @@ const Lista = forwardRef(function Lista({ usuario, showToast, puedeGestionar, ir
       {acts.length === 0 ? (
         <div className="empty"><div className="ico">📝</div><h3>No hay actividades todavía</h3><p>{puedeGestionar ? 'Creá tu primera actividad (Postwork).' : 'Todavía no se cargaron actividades.'}</p></div>
       ) : filtradas.length === 0 ? (
-        <div className="empty"><div className="ico">🔎</div><h3>Sin resultados</h3><p>Probá con otro filtro.</p></div>
+        <div className="empty empty-sm"><p>No encontramos actividades con estos filtros.</p></div>
       ) : agrupar ? (
         agruparPorCurso(filtradas).map((g) => (
           <details className="acts-grupo" key={g.curso} open>
@@ -1077,7 +1077,7 @@ function Respuestas({ usuario, irABuscador, showToast }) {
         {(q || fCurso || fEd || fAct) && <button className="btn-sm" onClick={() => { setQ(''); setFCurso(''); setFEd(''); setFAct(''); }}>Limpiar</button>}
       </div>
       {data.alcance === 'docente' && <p className="muted" style={{ fontSize: 12, marginTop: -4, marginBottom: 10 }}>Mostrando solo tus cursos/ediciones asignados.</p>}
-      {filtradas.length === 0 ? <div className="empty"><div className="ico">📭</div><h3>Sin respuestas</h3><p>No hay respuestas para estos filtros.</p></div> : (
+      {filtradas.length === 0 ? <div className="empty empty-sm"><p>No encontramos respuestas con estos filtros.</p></div> : (
         <div className="tablewrap"><table>
           {/* Pedido de Diego: misma estructura de orden en las tres tablas de "Respuestas" —
               a la izquierda de todo, Fecha y después Nombre/Estudiante (Formularios.jsx ya

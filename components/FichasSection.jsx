@@ -165,7 +165,7 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
       <p className="count">{filtradas.length} ficha{filtradas.length === 1 ? '' : 's'} encontrada{filtradas.length === 1 ? '' : 's'}</p>
 
       {filtradas.length === 0 ? (
-        <div className="empty"><div className="ico">🗂️</div><h3>No encontramos fichas</h3><p>Probá con otro término o cambiá el filtro.</p><button className="btn-sm" onClick={() => { setQ(''); setChip('Todas'); }}>Limpiar filtros</button></div>
+        <div className="empty empty-sm"><p>No encontramos fichas con estos filtros. <button className="linklike" onClick={() => { setQ(''); setChip('Todas'); }}>Limpiar filtros</button></p></div>
       ) : vista === 'lista' ? (
         <div className="tablewrap tablewrap-fichas"><table>
           <thead><tr><th>Ficha</th><th>Estado</th><th>Inscripciones</th><th>Próximas ediciones</th><th>Próxima edición</th><th>Actualizado</th><th>URL de inscripción</th><th></th></tr></thead>
@@ -181,7 +181,7 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
                 <td className="ins-name" style={{ borderLeft: `4px solid ${colorCurso(d.curso)}` }}>
                   {/* Pedido de Diego: hacer clic acá (el nombre del curso) tiene que abrir
                       directamente la edición/ficha en el Constructor, no solo el botón "Editar". */}
-                  <div className="curso-cell" style={puedeEditar ? { cursor: 'pointer' } : undefined} onClick={puedeEditar ? () => onEditar(d.slug) : undefined} title={puedeEditar ? 'Editar esta ficha' : undefined}>
+                  <div className={'curso-cell' + (puedeEditar ? ' curso-cell-link' : '')} onClick={puedeEditar ? () => onEditar(d.slug) : undefined} title={puedeEditar ? 'Editar esta ficha' : undefined}>
                     <span className="curso-avatar" style={{ background: colorCurso(d.curso) + '22', color: colorCurso(d.curso) }}>{inicialesCurso(d.curso)}</span>
                     <span style={{ color: colorCurso(d.curso), fontWeight: 400 }}>{d.curso}</span>
                   </div>
@@ -192,11 +192,14 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
                   {d.onDemand ? 'On demand' : eds.length > 0 ? `${eds.length} edición${eds.length === 1 ? '' : 'es'}` : '—'}
                   {/* Marca si entre las ediciones hay alguna asincrónica (sin día/horario fijo) —
                       así se ve de un vistazo sin tener que abrir cada ficha. */}
+                  {/* Pedido de Diego: sin negrita acá — clase propia (fstate-liviana) para no
+                      tocar .fstate de base, que se usa para los badges de Estado (Publicada/
+                      Borrador/Cerrada) y esos sí tienen que seguir en negrita. */}
                   {eds.some((e) => /asincr/.test(norm(e.label))) && (
-                    <span className="fstate bor" style={{ marginLeft: 6 }} title="Tiene una cursada asincrónica entre sus ediciones"><span className="d" />Asincrónica</span>
+                    <span className="fstate bor fstate-liviana" style={{ marginLeft: 6 }} title="Tiene una cursada asincrónica entre sus ediciones"><span className="d" />Asincrónica</span>
                   )}
                   {eds.length > 0 && eds.some((e) => !/asincr/.test(norm(e.label))) && (
-                    <span className="fstate pub" style={{ marginLeft: 6 }} title="Tiene ediciones con día y horario fijo"><span className="d" />Sincrónica</span>
+                    <span className="fstate pub fstate-liviana" style={{ marginLeft: 6 }} title="Tiene ediciones con día y horario fijo"><span className="d" />Sincrónica</span>
                   )}
                 </td>
                 <td className="sec">{d.curso === 'Coaching Inmobiliario' ? 'No aplica' : (proxima || '—')}</td>

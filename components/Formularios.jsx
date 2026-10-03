@@ -181,7 +181,7 @@ function Respuestas({ usuario, showToast }) {
         />
       )}
       <p className="count">{filtradas.length} respuesta(s)</p>
-      {filtradas.length === 0 ? <div className="empty"><div className="ico">📭</div><h3>Sin respuestas</h3><p>No hay respuestas para estos filtros.</p></div> : (
+      {filtradas.length === 0 ? <div className="empty empty-sm"><p>No encontramos respuestas con estos filtros.</p></div> : (
         <div className="tablewrap"><table>
           <thead><tr>
             <th style={{ minWidth: 110, cursor: 'pointer' }} onClick={() => ordenarPor('fecha')}>Fecha{flecha('fecha')}</th>
