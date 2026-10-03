@@ -65,6 +65,57 @@ function GraficoLinea({ etiquetas, puntos, color = '#22d3ee', alto = 88 }) {
     </div>
   );
 }
+
+// Igual que GraficoLinea pero con dos series superpuestas, mismo eje (mes elegido vs mes
+// anterior, alineados por día del mes) — pedido de Diego: "hacer comparaciones diarias y cómo
+// viene en relación al mes pasado", mismo estilo que el reporte de referencia que pasó (dos
+// líneas + marcador de "hoy"). La serie "anterior" va más tenue, punteada y sin relleno para no
+// competir visualmente con la actual.
+function GraficoLineaDoble({ etiquetas, actual, anterior, color = '#22d3ee', colorAnterior = '#94a3b8', alto = 150, hoyIndex }) {
+  const [hover, setHover] = useState(null);
+  const gid = useId().replace(/:/g, '');
+  const ancho = 560, padY = 14;
+  const todos = [...(actual || []), ...(anterior || [])].filter((p) => p !== null && p !== undefined);
+  if (!todos.length) return <div style={{ height: alto, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'rgb(var(--textMuted))' }}>Sin datos</div>;
+  const max = Math.max(...todos, 1), min = Math.min(...todos, 0), rango = max - min || 1;
+  const n = Math.max((actual || []).length, (anterior || []).length, 1);
+  const paso = ancho / Math.max(n - 1, 1);
+  const coordsDe = (serie) => Array.from({ length: n }, (_, i) => {
+    const p = serie ? serie[i] : undefined;
+    return (p === null || p === undefined) ? null : [i * paso, alto - padY - ((p - min) / rango) * (alto - padY * 2)];
+  });
+  const segsDe = (coords) => { const segs = []; let cur = []; coords.forEach((c) => { if (c) cur.push(c); else { if (cur.length > 1) segs.push(cur); cur = []; } }); if (cur.length > 1) segs.push(cur); return segs; };
+  const coordsA = coordsDe(actual), coordsB = coordsDe(anterior);
+  const segsA = segsDe(coordsA), segsB = segsDe(coordsB);
+  const onMove = (e) => { const r = e.currentTarget.getBoundingClientRect(); if (!r.width) return; let i = Math.round(((e.clientX - r.left) / r.width) * Math.max(n - 1, 1)); i = Math.max(0, Math.min(n - 1, i)); setHover(i); };
+  const fmt = (v) => (typeof v === 'number' ? v.toLocaleString('es-AR') : '—');
+  return (
+    <div style={{ position: 'relative' }} onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
+      <svg viewBox={`0 0 ${ancho} ${alto}`} style={{ width: '100%', height: alto }} preserveAspectRatio="none">
+        <defs>
+          <linearGradient id={`glf2-${gid}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity=".24" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {hoyIndex != null && hoyIndex >= 0 && hoyIndex < n && (
+          <line x1={hoyIndex * paso} x2={hoyIndex * paso} y1="0" y2={alto} stroke="rgb(var(--border))" strokeWidth="1" strokeDasharray="3 3" />
+        )}
+        {segsB.map((sg, i) => <path key={'bl' + i} d={pathSuave(sg, alto, false)} fill="none" stroke={colorAnterior} strokeOpacity=".7" strokeWidth="2" strokeDasharray="4 3" strokeLinecap="round" strokeLinejoin="round" />)}
+        {segsA.map((sg, i) => <path key={'af' + i} d={pathSuave(sg, alto, true)} fill={`url(#glf2-${gid})`} stroke="none" />)}
+        {segsA.map((sg, i) => <path key={'al' + i} d={pathSuave(sg, alto, false)} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />)}
+        {coordsA.map((c, i) => c && <circle key={'pa' + i} cx={c[0]} cy={c[1]} r={hover === i ? '5' : '3'} fill={color} />)}
+      </svg>
+      {hover !== null && (coordsA[hover] || coordsB[hover]) && (
+        <div style={{ position: 'absolute', pointerEvents: 'none', zIndex: 10, transform: 'translate(-50%,-100%)', marginTop: -6, left: `${(hover / Math.max(n - 1, 1)) * 100}%`, top: `${((coordsA[hover] || coordsB[hover])[1] / alto) * 100}%`, background: 'rgb(var(--surface2))', border: '1px solid rgb(var(--border))', borderRadius: 10, padding: '6px 10px', fontSize: 11, whiteSpace: 'nowrap', boxShadow: '0 6px 16px -6px rgba(0,0,0,.5)' }}>
+          <div style={{ color: 'rgb(var(--textMuted))', marginBottom: 2 }}>{etiquetas && etiquetas[hover] ? etiquetas[hover] : ''}</div>
+          <div><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: color, marginRight: 5 }} />{fmt(actual && actual[hover])}</div>
+          {anterior && <div style={{ opacity: .75 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: colorAnterior, marginRight: 5 }} />{fmt(anterior[hover])} <i style={{ fontStyle: 'normal', opacity: .7 }}>(mes anterior)</i></div>}
+        </div>
+      )}
+    </div>
+  );
+}
 import { exportarCSV, exportarXLSX, exportarPDF } from '../lib/exportUtils';
 
 // Misma normalización que ya usa el backend (/api/actividades/reporte) para cruzar una
@@ -76,6 +127,27 @@ function hace(n) { const d = new Date(); d.setDate(d.getDate() - n); return iso(
 function primerDiaMes() { const d = new Date(); d.setDate(1); return iso(d); }
 function primerDiaTrimestre() { const d = new Date(); d.setMonth(Math.floor(d.getMonth() / 3) * 3, 1); return iso(d); }
 function nombreMes(k) { const [y, m] = (k || '').split('-'); const d = new Date(Number(y), Number(m) - 1, 1); return isNaN(d.getTime()) ? (k || '') : d.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' }); }
+
+// Helpers para el combo de meses de "Evolución de inscripciones" (pedido de Diego: "cambiar
+// todo por un combo que muestre los meses" + comparar día a día contra el mes anterior).
+function ymDe(fechaIso) { return (fechaIso || '').slice(0, 7); } // "2026-10-05" -> "2026-10"
+function nombreMesLargo(ym) {
+  const [y, m] = (ym || '').split('-').map(Number);
+  const d = new Date(y, (m || 1) - 1, 1);
+  if (isNaN(d.getTime())) return ym || '';
+  const s = d.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+function mesAnteriorDe(ym) {
+  const [y, m] = (ym || '').split('-').map(Number);
+  const d = new Date(y, (m || 1) - 1, 1);
+  d.setMonth(d.getMonth() - 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+function diasEnMes(ym) {
+  const [y, m] = (ym || '').split('-').map(Number);
+  return new Date(y, m, 0).getDate();
+}
 function pctTone(pct, { buenoDesde = 80, regularDesde = 50 } = {}) {
   if (pct == null) return 'muted';
   return pct >= buenoDesde ? 'good' : pct >= regularDesde ? 'warn' : 'bad';
@@ -91,7 +163,35 @@ function esValorValido(v) {
   return !VALORES_BASURA_CAMPO.has(s.toLowerCase());
 }
 const paisAgrupado = (r) => (esValorValido(r.pais) ? r.pais.trim() : 'Sin datos');
-const origenAgrupado = (r) => (esValorValido(r.origen) ? r.origen.trim() : 'Sin informar');
+
+// "¿Cómo llegaste a nosotros?" trae datos históricos con formatos distintos para la misma
+// opción (pedido de Diego: "si pones emoticones, poné en todos" — notó "Instagram" y "✅
+// Instagram" como si fueran dos canales distintos). Misma normalización que ya usa la
+// distribución de "Campos" más abajo (ver normalizarValorCampo/OPCIONES_ORIGEN): se saca el
+// tilde/check de adelante y se agrupa por la opción canónica de la ficha actual.
+const OPCIONES_ORIGEN = ['Facebook', 'Google', 'Instagram', 'LinkedIn', 'Recomendación'];
+const origenAgrupado = (r) => {
+  if (!esValorValido(r.origen)) return 'Sin informar';
+  const v = r.origen.toString().trim().replace(/^[✓✔✅☑️]\s*/, '').trim();
+  if (/^otro\s*:/i.test(v)) return 'Otro';
+  const canon = OPCIONES_ORIGEN.find((o) => v.toLowerCase().startsWith(o.toLowerCase()));
+  return canon || v;
+};
+
+// Pedido de Diego ("poné las banderas de cada país" / emoticonos de origen en todos los
+// canales): un ícono fijo por valor conocido — fallback a nada (país) o a un ícono genérico
+// (origen) para lo que no está mapeado, en vez de dejarlo a medias.
+const BANDERA_PAIS = {
+  Argentina: '🇦🇷', Chile: '🇨🇱', Colombia: '🇨🇴', Uruguay: '🇺🇾', 'México': '🇲🇽', Mexico: '🇲🇽',
+  'Perú': '🇵🇪', Peru: '🇵🇪', Ecuador: '🇪🇨', Paraguay: '🇵🇾', Bolivia: '🇧🇴', Venezuela: '🇻🇪',
+  'España': '🇪🇸', Espana: '🇪🇸', 'Estados Unidos': '🇺🇸', 'EE.UU.': '🇺🇸', EEUU: '🇺🇸',
+  'Panamá': '🇵🇦', Panama: '🇵🇦', 'Costa Rica': '🇨🇷', Guatemala: '🇬🇹', Honduras: '🇭🇳',
+  'El Salvador': '🇸🇻', Nicaragua: '🇳🇮', 'República Dominicana': '🇩🇴', 'Republica Dominicana': '🇩🇴',
+  'Puerto Rico': '🇵🇷', Cuba: '🇨🇺', Brasil: '🇧🇷', Brazil: '🇧🇷'
+};
+const banderaPais = (pais) => BANDERA_PAIS[pais] || null;
+const ICONO_ORIGEN = { Instagram: '📷', Facebook: '📘', Google: '🔍', LinkedIn: '💼', 'Recomendación': '🗣️', Otro: '✨' };
+const iconoOrigen = (origen) => ICONO_ORIGEN[origen] || '📌';
 
 /* ============================ Íconos lineales (sin librerías, sin emoji) ============================ */
 const svgBase = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' };
@@ -188,7 +288,7 @@ function Expandible({ titulo, children, defaultOpen = false }) {
       <button type="button" className="sechead" style={{ width: '100%', background: 'none', border: 0, cursor: 'pointer', padding: 0 }} onClick={() => setOpen((v) => !v)}>
         <span className="htitle">{titulo}</span>
         <span className="grow" />
-        <span style={{ fontSize: 12, color: 'rgb(var(--accentTeal))', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+        <span style={{ fontSize: 12, color: 'rgb(var(--accentTeal))', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
           {open ? 'Ocultar' : 'Ver'} <Ico.chevronRight style={{ transform: open ? 'rotate(90deg)' : 'none', width: 12, height: 12 }} />
         </span>
       </button>
@@ -743,29 +843,31 @@ export default function Reportes({ usuario, rows, puedeActividades, puedeFormula
 }
 
 /* ============================ RESUMEN ============================ */
-const RANGOS_EVOL = [{ v: 30, l: '30 días' }, { v: 90, l: '3 meses' }, { v: 180, l: '6 meses' }, { v: 365, l: '12 meses' }];
-
-function serieDiaria(rows, dias) {
-  const claves = [];
-  for (let i = dias - 1; i >= 0; i--) claves.push(hace(i));
+// Pedido de Diego ("cambiar todo por un combo que muestre los meses" + "hacer comparaciones
+// diarias y cómo viene en relación al mes pasado"): reemplaza el viejo chip de rango (30
+// días/3 meses/...) por mes calendario — agrupa por día DEL MES (1 a 28-31) para poder
+// superponer el mes elegido contra el mes anterior en el mismo eje.
+function serieMensual(rows, ym) {
+  const nDias = diasEnMes(ym);
   const porDia = {}; const compPorDia = {}; const pendPorDia = {};
   rows.forEach((r) => {
     const f = (r.fecha || '').slice(0, 10);
-    if (!f) return;
-    porDia[f] = (porDia[f] || 0) + 1;
-    if (r.estado === 'Completada') compPorDia[f] = (compPorDia[f] || 0) + 1;
-    if (r.estado === 'Pendiente') pendPorDia[f] = (pendPorDia[f] || 0) + 1;
+    if (!f || ymDe(f) !== ym) return;
+    const dia = Number(f.slice(8, 10));
+    porDia[dia] = (porDia[dia] || 0) + 1;
+    if (r.estado === 'Completada') compPorDia[dia] = (compPorDia[dia] || 0) + 1;
+    if (r.estado === 'Pendiente') pendPorDia[dia] = (pendPorDia[dia] || 0) + 1;
   });
-  const fmt = (k) => { const d = new Date(k + 'T00:00:00'); return d.toLocaleDateString('es-AR', dias <= 31 ? { day: '2-digit', month: '2-digit' } : { day: '2-digit', month: 'short' }); };
+  const dias = Array.from({ length: nDias }, (_, i) => i + 1);
   return {
-    total: claves.map((k) => ({ label: fmt(k), v: porDia[k] || 0 })),
-    completadas: claves.map((k) => ({ label: fmt(k), v: compPorDia[k] || 0 })),
-    pendientes: claves.map((k) => ({ label: fmt(k), v: pendPorDia[k] || 0 }))
+    etiquetas: dias.map(String),
+    total: dias.map((d) => porDia[d] || 0),
+    completadas: dias.map((d) => compPorDia[d] || 0),
+    pendientes: dias.map((d) => pendPorDia[d] || 0)
   };
 }
 
 function ReportesResumen({ rows, irAConFiltro }) {
-  const [rango, setRango] = useState(30);
   const sem = rows.filter((r) => (r.fecha || '') >= hace(7)).length;
   const completadas = rows.filter((r) => r.estado === 'Completada').length;
   const pendientes = rows.filter((r) => r.estado === 'Pendiente').length;
@@ -777,7 +879,19 @@ function ReportesResumen({ rows, irAConFiltro }) {
   const nuevos30prev = rows.filter((r) => (r.fecha || '') >= hace(60) && (r.fecha || '') < hace(30)).length;
   const variacion = nuevos30prev > 0 ? Math.round((nuevos30 - nuevos30prev) / nuevos30prev * 100) : (nuevos30 > 0 ? 100 : 0);
 
-  const serie = useMemo(() => serieDiaria(rows, rango), [rows, rango]);
+  // Meses con datos + el mes en curso (aunque todavía no tenga fichas, para poder elegirlo).
+  const ymHoy = useMemo(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }, []);
+  const mesesDisponibles = useMemo(() => {
+    const set = new Set([ymHoy]);
+    rows.forEach((r) => { const f = (r.fecha || '').slice(0, 10); if (f) set.add(ymDe(f)); });
+    return Array.from(set).sort().reverse();
+  }, [rows, ymHoy]);
+  const [mesSel, setMesSel] = useState(null);
+  const mes = mesSel && mesesDisponibles.includes(mesSel) ? mesSel : (mesesDisponibles[0] || ymHoy);
+  const mesPrev = mesAnteriorDe(mes);
+  const serie = useMemo(() => serieMensual(rows, mes), [rows, mes]);
+  const seriePrev = useMemo(() => serieMensual(rows, mesPrev), [rows, mesPrev]);
+  const hoyIndex = mes === ymHoy ? new Date().getDate() - 1 : null;
 
   const porCursoDetalle = useMemo(() => {
     return CURSOS.map((c) => {
@@ -798,7 +912,10 @@ function ReportesResumen({ rows, irAConFiltro }) {
   const top = (map, n) => Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, n);
   const porPais = useMemo(() => top(agrupar(paisAgrupado), 10), [rows]);
   const porOrigen = useMemo(() => top(agrupar(origenAgrupado), 8), [rows]);
-  const porEdicion = useMemo(() => top(agrupar((r) => r.ed ? 'Ed. ' + r.ed : null), 10), [rows]);
+  // Pedido de Diego ("solo número, acordate" — mismo criterio ya aplicado en Respuestas de
+  // actividades, ver v1.20.0): acá el título de la sección ya dice "Por edición", así que la
+  // tarjeta de cada edición no repite "Ed." adelante del número.
+  const porEdicion = useMemo(() => top(agrupar((r) => r.ed ? String(r.ed) : null), 10), [rows]);
   const maxPais = Math.max(1, ...porPais.map(([, v]) => v));
   const maxOrigen = Math.max(1, ...porOrigen.map(([, v]) => v));
   const maxEdicion = Math.max(1, ...porEdicion.map(([, v]) => v));
@@ -844,47 +961,75 @@ function ReportesResumen({ rows, irAConFiltro }) {
         </Seccion>
       )}
 
-      <Seccion titulo="Evolución de inscripciones" sub="Fichas nuevas por día. Completadas y Pendientes se muestran como referencia secundaria." right={
-        <div className="fchips" style={{ margin: 0 }}>
-          {RANGOS_EVOL.map((r) => <button key={r.v} className={'fchip' + (rango === r.v ? ' on' : '')} onClick={() => setRango(r.v)}>{r.l}</button>)}
-        </div>
+      {/* Pedido de Diego ("Nuevas que significa? 31 completadas? HISTORICO? CUANDO?"): la
+          bajada y el ícono ℹ️ de cada número aclaran que estas cifras son todas del MISMO mes
+          elegido arriba a la derecha — no son un total histórico. "Completadas"/"Pendientes"
+          cuentan, de las fichas CREADAS ese mes, cuántas están en ese estado HOY (el estado
+          puede haber cambiado desde que se creó la ficha, por eso no es "completadas ese mismo
+          día"). Pedido de Diego ("cambiar todo por un combo que muestre los meses" + "hacer
+          comparaciones diarias y cómo viene en relación al mes pasado"): el chip de rango se
+          reemplazó por un combo de mes calendario, y "Nuevas por día" ahora superpone el mes
+          elegido contra el mes anterior, mismo criterio que el reporte de referencia que pasó. */}
+      <Seccion titulo="Evolución de inscripciones" sub="Fichas nuevas por día, según su fecha de inscripción. Completadas y Pendientes cuentan, de esas mismas fichas, cuántas están en ese estado hoy (no es un total histórico de toda la vida de la app)." right={
+        <select className="fsel" value={mes} onChange={(e) => setMesSel(e.target.value)}>
+          {mesesDisponibles.map((ym) => <option key={ym} value={ym}>{nombreMesLargo(ym)}</option>)}
+        </select>
       }>
         {(() => {
-          const sum = (a) => (a || []).reduce((x, p) => x + (p.v || 0), 0);
+          const sum = (a) => (a || []).reduce((x, v) => x + (v || 0), 0);
           const nuevas = sum(serie.total), comp = sum(serie.completadas), pend = sum(serie.pendientes);
+          const nuevasPrev = sum(seriePrev.total);
+          const variacionMes = nuevasPrev > 0 ? Math.round((nuevas - nuevasPrev) / nuevasPrev * 100) : (nuevas > 0 ? 100 : 0);
           const tasa = nuevas ? Math.round(comp / nuevas * 100) : 0;
           const hayPend = pend > 0;
           return (<>
             <div className="evol-kpis">
-              <div className="evol-kpi"><div className="ic" style={{ color: 'rgb(var(--accentTeal))' }}>{Ico.trend({})}</div><div className="n">{nuevas}</div><div className="l">Nuevas</div></div>
-              <div className="evol-kpi"><div className="ic" style={{ color: 'rgb(74 222 128)' }}>{Ico.check({})}</div><div className="n">{comp}</div><div className="l">Completadas</div></div>
-              <div className="evol-kpi"><div className="ic" style={{ color: 'rgb(251 191 36)' }}>{Ico.clock({})}</div><div className="n">{pend}</div><div className="l">Pendientes</div></div>
+              <div className="evol-kpi" title={`Fichas creadas en ${nombreMesLargo(mes)}, según su fecha de inscripción.`}><div className="ic" style={{ color: 'rgb(var(--accentTeal))' }}>{Ico.trend({})}</div><div className="n">{nuevas}</div><div className="l">Nuevas ℹ️</div></div>
+              <div className="evol-kpi" title="De las fichas creadas en este mes, cuántas están Completadas HOY — no es un total histórico ni 'completadas ese mismo día'.">
+                <div className="ic" style={{ color: 'rgb(74 222 128)' }}>{Ico.check({})}</div><div className="n">{comp}</div><div className="l">Completadas ℹ️</div>
+              </div>
+              <div className="evol-kpi" title="De las fichas creadas en este mes, cuántas siguen Pendientes o En revisión hoy.">
+                <div className="ic" style={{ color: 'rgb(251 191 36)' }}>{Ico.clock({})}</div><div className="n">{pend}</div><div className="l">Pendientes ℹ️</div>
+              </div>
               <div className="evol-kpi"><div className="ic" style={{ color: 'rgb(74 222 128)' }}>{Ico.circleDash({})}</div><div className="n">{tasa}%</div><div className="l">Tasa de completitud</div></div>
+            </div>
+            <div className="evol-panel">
+              <div className="evol-panel-h">
+                <span>Nuevas por día — {nombreMesLargo(mes)}</span>
+                <span style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                  <b>{nuevas.toLocaleString('es-AR')}</b>
+                  {nuevasPrev > 0 && (
+                    <span className={'evol-var' + (variacionMes > 0 ? ' good' : variacionMes < 0 ? ' bad' : '')} title={`${nuevasPrev} fichas nuevas en ${nombreMesLargo(mesPrev)}`}>
+                      {variacionMes > 0 ? '▲' : variacionMes < 0 ? '▼' : '→'} {Math.abs(variacionMes)}% vs. mes anterior
+                    </span>
+                  )}
+                </span>
+              </div>
+              <GraficoLineaDoble etiquetas={serie.etiquetas} actual={serie.total} anterior={nuevasPrev > 0 ? seriePrev.total : null} hoyIndex={hoyIndex} color="#22d3ee" alto={150} />
             </div>
             <div className="evol-paneles">
               <div className="evol-panel">
-                <div className="evol-panel-h"><span>Nuevas por día</span><b>{nuevas.toLocaleString('es-AR')}</b></div>
-                <GraficoLinea etiquetas={serie.total.map((p) => p.label)} puntos={serie.total.map((p) => p.v)} color="#22d3ee" />
-              </div>
-              <div className="evol-panel">
                 <div className="evol-panel-h"><span>Completadas por día</span><b>{comp.toLocaleString('es-AR')}</b></div>
-                <GraficoLinea etiquetas={serie.completadas.map((p) => p.label)} puntos={serie.completadas.map((p) => p.v)} color="#4ade80" />
+                <GraficoLinea etiquetas={serie.etiquetas} puntos={serie.completadas} color="#4ade80" />
               </div>
               {hayPend && (
                 <div className="evol-panel">
                   <div className="evol-panel-h"><span>Pendientes por día</span><b>{pend.toLocaleString('es-AR')}</b></div>
-                  <GraficoLinea etiquetas={serie.pendientes.map((p) => p.label)} puntos={serie.pendientes.map((p) => p.v)} color="#fbbf24" />
+                  <GraficoLinea etiquetas={serie.etiquetas} puntos={serie.pendientes} color="#fbbf24" />
                 </div>
               )}
             </div>
-            {!hayPend && <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>Pendientes: 0 en el período.</div>}
+            {!hayPend && <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>Pendientes: 0 en este mes.</div>}
           </>);
         })()}
       </Seccion>
 
       <Seccion titulo="Por curso" sub="Ranking de fichas por curso — clickeá una fila para verlo en Fichas completadas.">
+        {/* Pedido de Diego: "estirar para que no haya scroll" — antes el contenedor tenía un
+            alto fijo (400px) con scroll interno aunque hubiera pocos cursos; ahora crece
+            según la cantidad real de filas. */}
         {porCursoDetalle.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : (
-          <div className="tablewrap" style={{ maxHeight: 400 }}>
+          <div className="tablewrap">
             <table>
               <thead><tr><th>Curso</th><th>Fichas</th><th>Completadas</th><th>Pendientes</th><th>En revisión</th><th>% completado</th><th /></tr></thead>
               <tbody>{porCursoDetalle.map((c) => (
@@ -906,13 +1051,13 @@ function ReportesResumen({ rows, irAConFiltro }) {
       <div className="repx-duo">
         <Seccion titulo="Por país" sub="De dónde son las fichas — clickeá una fila para verla en Fichas completadas.">
           {porPais.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : (
-            <TablaCompacta filas={porPais} dirtyLabel="Sin datos" onClick={irAConFiltro ? (k) => irAConFiltro('pais', k) : undefined} />
+            <TablaCompacta filas={porPais} dirtyLabel="Sin datos" onClick={irAConFiltro ? (k) => irAConFiltro('pais', k) : undefined} icono={banderaPais} />
           )}
         </Seccion>
 
         <Seccion titulo="Origen de inscripciones" sub="Por qué canal llegó cada ficha.">
           {porOrigen.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : (
-            <TablaCompacta filas={porOrigen} dirtyLabel="Sin informar" />
+            <TablaCompacta filas={porOrigen} dirtyLabel="Sin informar" icono={iconoOrigen} />
           )}
         </Seccion>
       </div>
@@ -921,7 +1066,7 @@ function ReportesResumen({ rows, irAConFiltro }) {
         {porEdicion.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : (
           <div className="repx-ed-grid">
             {porEdicion.map(([k, v]) => {
-              const onClick = irAConFiltro ? () => irAConFiltro('ed', k.replace(/^Ed\.\s*/, '')) : undefined;
+              const onClick = irAConFiltro ? () => irAConFiltro('ed', k) : undefined;
               const contenido = (<><span className="rm-n">{k}</span><span className="rm-v">{v}</span></>);
               return onClick
                 ? <button key={k} type="button" className="repx-ed-item rm-click" onClick={onClick}>{contenido}</button>
@@ -939,16 +1084,17 @@ function ReportesResumen({ rows, irAConFiltro }) {
 // dato y misma lógica de agrupación (ver porPais/porOrigen más arriba), solo cambia cómo se
 // muestra. dirtyLabel marca en gris/itálica la fila de valores "sucios" (p. ej. "Sin datos"),
 // igual que antes hacía claseFill="m" en la barra.
-function TablaCompacta({ filas, dirtyLabel, onClick }) {
+function TablaCompacta({ filas, dirtyLabel, onClick, icono }) {
   return (
     <table className="repx-minitable">
       <tbody>
         {filas.map(([k, v]) => {
           const dirty = k === dirtyLabel;
           const clickable = onClick && !dirty;
+          const ic = icono && !dirty ? icono(k) : null;
           return (
             <tr key={k} className={(dirty ? 'rm-dirty ' : '') + (clickable ? 'rm-click' : '')} onClick={clickable ? () => onClick(k) : undefined}>
-              <td className="rm-n" title={k}>{k}</td>
+              <td className="rm-n" title={k}>{ic && <span className="rm-ico">{ic}</span>}{k}</td>
               <td className="rm-v">{v}</td>
             </tr>
           );
@@ -1066,7 +1212,7 @@ function ReportesInscripciones({ rows, irAConFiltro }) {
                 <tr key={fila.mes}>
                   <td><b>{nombreMes(fila.mes)}</b></td>
                   {cursosConDatos.map((c) => <td key={c} className="sec">{fila.porCurso[c] || 0}</td>)}
-                  <td style={{ fontWeight: 700 }}>{fila.total}</td>
+                  <td style={{ fontWeight: 500 }}>{fila.total}</td>
                 </tr>
               ))}</tbody>
             </table>

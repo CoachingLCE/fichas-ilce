@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSession } from '../lib/useSession';
-import { tienePermisoInscripciones, tienePermisoCambiarEstado, tienePermisoExportar, tienePermisoDashboard, tienePermisoConstructor, tienePermisoAccesos, tienePermisoActividades, tienePermisoGestionActividades, tienePermisoAsignarDocentes, tienePermisoEmails, tienePermisoAuditoria, tienePermisoFormularios, puedeVerComoOtro } from '../lib/permisos';
+import { tienePermisoInscripciones, tienePermisoCambiarEstado, tienePermisoExportar, tienePermisoDashboard, tienePermisoConstructor, tienePermisoAccesos, tienePermisoActividades, tienePermisoGestionActividades, tienePermisoAsignarDocentes, tienePermisoEmails, tienePermisoAuditoria, tienePermisoFormularios, tienePermisoVerRespuestasActividades, tienePermisoVerRespuestasFormularios, puedeVerComoOtro } from '../lib/permisos';
 import { ESTADOS, normalizarEstado, nombreVisibleRoles, estiloCurso, colorCurso, estadoFechaReciente } from '../lib/constants';
 import { Isologo, IsologoDefs } from './Isologo';
 import ThemeSelector from './ThemeSelector';
@@ -74,7 +74,7 @@ function SelectorDoble({ opciones }) {
   if (opciones.length === 0) return null;
   return (
     <div className="empty" style={{ textAlign: 'center', padding: '48px 20px' }}>
-      <p style={{ fontSize: 15, fontWeight: 700, marginBottom: 18 }}>¿Qué querés abrir?</p>
+      <p style={{ fontSize: 15, fontWeight: 500, marginBottom: 18 }}>¿Qué querés abrir?</p>
       <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
         {opciones.map((o) => (
           <button key={o.key} className="btn btn-primary" style={{ padding: '14px 28px' }} onClick={o.onClick}>{o.icono} {o.label}</button>
@@ -348,9 +348,9 @@ export default function Panel() {
           {/* "Fichas de inscripción" y "Fichas completadas" quedan unificadas bajo una sola
               pestaña ("Fichas"), con sub-pestañas adentro — antes competían visualmente
               como si fueran dos módulos del mismo nivel. */}
-          <button className={'tnav' + (tab === 'fichas' ? ' on' : '')} onClick={() => setTab('fichas')}>Fichas de inscripción</button>
-          <button className={'tnav' + (tab === 'actividadesyformularios' ? ' on' : '') + ((tienePermisoActividades(usuario) || tienePermisoFormularios(usuario)) ? '' : ' dim')} onClick={() => { setTab('actividadesyformularios'); setVistaAyF(null); }}>Actividades y formularios</button>
-          <button className={'tnav' + ((tab === 'respuestas' || tab === 'inscripciones') ? ' on' : '') + ((tienePermisoActividades(usuario) || tienePermisoFormularios(usuario)) ? '' : ' dim')} onClick={() => { setTab('respuestas'); setVistaResp(null); }}>Respuestas de fichas, actividades y formularios</button>
+          <button className={'tnav' + (tab === 'fichas' ? ' on' : '')} onClick={() => setTab('fichas')} title="Fichas de inscripción">Fichas</button>
+          <button className={'tnav' + (tab === 'actividadesyformularios' ? ' on' : '') + ((tienePermisoActividades(usuario) || tienePermisoFormularios(usuario)) ? '' : ' dim')} onClick={() => { setTab('actividadesyformularios'); setVistaAyF(null); }} title="Actividades y formularios">Actividades</button>
+          <button className={'tnav' + ((tab === 'respuestas' || tab === 'inscripciones') ? ' on' : '') + ((tienePermisoVerRespuestasActividades(usuario) || tienePermisoVerRespuestasFormularios(usuario)) ? '' : ' dim')} onClick={() => { setTab('respuestas'); setVistaResp(null); }} title="Respuestas de fichas, actividades y formularios">Respuestas</button>
           {/* El Dashboard se fusionó dentro de Reportes (v0.89.0): todo lo que mostraba
               (KPIs, Atención, Evolución, Por curso/estado/edición/país/origen) ahora vive
               en la pestaña "Reportes" → "Resumen", así que la pestaña aparte se saca. */}
@@ -358,7 +358,7 @@ export default function Panel() {
           <div className="navgroup">
             <span className="navgroup-label">Gestión</span>
             <button className={'tnav' + (tab === 'emails' ? ' on' : '') + (tienePermisoEmails(usuario) ? '' : ' dim')} onClick={() => setTab('emails')}>Emails</button>
-            <button className={'tnav' + (tab === 'equipo' ? ' on' : '') + (tienePermisoAsignarDocentes(usuario) ? '' : ' dim')} onClick={() => setTab('equipo')}>Equipo Docente</button>
+            <button className={'tnav' + (tab === 'equipo' ? ' on' : '') + (tienePermisoAsignarDocentes(usuario) ? '' : ' dim')} onClick={() => setTab('equipo')} title="Equipo Docente">Equipo</button>
             {/* El Constructor de fichas ya no es una pestaña aparte: se abre desde "Fichas de
                 inscripción" (✎ Editar / + Cargar edición en cada ficha), para que todo lo de fichas
                 quede junto en una sola hoja. */}
@@ -366,7 +366,7 @@ export default function Panel() {
           <div className="navgroup">
             <span className="navgroup-label">Configuración</span>
             <button className={'tnav' + (tab === 'accesos' ? ' on' : '') + (tienePermisoAccesos(usuario) ? '' : ' dim')} onClick={() => setTab('accesos')}>Accesos</button>
-            <button className={'tnav' + (tab === 'auditoria' ? ' on' : '') + (tienePermisoAuditoria(usuario) ? '' : ' dim')} onClick={() => setTab('auditoria')}>Historial de acciones</button>
+            <button className={'tnav' + (tab === 'auditoria' ? ' on' : '') + (tienePermisoAuditoria(usuario) ? '' : ' dim')} onClick={() => setTab('auditoria')} title="Historial de acciones">Historial</button>
             {/* Pedido de Diego: el buscador y el selector de tema van a la derecha de "Historial
                 de acciones" — antes vivían sueltos en la esquina superior derecha (topnav-right). */}
             <button data-tour="nav-buscador" className={'iconbtn' + (tab === 'buscador' ? ' on' : '')} title="Buscar en fichas, inscripciones, actividades y formularios" aria-label="Buscar" onClick={() => setTab('buscador')}>🔎</button>
@@ -438,11 +438,11 @@ export default function Panel() {
                 de la pestaña "Respuestas", así que al entrar a Inscripciones desde ahí (con
                 "Respuestas fichas") el selector desaparecía y no se podía saltar a las otras
                 dos. Mismo componente, "Respuestas fichas" queda marcada como la actual. */}
-            {(tienePermisoActividades(usuario) || tienePermisoFormularios(usuario)) && (
+            {(tienePermisoVerRespuestasActividades(usuario) || tienePermisoVerRespuestasFormularios(usuario)) && (
               <div className="subtabs-pill">
                 <button className="on" title="Estás viendo las inscripciones (Fichas completadas)">📋 Respuestas fichas</button>
-                {tienePermisoActividades(usuario) && <button onClick={() => { setTab('respuestas'); setVistaResp('actividades'); }}>📝 Respuestas actividades</button>}
-                {tienePermisoFormularios(usuario) && <button onClick={() => { setTab('respuestas'); setVistaResp('formularios'); }}>🗒️ Respuestas formularios</button>}
+                {tienePermisoVerRespuestasActividades(usuario) && <button onClick={() => { setTab('respuestas'); setVistaResp('actividades'); }}>📝 Respuestas actividades</button>}
+                {tienePermisoVerRespuestasFormularios(usuario) && <button onClick={() => { setTab('respuestas'); setVistaResp('formularios'); }}>🗒️ Respuestas formularios</button>}
               </div>
             )}
             {/* Los números/KPIs (Total, últimos 7 días, pendientes, etc.) se movieron a la
@@ -491,7 +491,7 @@ export default function Panel() {
             </div>
             {(q || fCurso || fEd || fPais || fEstado || fDesde || fHasta) && (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
-                {(() => { const n = [q, fEstado, fCurso, fEd, fPais, (fDesde || fHasta)].filter(Boolean).length; return <span style={{ fontSize: 12.5, color: 'rgb(var(--textMuted))', fontWeight: 700 }}>{n} {n === 1 ? 'filtro activo' : 'filtros activos'}</span>; })()}
+                {(() => { const n = [q, fEstado, fCurso, fEd, fPais, (fDesde || fHasta)].filter(Boolean).length; return <span style={{ fontSize: 12.5, color: 'rgb(var(--textMuted))', fontWeight: 500 }}>{n} {n === 1 ? 'filtro activo' : 'filtros activos'}</span>; })()}
                 {q && <FiltroChip label={`Buscando: "${q}"`} onClear={() => setQ('')} />}
                 {fEstado && <FiltroChip label={`Estado: ${fEstado}`} onClear={() => setFEstado('')} />}
                 {fCurso && <FiltroChip label={`Curso: ${fCurso}`} onClear={() => setFCurso('')} />}
@@ -547,8 +547,8 @@ export default function Panel() {
           );
         })()}
         {tab === 'respuestas' && (() => {
-          const puedeAct = tienePermisoActividades(usuario);
-          const puedeForm = tienePermisoFormularios(usuario);
+          const puedeAct = tienePermisoVerRespuestasActividades(usuario);
+          const puedeForm = tienePermisoVerRespuestasFormularios(usuario);
           if (!puedeAct && !puedeForm) return <AccesoDenegado seccion="Respuestas" />;
           const elegida = vistaResp || (puedeForm && !puedeAct ? 'formularios' : 'actividades');
           return (
@@ -629,6 +629,11 @@ export default function Panel() {
       <TourGuiado tab={tab} setTab={setTab} permisos={{
         dashboard: tienePermisoDashboard(usuario),
         actividadesyformularios: tienePermisoActividades(usuario) || tienePermisoFormularios(usuario),
+        // Pedido de Diego ("quiero que todos puedan ver las respuestas"): el paso del tour
+        // "Respuestas" ya no depende del permiso de gestión (ese sigue siendo
+        // "actividadesyformularios", para el paso de CREAR actividades/formularios) — ahora
+        // cualquier usuario autenticado puede verlo, igual que la pantalla real.
+        respuestas: tienePermisoVerRespuestasActividades(usuario) || tienePermisoVerRespuestasFormularios(usuario),
         emails: tienePermisoEmails(usuario),
         equipo: tienePermisoAsignarDocentes(usuario),
         accesos: tienePermisoAccesos(usuario),
