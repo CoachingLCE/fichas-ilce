@@ -41,6 +41,39 @@ export default function Auditoria({ usuario }) {
     });
   }, [eventos, q, cat]);
   const fmt = (iso) => { const d = new Date(iso); return isNaN(d) ? iso : d.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }); };
+
+  // Pedido de Diego: "compaginar manteniendo visible lo del mes" — los inicios de sesión (y los
+  // intentos fallidos) de una misma persona, uno atrás del otro, ensucian la lista sin aportar
+  // nada nuevo cada vez. Se agrupan en una sola fila con "×N" mientras se repite el mismo
+  // usuario + misma acción, sin mezclar "Inició sesión" con "Intento de login fallido". El resto
+  // de las acciones (ficha completada, creó, editó, etc.) no se toca, fila por fila como siempre.
+  // Entre medio se intercala un separador por mes, así nunca se pierde de vista de qué mes es
+  // lo que se está mirando aunque se haya compaginado un montón de logins.
+  const filas = useMemo(() => {
+    const out = [];
+    let mesActual = null;
+    let grupo = null;
+    const cerrarGrupo = () => { if (grupo) { out.push(grupo); grupo = null; } };
+    filtrados.forEach((e) => {
+      const d = new Date(e.fecha);
+      const mesKey = isNaN(d) ? '—' : `${d.getFullYear()}-${d.getMonth()}`;
+      if (mesKey !== mesActual) {
+        cerrarGrupo();
+        mesActual = mesKey;
+        out.push({ tipo: 'mes', label: isNaN(d) ? 'Fecha desconocida' : d.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }) });
+      }
+      const c = catAccion(e.accion);
+      if (c.id === 'login' && grupo && grupo.usuario === e.usuario && grupo.accion === e.accion) {
+        grupo.count++; grupo.primera = e.fecha;
+      } else {
+        cerrarGrupo();
+        if (c.id === 'login') grupo = { tipo: 'grupo', usuario: e.usuario, accion: e.accion, cat: c, ultima: e.fecha, primera: e.fecha, count: 1 };
+        else out.push({ tipo: 'evento', ...e });
+      }
+    });
+    cerrarGrupo();
+    return out;
+  }, [filtrados]);
   if (!eventos) return <div className="spin" />;
 
   const CHIPS = [
@@ -65,14 +98,29 @@ export default function Auditoria({ usuario }) {
         <div className="tablewrap" style={{ maxHeight: '68vh' }}>
           <table>
             <thead><tr><th style={{ minWidth: 120 }}>Fecha</th><th style={{ minWidth: 190 }}>Usuario</th><th style={{ minWidth: 170 }}>Acción</th><th style={{ minWidth: 240 }}>Detalle</th></tr></thead>
-            <tbody>{filtrados.map((e, i) => {
-              const c = catAccion(e.accion);
+            <tbody>{filas.map((f, i) => {
+              if (f.tipo === 'mes') {
+                return (
+                  <tr key={'mes-' + i} className="aud-mes-row"><td colSpan={4}>{f.label}</td></tr>
+                );
+              }
+              if (f.tipo === 'grupo') {
+                return (
+                  <tr key={'grupo-' + i}>
+                    <td className="sec">{f.count > 1 ? `${fmt(f.primera)} → ${fmt(f.ultima)}` : fmt(f.ultima)}</td>
+                    <td>{f.usuario}</td>
+                    <td><b style={{ color: f.cat.color }}>{f.cat.icono} {f.accion}</b>{f.count > 1 && <span className="aud-x-cnt"> ×{f.count}</span>}</td>
+                    <td className="sec">{f.count > 1 ? `${f.count} veces seguidas` : ''}</td>
+                  </tr>
+                );
+              }
+              const c = catAccion(f.accion);
               return (
                 <tr key={i}>
-                  <td className="sec">{fmt(e.fecha)}</td>
-                  <td>{e.usuario}</td>
-                  <td><b style={{ color: c.color }}>{c.icono} {e.accion}</b></td>
-                  <td className="sec">{e.detalle}</td>
+                  <td className="sec">{fmt(f.fecha)}</td>
+                  <td>{f.usuario}</td>
+                  <td><b style={{ color: c.color }}>{c.icono} {f.accion}</b></td>
+                  <td className="sec">{f.detalle}</td>
                 </tr>
               );
             })}</tbody>

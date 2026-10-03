@@ -207,7 +207,10 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
                     <button className="url-copy" title="Copiar URL" onClick={(e) => { e.stopPropagation(); copiarLink(d); }}>{copiado === d.slug ? '✓' : '📋'}</button>
                   </div>
                 </td>
-                <td style={{ textAlign: 'right' }}>{puedeEditar && <button className="btn-sm solid" onClick={() => onEditar(d.slug)}>{eds.length ? '✎ Editar' : '+ Cargar edición'}</button>}</td>
+                {/* Pedido de Diego: este botón más chico y "estético" (más transparente), sin
+                    tocar el .btn-sm.solid de base (se usa en Columnas/CSV/Excel/Actualizar y
+                    muchos otros lugares) — clase propia solo para esta columna. */}
+                <td style={{ textAlign: 'right' }}>{puedeEditar && <button className="btn-sm solid fichas-editar-btn" onClick={() => onEditar(d.slug)}>{eds.length ? '✎ Editar' : '+ Cargar edición'}</button>}</td>
               </tr>
             );
           })}</tbody>

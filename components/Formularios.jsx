@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import { APP_URL, estadoFechaReciente } from '../lib/constants';
+import { SelectDropdown } from './SelectDropdown';
 
 const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
@@ -163,10 +164,12 @@ function Respuestas({ usuario, showToast }) {
   if (!data) return <div className="spin" />;
   return (
     <div>
+      {/* Pedido de Diego: el buscador de texto vive en un solo lugar (el ícono 🔎 de arriba de
+          todo) — se saca este cuadro de búsqueda repetido. El combo de Formulario pasa a
+          SelectDropdown (mismo look "chip" chico que el resto de los filtros de la app). */}
       <div className="filters">
-        <div className="fsearch" style={{ maxWidth: 260 }}>🔎 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, email…" /></div>
-        <select className="fsel" value={fForm} onChange={(e) => setFForm(e.target.value)}><option value="">Formulario: todos</option>{forms.map((x) => <option key={x}>{x}</option>)}</select>
-        {(q || fForm) && <button className="btn-sm" onClick={() => { setQ(''); setFForm(''); }}>Limpiar</button>}
+        <SelectDropdown placeholder="Formulario: todos" searchable value={fForm} onChange={setFForm} options={forms.map((x) => ({ value: x, label: x }))} />
+        {fForm && <button className="btn-sm" onClick={() => setFForm('')}>Limpiar</button>}
         <span className="spacer" />
         <button className="btn-sm solid" onClick={() => setImportarAbierto(true)}>📥 Importar respuestas históricas</button>
       </div>

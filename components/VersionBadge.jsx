@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { APP_VERSION, APP_UPDATED_AT } from '../lib/version';
 import { CHANGELOG } from '../lib/changelog';
 
@@ -10,11 +10,31 @@ export default function VersionBadge() {
   const [hayNovedades, setHayNovedades] = useState(false);
   const [verAnteriores, setVerAnteriores] = useState(false);
   const fecha = new Date(APP_UPDATED_AT + 'T00:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const scrollRef = useRef(null);
+  const observerRef = useRef(null);
 
   // Parpadea mientras la ultima version vista sea distinta de la actual; al hacer clic se marca como vista.
   useEffect(() => {
     try { if (localStorage.getItem(CLAVE_ULTIMA_VISTA) !== APP_VERSION) setHayNovedades(true); } catch (e) { /* */ }
   }, []);
+
+  // Pedido de Diego: que el panel arranque "apagado" y se vaya "prendiendo" a medida que se lee,
+  // como si acompañara la lectura — no es un fade parejo al abrir, es por renglón y atado al
+  // scroll: cada ítem empieza opaco y se ilumina solo cuando entra a la franja de lectura de
+  // arriba (los que ya se ven al abrir se iluminan enseguida; los de más abajo, a medida que se
+  // llega a ellos). Una vez que un ítem se iluminó, se queda así (no se vuelve a apagar).
+  useEffect(() => {
+    const root = scrollRef.current;
+    if (!abierto || !root) return;
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) { entry.target.classList.add('nov-lit'); obs.unobserve(entry.target); }
+      });
+    }, { root, rootMargin: '0px 0px -40% 0px', threshold: 0.15 });
+    root.querySelectorAll('.nov-line').forEach((el) => obs.observe(el));
+    observerRef.current = obs;
+    return () => obs.disconnect();
+  }, [abierto, verAnteriores]);
 
   function abrir() {
     setAbierto(true);
@@ -36,11 +56,7 @@ export default function VersionBadge() {
       </button>
       {abierto && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setAbierto(false)}>
-          <div className="relative bg-surface2 border border-border rounded-2xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            {/* Al abrir, arranca más opaco arriba e "ilumina" hacia abajo (pedido de Diego) —
-                un degradé fijo en la parte de arriba de la ventana, no algo que dependa del
-                scroll. */}
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-16 rounded-t-2xl bg-gradient-to-b from-black/35 to-transparent z-10" />
+          <div ref={scrollRef} className="relative bg-surface2 border border-border rounded-2xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <p className="text-base font-bold">📋 Novedades de la app</p>
               <button onClick={() => setAbierto(false)} className="text-textMuted hover:text-text">✕</button>
@@ -53,7 +69,7 @@ export default function VersionBadge() {
                   </p>
                   <ul className="space-y-1">
                     {e.cambios.map((c, i) => (
-                      <li key={i} className="text-textSec text-xs flex gap-2"><span className="text-accentPurple">•</span><span>{c}</span></li>
+                      <li key={i} className="nov-line text-textSec text-xs flex gap-2"><span className="text-accentPurple">•</span><span>{c}</span></li>
                     ))}
                   </ul>
                 </div>

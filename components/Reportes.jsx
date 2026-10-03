@@ -205,16 +205,19 @@ function CrossLink({ onClick, children }) {
 // Reestructuración pedida por Diego: Resumen · Fichas · Actividades · Cursos · Estudiantes
 // (Formularios se mantiene, aparte, al final — Diego no lo mencionó en el pedido de
 // reestructuración y ya era un reporte real y en uso, así que no se saca ni se mezcla).
+// Rediseño de la navegación (referencia de Diego: seguimiento-lead-estudiante/reportes): cada
+// pestaña tiene su propio ícono y color fijo (no se ciclan ni se repiten), igual de criterio
+// que colorCurso — se evitan verde/amarillo/rojo porque esos quedan reservados para Estado.
 const NAV = [
-  { v: 'resumen', l: 'Resumen' },
-  { v: 'inscripciones', l: 'Fichas' },
-  { v: 'actividades', l: 'Actividades', req: 'act' },
-  { v: 'preguntas', l: 'Preguntas', req: 'act' },
-  { v: 'respuestas', l: 'Respuestas', req: 'act' },
-  { v: 'cursos', l: 'Cursos' },
-  { v: 'estudiantes', l: 'Estudiantes' },
-  { v: 'campos', l: 'Campos' },
-  { v: 'formularios', l: 'Formularios', req: 'form' },
+  { v: 'resumen', l: 'Resumen', ic: 'grid', c: '#0595ad' },
+  { v: 'inscripciones', l: 'Fichas', ic: 'file', c: '#3b82f6' },
+  { v: 'actividades', l: 'Actividades', req: 'act', ic: 'check', c: '#7c3aed' },
+  { v: 'preguntas', l: 'Preguntas', req: 'act', ic: 'circleDash', c: '#db2777' },
+  { v: 'respuestas', l: 'Respuestas', req: 'act', ic: 'edit', c: '#a21caf' },
+  { v: 'cursos', l: 'Cursos', ic: 'layers', c: '#22d3ee' },
+  { v: 'estudiantes', l: 'Estudiantes', ic: 'user', c: '#6366f1' },
+  { v: 'campos', l: 'Campos', ic: 'list', c: '#96198f' },
+  { v: 'formularios', l: 'Formularios', req: 'form', ic: 'folder', c: '#0891b2' },
 ];
 const PERIODOS = [
   { v: 'todo', l: 'Todo' }, { v: 'hoy', l: 'Hoy' }, { v: '7d', l: '7 días' },
@@ -656,9 +659,17 @@ export default function Reportes({ usuario, rows, puedeActividades, puedeFormula
       </div>
 
       <div className="repx-nav">
-        {NAV.filter((n) => (n.req === 'act' ? puedeActividades : n.req === 'form' ? puedeFormularios : true)).map((n) => (
-          <button key={n.v} className={sub === n.v ? 'on' : ''} onClick={() => setSub(n.v)}>{n.l}</button>
-        ))}
+        {NAV.filter((n) => (n.req === 'act' ? puedeActividades : n.req === 'form' ? puedeFormularios : true)).map((n) => {
+          const Icono = Ico[n.ic];
+          const activo = sub === n.v;
+          return (
+            <button key={n.v} className={'repx-nav-pill' + (activo ? ' on' : '')}
+              style={activo ? { background: n.c, color: '#fff' } : { background: n.c + '1c', color: n.c }}
+              onClick={() => setSub(n.v)}>
+              <Icono /> {n.l}
+            </button>
+          );
+        })}
       </div>
 
       <div className="repx-toolbar">

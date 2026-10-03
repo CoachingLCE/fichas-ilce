@@ -22,11 +22,15 @@ import Buscador from './Buscador';
 import TourGuiado from './TourGuiado';
 import { SelectDropdown, FiltroChip } from './SelectDropdown';
 
+// Pedido de Diego: misma estructura de orden en las tres tablas de "Respuestas" (Fichas,
+// Actividades, Formularios) — a la izquierda de todo, Fecha y después Nombre; el resto de las
+// columnas no cambia, solo el orden de estas dos primeras (ver también Actividades.jsx, donde
+// Formularios.jsx ya tenía este mismo orden desde antes).
 const ALL_COLS = [
-  ['nom', 'Nombre'], ['ape', 'Apellido'], ['em', 'Email'], ['curso', 'Curso'], ['ed', 'Edición'],
+  ['fecha', 'Fecha ficha'], ['nom', 'Nombre'], ['ape', 'Apellido'], ['em', 'Email'], ['curso', 'Curso'], ['ed', 'Edición'],
   ['pais', 'País'], ['prov', 'Provincia'], ['loc', 'Localidad'], ['wa', 'WhatsApp'], ['doc', 'Documento'],
   ['ig', 'Instagram'], ['prof', 'Profesión'], ['origen', 'Origen'], ['mod', 'Modalidad'],
-  ['inscrito', 'Inscrito'], ['estado', 'Estado'], ['fecha', 'Fecha ficha'],
+  ['inscrito', 'Inscrito'], ['estado', 'Estado'],
   // Se completa sola cuando la persona hace clic en "Hablar por WhatsApp" del mail de
   // confirmación (ver /api/click/whatsapp) — columna ancha a propósito porque el título es
   // largo (pedido de Diego).
@@ -429,6 +433,18 @@ export default function Panel() {
 
         {rows && tab === 'inscripciones' && (
           <>
+            {/* Pedido de Diego: el selector "Respuestas fichas / Respuestas actividades /
+                Respuestas formularios" tiene que verse también acá — antes solo vivía dentro
+                de la pestaña "Respuestas", así que al entrar a Inscripciones desde ahí (con
+                "Respuestas fichas") el selector desaparecía y no se podía saltar a las otras
+                dos. Mismo componente, "Respuestas fichas" queda marcada como la actual. */}
+            {(tienePermisoActividades(usuario) || tienePermisoFormularios(usuario)) && (
+              <div className="subtabs-pill">
+                <button className="on" title="Estás viendo las inscripciones (Fichas completadas)">📋 Respuestas fichas</button>
+                {tienePermisoActividades(usuario) && <button onClick={() => { setTab('respuestas'); setVistaResp('actividades'); }}>📝 Respuestas actividades</button>}
+                {tienePermisoFormularios(usuario) && <button onClick={() => { setTab('respuestas'); setVistaResp('formularios'); }}>🗒️ Respuestas formularios</button>}
+              </div>
+            )}
             {/* Los números/KPIs (Total, últimos 7 días, pendientes, etc.) se movieron a la
                 pestaña "Reportes" — acá solo quedan los filtros rápidos para trabajar el día a día. */}
             {(() => {
@@ -442,13 +458,13 @@ export default function Panel() {
                 setMasFiltros(true);
               };
               {/* Pedido de Diego: un solo tipo de filtro (chips) — se sacaron los combos de
-                  Curso/Edición/País y los selectores de fecha. Los dos grupos de chips van
-                  uno al lado del otro para no ocupar tanta altura. */}
+                  Curso/Edición/País y los selectores de fecha. "Estado" va abajo de "Filtros
+                  rápidos" (no al lado), y los chips de ambos grupos más chicos. */}
               return (
                 <div className="fgroup-row">
                   <div className="fgroup-col">
                     <div className="fgroup-label">Filtros rápidos</div>
-                    <div className="fchips">
+                    <div className="fchips fchips-sm">
                       <button className="pill" onClick={() => setPeriodo('hoy')}>Hoy</button>
                       <button className="pill" onClick={() => setPeriodo('sem')}>Esta semana</button>
                       <button className="pill" onClick={() => setPeriodo('mes')}>Este mes</button>
@@ -458,7 +474,7 @@ export default function Panel() {
                   </div>
                   <div className="fgroup-col">
                     <div className="fgroup-label">Estado</div>
-                    <div className="fchips">
+                    <div className="fchips fchips-sm">
                       <button className={'fchip' + (fEstado === '' ? ' on' : '')} onClick={() => setFEstado('')}>Todas <span className="cnt">{baseParaChips.length}</span></button>
                       {ESTADOS.filter((e) => baseParaChips.some((r) => r.estado === e)).map((e) => (
                         <button key={e} className={'fchip' + (fEstado === e ? ' on' : '')} onClick={() => setFEstado(fEstado === e ? '' : e)}>{e} <span className="cnt">{baseParaChips.filter((r) => r.estado === e).length}</span></button>

@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useMemo, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { CURSOS, APP_URL, colorCurso, inicialesCurso, estadoFechaReciente } from '../lib/constants';
+import { tienePermisoEliminarRespuestas } from '../lib/permisos';
 import { SelectDropdown } from './SelectDropdown';
 import ActividadForm from './ActividadForm';
 import { IsologoDefs } from './Isologo';
@@ -100,7 +101,7 @@ const Actividades = forwardRef(function Actividades({ usuario, showToast, puedeG
   return (
     <div>
       {sub === 'lista' && <Lista ref={listaRef} usuario={usuario} showToast={showToast} puedeGestionar={puedeGestionar} irABuscador={irABuscador} />}
-      {sub === 'respuestas' && <Respuestas usuario={usuario} irABuscador={irABuscador} />}
+      {sub === 'respuestas' && <Respuestas usuario={usuario} irABuscador={irABuscador} showToast={showToast} />}
     </div>
   );
 });
@@ -639,7 +640,7 @@ function TablaActividades({ items, puedeGestionar, onEditar, onDuplicar, onDetal
               <CeldaEditable
                 valor={a.edicion} placeholder="N° o Todas" puedeEditar={puedeGestionar}
                 onGuardar={(v) => onGuardarCampo(a, { edicion: v })}
-                render={(v) => v ? <span className="edchip">{v.toLowerCase() === 'todas' ? 'Todas' : `Ed. ${v}`}</span> : <span className="sec">—</span>}
+                render={(v) => v ? <span className="edchip">{v.toLowerCase() === 'todas' ? 'Todas' : v}</span> : <span className="sec">—</span>}
               />
             </td>
             <td className="sec">
@@ -744,7 +745,7 @@ function DetalleActividad({ a, puedeGestionar, showToast, onEditar, onDuplicar, 
               <CeldaEditable
                 valor={a.edicion} placeholder="N° o Todas" puedeEditar={puedeGestionar}
                 onGuardar={(v) => onGuardarCampo(a, { edicion: v })}
-                render={(v) => v ? (v.toLowerCase() === 'todas' ? 'Todas' : `Ed. ${v}`) : 'Se la pide al estudiante'}
+                render={(v) => v ? (v.toLowerCase() === 'todas' ? 'Todas' : v) : 'Se la pide al estudiante'}
               />
             </div>
           </div>
@@ -1014,15 +1015,36 @@ function ModalRespuestaDetalle({ x, onCerrar }) {
   );
 }
 
-function Respuestas({ usuario, irABuscador }) {
+function Respuestas({ usuario, irABuscador, showToast }) {
   const [data, setData] = useState(null);
   const [q, setQ] = useState('');
   const [fCurso, setFCurso] = useState(''); const [fEd, setFEd] = useState(''); const [fAct, setFAct] = useState('');
   const [detalleAbierto, setDetalleAbierto] = useState(null);
+  const puedeEliminar = tienePermisoEliminarRespuestas(usuario);
   useEffect(() => { (async () => {
     const res = await fetch('/api/actividades/respuestas?solicitanteEmail=' + encodeURIComponent(usuario.email));
     const d = await res.json(); setData(d.ok ? d : { respuestas: [] });
   })(); /* eslint-disable-next-line */ }, []);
+
+  // Pedido de Diego: "Super Admin puede eliminar rtas" — baja lógica desde acá mismo, con
+  // confirmación (misma UX que ya usa el resto de la app para borrar cosas que no se pueden
+  // deshacer, ver EditorActividad.eliminar más arriba en este archivo).
+  async function eliminarRespuesta(x) {
+    if (!confirm(`¿Eliminar la respuesta de ${x.nombre || x.email || 'esta persona'} en "${x.actividad}"?\n\nEsta acción no se puede deshacer.`)) return;
+    try {
+      const res = await fetch('/api/actividades/respuestas', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ solicitanteEmail: usuario.email, id: x.id })
+      });
+      const d = await res.json();
+      if (!d.ok) throw new Error(d.error || 'No se pudo eliminar');
+      setData((prev) => ({ ...prev, respuestas: (prev.respuestas || []).filter((r) => r.id !== x.id) }));
+      showToast && showToast('✓ Respuesta eliminada');
+    } catch (e) {
+      showToast ? showToast('✗ ' + (e.message || 'Error de conexión')) : alert(e.message || 'Error de conexión');
+    }
+  }
 
   const r = data?.respuestas || [];
   const cursos = useMemo(() => [...new Set(r.map((x) => x.curso).filter(Boolean))].sort(), [r]);
@@ -1051,23 +1073,25 @@ function Respuestas({ usuario, irABuscador }) {
             el ícono 🔎 de arriba del todo, este botón local lo duplicaba. */}
         <SelectDropdown placeholder="Curso: todos" searchable value={fCurso} onChange={setFCurso} options={cursos.map((x) => ({ value: x, label: x }))} />
         <SelectDropdown placeholder="Edición: todas" searchable value={fEd} onChange={setFEd} options={ediciones.map((x) => ({ value: x, label: 'Ed. ' + x }))} />
-        <select className="fsel" value={fAct} onChange={(e) => setFAct(e.target.value)}><option value="">Actividad: todas</option>{actividades.map((x) => <option key={x}>{x}</option>)}</select>
+        <SelectDropdown placeholder="Actividad: todas" searchable value={fAct} onChange={setFAct} options={actividades.map((x) => ({ value: x, label: x }))} />
         {(q || fCurso || fEd || fAct) && <button className="btn-sm" onClick={() => { setQ(''); setFCurso(''); setFEd(''); setFAct(''); }}>Limpiar</button>}
       </div>
       {data.alcance === 'docente' && <p className="muted" style={{ fontSize: 12, marginTop: -4, marginBottom: 10 }}>Mostrando solo tus cursos/ediciones asignados.</p>}
       {filtradas.length === 0 ? <div className="empty"><div className="ico">📭</div><h3>Sin respuestas</h3><p>No hay respuestas para estos filtros.</p></div> : (
         <div className="tablewrap"><table>
-          {/* Mismo orden que la tabla de Fichas completadas (Nombre, Curso, Edición, ...) —
-              antes empezaba por Fecha, pedido de Diego para que las dos tablas se lean igual. */}
+          {/* Pedido de Diego: misma estructura de orden en las tres tablas de "Respuestas" —
+              a la izquierda de todo, Fecha y después Nombre/Estudiante (Formularios.jsx ya
+              tenía este orden; acá y en Fichas completadas se alinean a ese mismo criterio). */}
           <thead><tr>
-            <th style={{ minWidth: 150 }}>Estudiante</th><th style={{ minWidth: 130 }}>Curso</th><th style={{ minWidth: 78 }}>Edición</th>
+            <th style={{ minWidth: 120 }}>Fecha</th><th style={{ minWidth: 150 }}>Estudiante</th><th style={{ minWidth: 130 }}>Curso</th><th style={{ minWidth: 78 }}>Edición</th>
             <th style={{ minWidth: 160 }}>Actividad</th><th style={{ minWidth: 180 }}>Email</th><th style={{ minWidth: 90 }}>Tiempo</th>
-            <th style={{ minWidth: 80, textAlign: 'right' }}>Puntaje</th><th style={{ minWidth: 120 }}>Fecha</th><th style={{ minWidth: 70 }}></th>
+            <th style={{ minWidth: 80, textAlign: 'right' }}>Puntaje</th><th style={{ minWidth: 70 }}></th>{puedeEliminar && <th style={{ minWidth: 40 }}></th>}
           </tr></thead>
           <tbody>{filtradas.map((x) => {
             const abiertas = (x.detalle || []).filter((d) => d.tipo === 'abierta');
             return (
             <tr key={x.id}>
+              <td><CeldaFechaRecienteAct iso={x.fecha} /></td>
               <td>{x.nombre || '—'}</td>
               <td><span style={{ color: colorCurso(x.curso) }}>{x.curso}</span></td>
               <td>{x.edicion || '—'}</td>
@@ -1075,8 +1099,10 @@ function Respuestas({ usuario, irABuscador }) {
               <td className="sec">{x.email}</td>
               <td className="sec">{fmtTiempo(x.duracion)}</td>
               <td style={{ textAlign: 'right' }}><b style={{ color: colorPorPuntaje(x.puntaje, x.total) }}>{x.puntaje}/{x.total}</b></td>
-              <td><CeldaFechaRecienteAct iso={x.fecha} /></td>
               <td>{abiertas.length > 0 && <button className="btn-sm" onClick={() => setDetalleAbierto(x)} title="Ver respuestas abiertas">✎ Ver ({abiertas.length})</button>}</td>
+              {/* Pedido de Diego: "Super Admin puede eliminar rtas" — solo visible con permiso
+                  (tienePermisoEliminarRespuestas, hoy equivale a rol Admin). */}
+              {puedeEliminar && <td><button className="btn-sm" style={{ color: 'rgb(248 113 113)' }} onClick={() => eliminarRespuesta(x)} title="Eliminar esta respuesta">🗑</button></td>}
             </tr>
             );
           })}</tbody>

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
-import { readSheet } from '../../../../lib/sheets';
+import { readSheet, updateRow } from '../../../../lib/sheets';
 import { TABS } from '../../../../lib/constants';
-import { findUsuario, tienePermisoActividades, tienePermisoVerTodasRespuestas } from '../../../../lib/auth';
+import { findUsuario, tienePermisoActividades, tienePermisoVerTodasRespuestas, tienePermisoEliminarRespuestas } from '../../../../lib/auth';
+import { registrarAccion } from '../../../../lib/auditoria';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,4 +54,24 @@ export async function GET(req) {
     return c === (r.curso || '').trim() && (!e || e === (r.edicion || '').trim());
   });
   return NextResponse.json({ ok: true, respuestas: filas.filter(permitido), alcance: 'docente' });
+}
+
+// Pedido de Diego: el Admin puede eliminar una respuesta de actividad ya enviada (por ejemplo,
+// una prueba/test cargada por error). Baja lógica, mismo criterio que ya usa DELETE en
+// /api/actividades (y /api/docentes): se vacía la fila en vez de borrarla de verdad, porque no
+// existe una función en lib/sheets.js para eliminar una fila real de la planilla.
+export async function DELETE(req) {
+  const body = await req.json();
+  const usuario = await findUsuario(body.solicitanteEmail);
+  if (!usuario || !tienePermisoEliminarRespuestas(usuario)) return NextResponse.json({ ok: false, error: 'Sin permiso' }, { status: 403 });
+  const { id } = body || {};
+  if (!id) return NextResponse.json({ ok: false, error: 'Falta el id' }, { status: 400 });
+  const filas = await readSheet(TABS.RESPUESTAS_ACT, { noCache: true });
+  const f = filas.find((x) => x.ID === id);
+  if (!f) return NextResponse.json({ ok: false, error: 'No encontrada' }, { status: 404 });
+  // Columnas de RESPUESTAS_ACT (ver lib/constants.js → HEADERS): ID, Fecha, Actividad, Curso,
+  // Edición, Email, Nombre, Puntuación, Total, Respuestas JSON, Duración seg.
+  await updateRow(TABS.RESPUESTAS_ACT, f._rowIndex, ['', '', '', '', '', '', '', '', '', '', '']);
+  await registrarAccion(usuario.email, usuario.nombre, 'Eliminó respuesta de actividad', `${f.Nombre || f.Email || ''} — ${f.Actividad || ''}${f.Curso ? ' · ' + f.Curso : ''}`);
+  return NextResponse.json({ ok: true });
 }

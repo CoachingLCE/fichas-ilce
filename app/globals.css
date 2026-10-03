@@ -53,9 +53,17 @@ html, body { margin: 0; padding: 0; }
 body {
   background: rgb(var(--bg));
   color: rgb(var(--text));
-  font-family: 'Dosis', system-ui, sans-serif;
-  font-weight: 400; /* Pedido de Diego: todo el texto de la app heredaba 500 (semi-negrita)
-                       de esta regla global — bajado a 400 (normal) en toda la app. */
+  /* Pedido de Diego ("qué tipografía estás usando" / "parece todo bold semi bold" / "saca todo
+     eso"): el texto normal de TODA la app venía en 'Dosis' por esta regla — Dosis es una fuente
+     geométrica de trazo parejo, pensada para títulos/display, que se lee más "gorda" que una
+     tipografía de sistema aunque esté en weight 400 (bajarle el weight, como se hizo antes, no
+     alcanzaba porque el problema de fondo era la fuente, no el peso). Dosis se saca de acá; el
+     texto normal pasa a usar la fuente nativa del sistema (más liviana y más legible en tamaños
+     chicos). 'Dosis' se sigue usando a propósito donde ya estaba puesta explícitamente en cada
+     elemento (títulos grandes, números de KPI, etc. — abajo en este mismo archivo), eso no cambia.
+  */
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 400;
   -webkit-font-smoothing: antialiased;
 }
 h1, h2, h3, .font-display { font-family: 'Dosis', system-ui, sans-serif; letter-spacing: .2px; }
@@ -337,7 +345,7 @@ tbody tr{cursor:pointer}tbody tr:hover{background:rgb(var(--surface2))}
    después de sus hermanos (que tienen order:0 por default), por eso terminaba al final de
    la fila en vez de al principio. El orden de aparición en el DOM ya lo deja primero. */
 .topnav-brand{display:flex;align-items:center;gap:10px;flex:0 0 auto}
-.topnav-tabs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;order:3;flex-basis:100%;min-width:0;padding-top:2px}
+.topnav-tabs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;padding-top:2px}
 .tnav{height:36px;display:inline-flex;align-items:center;padding:0 15px;border-radius:10px;font-size:14px;font-weight:600;
   white-space:nowrap;cursor:pointer;border:1px solid rgb(var(--border));background:rgb(var(--surface2));color:rgb(var(--textSec));transition:.15s}
 .tnav:hover{color:rgb(var(--text));border-color:rgb(var(--accentTeal))}
@@ -345,7 +353,12 @@ tbody tr{cursor:pointer}tbody tr:hover{background:rgb(var(--surface2))}
 /* Pestañas a las que el rol actual no tiene acceso: se ven "apagadas" y las que sí tiene acceso, más nítidas */
 .tnav.dim{opacity:.42;filter:saturate(.6)}
 .tnav.dim:hover{opacity:.75;filter:none}
-.topnav-right{display:flex;align-items:center;gap:12px;flex:0 0 auto;margin-left:auto;order:2}
+/* Pedido de Diego: "Ver como" + usuario + "Salir" en la MISMA línea que el resto de la barra
+   (antes, por el "order:3;flex-basis:100%" de .topnav-tabs de más arriba, .topnav-tabs ocupaba
+   una línea entera para sí sola y empujaba esto a su propia línea separada). Sin esas reglas,
+   ambos quedan en la misma fila de .topnav-inner y "margin-left:auto" lo manda al extremo
+   derecho de esa misma fila (se sigue yendo a su propia línea solo si la pantalla es angosta). */
+.topnav-right{display:flex;align-items:center;gap:12px;flex:0 0 auto;margin-left:auto}
 .topnav-user{line-height:1.15;text-align:right}
 .topnav-user b{display:block;font-size:13px}
 .topnav-user span{font-size:11px;color:rgb(var(--textMuted))}
@@ -406,7 +419,10 @@ tbody tr{cursor:pointer}tbody tr:hover{background:rgb(var(--surface2))}
 .fdrop-row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:8px}
 .fdrop{position:relative;min-width:150px}
 .fdrop-label{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:rgb(var(--textMuted));font-weight:700;margin:0 0 5px}
-.fdrop-btn{width:100%;height:36px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 12px;border-radius:9px;border:1px solid rgb(var(--border));background:rgb(var(--surface));color:rgb(var(--text));font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Pedido de Diego: estos combos, más chicos y con forma de chip (como el resto de los filtros
+   de la app) — cambia acá, una sola vez, para todos los lugares que usan SelectDropdown
+   (Actividades → Respuestas: Curso/Edición/Actividad; Formularios → Respuestas: Formulario; etc.) */
+.fdrop-btn{width:100%;height:30px;display:flex;align-items:center;justify-content:space-between;gap:6px;padding:0 11px;border-radius:999px;border:1px solid rgb(var(--border));background:rgb(var(--surface));color:rgb(var(--text));font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fdrop-btn:hover{border-color:rgb(var(--accentTeal))}
 .fdrop-btn.on{border-color:rgb(var(--accentPurple));color:rgb(var(--accentPurple))}
 .fdrop-btn .fdrop-car{color:rgb(var(--textMuted));flex:none}
@@ -419,7 +435,6 @@ tbody tr{cursor:pointer}tbody tr:hover{background:rgb(var(--surface2))}
 .fdrop-opt.on{background:rgb(var(--accentPurple) / .15);color:rgb(var(--accentPurple));font-weight:700}
 .fdrop-empty{padding:10px 12px;font-size:12px;color:rgb(var(--textMuted))}
 .fdrop-vercomo{min-width:0;width:170px}
-.fdrop-vercomo .fdrop-btn{height:32px}
 .fdrop-vercomo .fdrop-panel{max-width:320px;right:0;left:auto}
 .fdrop-vercomo .fdrop-opt{white-space:normal;line-height:1.35}
 .tagcloud{display:flex;flex-wrap:wrap;gap:7px}
@@ -669,11 +684,16 @@ tr.clickable:hover{background:rgb(var(--surface2))}
 
 /* ── Etiquetas de grupo en la zona de filtros ── */
 .fgroup-label{font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:rgb(var(--textMuted));font-weight:700;margin:0 0 6px}
-/* Pedido de Diego: "Filtros rápidos" y "Estado" van uno al lado del otro, no apilados
-   uno abajo del otro — así el bloque de filtros ocupa mucha menos altura. */
-.fgroup-row{display:flex;gap:28px;flex-wrap:wrap;margin-bottom:12px}
+/* Pedido de Diego: "Filtros rápidos" arriba y "Estado" abajo (apilados, no uno al lado del
+   otro como se había probado antes) — con los chips más chicos (.fchips-sm) y poco margen
+   entre los dos grupos, para que entre todo junto sin ocupar tanta altura. */
+.fgroup-row{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
 .fgroup-col{min-width:0}
 .fgroup-col .fchips{margin-bottom:0}
+.fchips-sm.fchips{gap:6px}
+.fchips-sm .pill{height:24px;padding:0 10px;font-size:11px}
+.fchips-sm .fchip{height:26px;padding:0 9px;font-size:11px;gap:5px}
+.fchips-sm .fchip .cnt,.fchips-sm .pill .cnt{font-size:9.5px}
 
 /* ── Fichas completadas: tabla más moderna + chips en celdas ── */
 .ins-name{font-weight:700;color:rgb(var(--text))}
@@ -1096,12 +1116,14 @@ tr.clickable:hover{background:rgb(var(--surface2))}
 .repx-head-meta{display:flex;align-items:center;gap:6px;font-size:12px;color:rgb(var(--textMuted));margin-top:4px}
 .repx-head-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
 
-/* Navegación como control segmentado (una sola pieza, no pestañas subrayadas) */
-.repx-nav{display:inline-flex;align-items:center;gap:2px;background:rgb(var(--surface2));border:1px solid rgb(var(--border));border-radius:12px;padding:3px;margin-bottom:16px;flex-wrap:wrap}
-.repx-nav button{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 14px;border-radius:9px;border:0;background:transparent;color:rgb(var(--textSec));font-size:13.5px;font-weight:700;cursor:pointer;transition:background .15s,color .15s;white-space:nowrap}
-.repx-nav button:hover{color:rgb(var(--text))}
-.repx-nav button.on{background:rgb(var(--surface));color:rgb(var(--accentTeal));box-shadow:0 1px 3px rgba(0,0,0,.18)}
-[data-theme="light"] .repx-nav button.on{box-shadow:0 1px 2px rgba(15,23,42,.1)}
+/* Rediseño pedido por Diego (referencia: seguimiento-lead-estudiante/reportes): cada pestaña es
+   su propia píldora con ícono y color fijo (ver NAV en Reportes.jsx), en vez de un control
+   segmentado de una sola pieza con todo del mismo color. El color de cada botón se pisa por
+   inline style (background/color vienen de n.c en JS), acá solo queda la forma y el estado. */
+.repx-nav{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.repx-nav-pill{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 14px;border-radius:999px;border:0;font-size:13.5px;font-weight:600;cursor:pointer;transition:filter .15s,box-shadow .15s;white-space:nowrap}
+.repx-nav-pill:hover{filter:brightness(1.18)}
+.repx-nav-pill.on{font-weight:700;box-shadow:0 3px 10px -3px rgba(0,0,0,.45)}
 
 /* Toolbar de filtros: presets de período + "Más filtros" + acciones */
 .repx-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
@@ -1401,3 +1423,24 @@ tr.clickable .repx-cellbar:hover .fl{filter:brightness(1.15)}
   0%, 100% { opacity: 0.45; box-shadow: 0 0 0 0 rgba(34, 211, 238, 0); border-color: rgb(var(--color-border)); }
   50% { opacity: 1; box-shadow: 0 0 12px 3px rgba(34, 211, 238, 0.65); border-color: rgb(var(--color-accentTeal)); }
 }
+
+/* Pedido de Diego: el panel de "Novedades" arranca "apagado" y se va "prendiendo" renglón por
+   renglón como si acompañara la lectura — cada ítem empieza opaco/desaturado y un
+   IntersectionObserver (ver VersionBadge.jsx) le agrega .nov-lit apenas entra a la franja de
+   lectura de arriba del cuadro. Una vez iluminado se queda así. */
+.nov-line{opacity:.3;filter:saturate(.3);transition:opacity .55s ease,filter .55s ease}
+.nov-line.nov-lit{opacity:1;filter:none}
+
+/* Pedido de Diego: el botón "Editar"/"+ Cargar edición" de la lista de Fichas, más chico y
+   "estético" — más transparente en vez del gradiente sólido grande. Selector de 3 clases a
+   propósito, para pisar a .btn-sm.solid (misma especificidad que .btn-sm.solid, así que si no,
+   según el orden del archivo podía no ganar). No se toca .btn-sm.solid de base: se usa en
+   Columnas/CSV/Excel/Actualizar y muchos otros botones que no estaban en cuestión. */
+.btn-sm.solid.fichas-editar-btn{height:28px;padding:0 11px;font-size:12px;font-weight:600;border-radius:8px;
+  background:rgb(var(--accentPurple) / .16);color:rgb(var(--accentMagenta));box-shadow:none;border:1px solid rgb(var(--accentPurple) / .35)}
+.btn-sm.solid.fichas-editar-btn:hover{background:rgb(var(--accentPurple) / .26);filter:none;border-color:rgb(var(--accentPurple) / .55)}
+
+/* Historial de acciones: separador de mes (pedido de Diego, "compaginar manteniendo visible lo
+   del mes") y la insignia "×N" de los inicios de sesión agrupados. */
+.aud-mes-row td{padding:10px 13px 6px;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:rgb(var(--textMuted));background:transparent;border-bottom:1px solid rgb(var(--border))}
+.aud-x-cnt{font-size:11px;font-weight:700;color:rgb(var(--textMuted));margin-left:4px}
