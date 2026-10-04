@@ -58,7 +58,7 @@ function GraficoLinea({ etiquetas, puntos, color = '#22d3ee', alto = 88 }) {
         {coords.map((c, i) => c && <circle key={i} cx={c[0]} cy={c[1]} r={hover === i ? '5' : '3'} fill={color} />)}
       </svg>
       {hover !== null && coords[hover] && (
-        <div style={{ position: 'absolute', pointerEvents: 'none', zIndex: 10, transform: 'translate(-50%,-100%)', marginTop: -6, left: `${(hover / Math.max(puntos.length - 1, 1)) * 100}%`, top: `${(coords[hover][1] / alto) * 100}%`, background: 'rgb(var(--surface2))', border: '1px solid rgb(var(--border))', borderRadius: 10, padding: '4px 8px', fontSize: 11, whiteSpace: 'nowrap', boxShadow: '0 6px 16px -6px rgba(0,0,0,.5)' }}>
+        <div style={{ position: 'absolute', pointerEvents: 'none', zIndex: 10, transform: 'translate(-50%,-100%)', marginTop: -6, left: `${(hover / Math.max(puntos.length - 1, 1)) * 100}%`, top: `${(coords[hover][1] / alto) * 100}%`, background: 'rgb(var(--surface2))', border: '1px solid rgb(var(--border))', borderRadius: 10, padding: '4px 8px', fontSize: 12, whiteSpace: 'nowrap', boxShadow: '0 6px 16px -6px rgba(0,0,0,.5)' }}>
           <span style={{ color: 'rgb(var(--textMuted))' }}>{etiquetas && etiquetas[hover] ? etiquetas[hover] + ': ' : ''}</span><b>{fmt(puntos[hover])}</b>
         </div>
       )}
@@ -107,7 +107,7 @@ function GraficoLineaDoble({ etiquetas, actual, anterior, color = '#22d3ee', col
         {coordsA.map((c, i) => c && <circle key={'pa' + i} cx={c[0]} cy={c[1]} r={hover === i ? '5' : '3'} fill={color} />)}
       </svg>
       {hover !== null && (coordsA[hover] || coordsB[hover]) && (
-        <div style={{ position: 'absolute', pointerEvents: 'none', zIndex: 10, transform: 'translate(-50%,-100%)', marginTop: -6, left: `${(hover / Math.max(n - 1, 1)) * 100}%`, top: `${((coordsA[hover] || coordsB[hover])[1] / alto) * 100}%`, background: 'rgb(var(--surface2))', border: '1px solid rgb(var(--border))', borderRadius: 10, padding: '6px 10px', fontSize: 11, whiteSpace: 'nowrap', boxShadow: '0 6px 16px -6px rgba(0,0,0,.5)' }}>
+        <div style={{ position: 'absolute', pointerEvents: 'none', zIndex: 10, transform: 'translate(-50%,-100%)', marginTop: -6, left: `${(hover / Math.max(n - 1, 1)) * 100}%`, top: `${((coordsA[hover] || coordsB[hover])[1] / alto) * 100}%`, background: 'rgb(var(--surface2))', border: '1px solid rgb(var(--border))', borderRadius: 10, padding: '6px 10px', fontSize: 12, whiteSpace: 'nowrap', boxShadow: '0 6px 16px -6px rgba(0,0,0,.5)' }}>
           <div style={{ color: 'rgb(var(--textMuted))', marginBottom: 2 }}>{etiquetas && etiquetas[hover] ? etiquetas[hover] : ''}</div>
           <div><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: color, marginRight: 5 }} />{fmt(actual && actual[hover])}</div>
           {anterior && <div style={{ opacity: .75 }}><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: colorAnterior, marginRight: 5 }} />{fmt(anterior[hover])} <i style={{ fontStyle: 'normal', opacity: .7 }}>(mes anterior)</i></div>}
@@ -799,13 +799,13 @@ export default function Reportes({ usuario, rows, puedeActividades, puedeFormula
         <span className="grow" />
       </div>
       {(sub === 'actividades' || sub === 'preguntas' || sub === 'formularios' || sub === 'cursos' || sub === 'estudiantes') && (fEstado) && (
-        <p className="muted" style={{ fontSize: 11.5, margin: '0 0 8px' }}>El filtro de Estado no aplica acá (es propio de las fichas de inscripción).</p>
+        <p className="muted" style={{ fontSize: 12, margin: '0 0 8px' }}>El filtro de Estado no aplica acá (es propio de las fichas de inscripción).</p>
       )}
       {(sub === 'actividades' || sub === 'preguntas') && (fEd || fDesde || fHasta) && (
-        <p className="muted" style={{ fontSize: 11.5, margin: '0 0 8px' }}>Las actividades son del curso completo salvo que tengan una Edición propia asignada — acá solo se aplicó Curso (y Docente, a nivel de curso). El Reporte de Respuestas sí filtra por Edición y por Período (son datos reales de cada envío).</p>
+        <p className="muted" style={{ fontSize: 12, margin: '0 0 8px' }}>Las actividades son del curso completo salvo que tengan una Edición propia asignada — acá solo se aplicó Curso (y Docente, a nivel de curso). El Reporte de Respuestas sí filtra por Edición y por Período (son datos reales de cada envío).</p>
       )}
       {(sub === 'cursos' || sub === 'estudiantes') && (fEd || fDesde || fHasta) && (
-        <p className="muted" style={{ fontSize: 11.5, margin: '0 0 8px' }}>Las actividades son del curso completo, no de una edición puntual — las columnas de Actividades y % participación no cambian por Edición ni Fecha (Ediciones y Estudiantes sí reflejan esos filtros).</p>
+        <p className="muted" style={{ fontSize: 12, margin: '0 0 8px' }}>Las actividades son del curso completo, no de una edición puntual — las columnas de Actividades y % participación no cambian por Edición ni Fecha (Ediciones y Estudiantes sí reflejan esos filtros).</p>
       )}
       {chips.length > 0 && (
         <div className="repx-chips-row">
@@ -1162,7 +1162,7 @@ function ReportesInscripciones({ rows, irAConFiltro }) {
             {embudoProceso.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : embudoProceso.map((e) => (
               <div key={e.estado} style={{ marginBottom: 4 }}>
                 <Barra label={e.estado} n={e.n} max={maxEmbudo} claseFill={e.estado === 'Completada' || e.estado === 'Inscrito' ? '' : 'm'} onClick={irAConFiltro ? () => irAConFiltro('estado', e.estado) : undefined} />
-                <div style={{ fontSize: 11, color: 'rgb(var(--textMuted))', textAlign: 'right', marginTop: -4, marginBottom: 6 }}>{rows.length ? Math.round(e.n / rows.length * 100) : 0}% del total</div>
+                <div style={{ fontSize: 12, color: 'rgb(var(--textMuted))', textAlign: 'right', marginTop: -4, marginBottom: 6 }}>{rows.length ? Math.round(e.n / rows.length * 100) : 0}% del total</div>
               </div>
             ))}
           </div>
@@ -1172,7 +1172,7 @@ function ReportesInscripciones({ rows, irAConFiltro }) {
               {embudoSalidas.map((e) => (
                 <div key={e.estado} style={{ marginBottom: 4 }}>
                   <Barra label={e.estado} n={e.n} max={maxEmbudo} claseFill="r" onClick={irAConFiltro ? () => irAConFiltro('estado', e.estado) : undefined} />
-                  <div style={{ fontSize: 11, color: 'rgb(var(--textMuted))', textAlign: 'right', marginTop: -4, marginBottom: 6 }}>{rows.length ? Math.round(e.n / rows.length * 100) : 0}% del total</div>
+                  <div style={{ fontSize: 12, color: 'rgb(var(--textMuted))', textAlign: 'right', marginTop: -4, marginBottom: 6 }}>{rows.length ? Math.round(e.n / rows.length * 100) : 0}% del total</div>
                 </div>
               ))}
             </div>
@@ -1286,7 +1286,7 @@ function ReportesActividades({ data, actividades, irAPreguntas }) {
         <RepKpi icon={<Ico.user />} n={estudiantesPorCurso} label="Estudiantes participantes*" />
         <RepKpi icon={<Ico.check />} n={totalResp ? promedioGeneral + '%' : '—'} label="Promedio general" sub={totalResp ? `sobre ${totalResp} respuesta${totalResp === 1 ? '' : 's'}` : null} subTone={totalResp ? (promedioGeneral >= 80 ? 'good' : promedioGeneral < 50 ? 'bad' : '') : ''} />
       </div>
-      <p className="muted" style={{ fontSize: 11, marginTop: -8 }}>*Suma de estudiantes distintos por curso — si alguien participó en más de un curso, se cuenta una vez en cada uno (no es un total global deduplicado).</p>
+      <p className="muted" style={{ fontSize: 12, marginTop: -8 }}>*Suma de estudiantes distintos por curso — si alguien participó en más de un curso, se cuenta una vez en cada uno (no es un total global deduplicado).</p>
 
       <Seccion titulo="Resultados por actividad" sub="Estudiantes = inscriptos en el curso (o en su Edición, si la actividad tiene una asignada). Respondieron = estudiantes distintos que la completaron." right={
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -1379,7 +1379,7 @@ function ReportesPreguntas({ actividades, tabla }) {
         <RepKpi icon={<Ico.check />} n={promGeneral == null ? '—' : promGeneral + '%'} label="Promedio de aciertos" subTone={promGeneral != null ? pctTone(promGeneral) : ''} />
         <RepKpi icon={<Ico.alert />} n={peor ? peor.pct + '%' : '—'} label="Punto más débil" sub={peor ? `${peor.pregunta.slice(0, 36)}${peor.pregunta.length > 36 ? '…' : ''}` : null} subTone={peor ? 'bad' : ''} />
       </div>
-      <p className="muted" style={{ fontSize: 11, marginTop: -8 }}>Solo se incluyen preguntas de opción múltiple o Verdadero/Falso (se autocorrigen) con al menos {minResp} respuesta{minResp === 1 ? '' : 's'}.</p>
+      <p className="muted" style={{ fontSize: 12, marginTop: -8 }}>Solo se incluyen preguntas de opción múltiple o Verdadero/Falso (se autocorrigen) con al menos {minResp} respuesta{minResp === 1 ? '' : 's'}.</p>
 
       <Seccion titulo="Preguntas" right={
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -1515,7 +1515,7 @@ function ReportesRespuestas({ actividades, detalle }) {
                   <tbody>{p.lista.map((d, i) => (
                     <tr key={i}>
                       <td className="sec">{d.fecha}</td>
-                      <td><b>{d.nombre || '—'}</b><div className="muted" style={{ fontSize: 11 }}>{d.email}</div></td>
+                      <td><b>{d.nombre || '—'}</b><div className="muted" style={{ fontSize: 12 }}>{d.email}</div></td>
                       <td style={{ whiteSpace: 'pre-wrap' }}>{d.respuesta}</td>
                     </tr>
                   ))}</tbody>
@@ -1526,7 +1526,7 @@ function ReportesRespuestas({ actividades, detalle }) {
             <div>{p.opciones.map((o) => (
               <div key={o.valor} style={{ marginBottom: 4 }}>
                 <Barra label={o.valor} n={o.n} max={maxOpcion} />
-                <div style={{ fontSize: 11, color: 'rgb(var(--textMuted))', textAlign: 'right', marginTop: -4, marginBottom: 6 }}>{o.pct}% de las respuestas</div>
+                <div style={{ fontSize: 12, color: 'rgb(var(--textMuted))', textAlign: 'right', marginTop: -4, marginBottom: 6 }}>{o.pct}% de las respuestas</div>
               </div>
             ))}</div>
           )}
@@ -1556,7 +1556,7 @@ function ReportesCampos({ distribucion }) {
               <div>{c.opciones.map((o) => (
                 <div key={o.valor} style={{ marginBottom: 4 }}>
                   <Barra label={o.valor} n={o.n} max={max} />
-                  <div style={{ fontSize: 11, color: 'rgb(var(--textMuted))', textAlign: 'right', marginTop: -4, marginBottom: 6 }}>{o.pct}% de {c.total} ficha{c.total === 1 ? '' : 's'}</div>
+                  <div style={{ fontSize: 12, color: 'rgb(var(--textMuted))', textAlign: 'right', marginTop: -4, marginBottom: 6 }}>{o.pct}% de {c.total} ficha{c.total === 1 ? '' : 's'}</div>
                 </div>
               ))}</div>
             )}
@@ -1675,7 +1675,7 @@ function ReportesEstudiantes({ tabla, puedeActividades, irAConFiltro }) {
               <thead><tr><th>Estudiante</th><th>Curso</th><th>Edición</th><th>Actividades realizadas</th><th>% participación</th></tr></thead>
               <tbody>{ordenadas.map((e, i) => (
                 <tr key={e.email + '·' + e.curso + '·' + i} className={irAConFiltro ? 'clickable' : ''} style={irAConFiltro ? { cursor: 'pointer' } : undefined} onClick={irAConFiltro ? () => irAConFiltro('curso', e.curso) : undefined}>
-                  <td><b>{e.estudiante}</b><div className="muted" style={{ fontSize: 11 }}>{e.email}</div></td>
+                  <td><b>{e.estudiante}</b><div className="muted" style={{ fontSize: 12 }}>{e.email}</div></td>
                   <td className="sec">{e.curso}</td>
                   <td className="sec">{e.ed || '—'}</td>
                   <td className="sec">{puedeActividades ? `${e.realizadas} / ${e.totalAct}` : '—'}</td>

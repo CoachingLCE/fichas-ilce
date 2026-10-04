@@ -34,7 +34,7 @@ export default async function ActividadPublica({ params }) {
         <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '26px 14px 60px' }}>
           <div style={{ width: 394, maxWidth: '100%', background: 'rgb(var(--surface))', border: '1px solid rgb(var(--border))', borderRadius: 30, overflow: 'hidden' }}>
             <div style={{ padding: '24px 22px', color: '#fff', background: 'linear-gradient(120deg,#01233f,#065f74 55%,#0595ad)' }}>
-              <div style={{ fontFamily: 'Jost', letterSpacing: 4, fontSize: 11, opacity: .85 }}>ACTIVIDAD</div>
+              <div style={{ fontFamily: 'Jost', letterSpacing: 4, fontSize: 12, opacity: .85 }}>ACTIVIDAD</div>
               <div style={{ fontFamily: 'Jost', fontWeight: 500, fontSize: 24, marginTop: 6 }}>{act.curso}</div>
             </div>
             <div style={{ padding: 26, textAlign: 'center' }}>

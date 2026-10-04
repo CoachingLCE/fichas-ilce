@@ -159,7 +159,7 @@ export default function ActividadForm({ act, modoPreview = false }) {
     if (!guardado) return null;
     const txt = guardado === 'guardando' ? 'Guardando…' : guardado === 'error' ? '⚠ No se pudo guardar en este dispositivo' : '✓ Respuestas guardadas en este dispositivo';
     const color = guardado === 'error' ? 'rgb(248 113 113)' : guardado === 'guardando' ? 'rgb(var(--textMuted))' : 'rgb(74 222 128)';
-    return <div style={{ fontSize: 11.5, color, textAlign: compacto ? 'right' : 'left', marginTop: compacto ? 0 : 8 }}>{txt}</div>;
+    return <div style={{ fontSize: 12, color, textAlign: compacto ? 'right' : 'left', marginTop: compacto ? 0 : 8 }}>{txt}</div>;
   };
 
   // "Ya completada": gana siempre sobre cualquier otra pantalla — ni se le llega a mostrar

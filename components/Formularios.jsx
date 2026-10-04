@@ -239,7 +239,7 @@ function Respuestas({ usuario, showToast }) {
                   <div style={{ padding: '10px 6px', display: 'grid', gap: 6 }}>
                     {Object.entries(x.r || {}).filter(([k]) => !['email', 'nombre', 'curso', 'edicion', 'importadoDe'].includes(k)).map(([k, v]) => (
                       <div key={k} style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 11.5, color: 'rgb(var(--textMuted))', textTransform: 'capitalize', flex: '0 0 160px' }}>{k}</span>
+                        <span style={{ fontSize: 12, color: 'rgb(var(--textMuted))', textTransform: 'capitalize', flex: '0 0 160px' }}>{k}</span>
                         <span style={{ fontSize: 13.5 }}>{String(v)}</span>
                       </div>
                     ))}

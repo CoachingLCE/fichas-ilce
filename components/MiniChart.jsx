@@ -50,9 +50,9 @@ export default function MiniChart({ series, height = 180, formatValue = (v) => v
       </svg>
       {series.length > 1 && (
         <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 6 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: 'rgb(var(--textSec))' }}><i style={{ width: 10, height: 2, background: 'rgb(var(--accentTeal))', display: 'inline-block' }} />{principal.nombre || 'Total'}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'rgb(var(--textSec))' }}><i style={{ width: 10, height: 2, background: 'rgb(var(--accentTeal))', display: 'inline-block' }} />{principal.nombre || 'Total'}</span>
           {series.slice(1).map((s, si) => (
-            <span key={si} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: 'rgb(var(--textSec))' }}><i style={{ width: 10, height: 2, background: s.color || 'rgb(var(--accentPurple))', display: 'inline-block' }} />{s.nombre}</span>
+            <span key={si} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'rgb(var(--textSec))' }}><i style={{ width: 10, height: 2, background: s.color || 'rgb(var(--accentPurple))', display: 'inline-block' }} />{s.nombre}</span>
           ))}
         </div>
       )}

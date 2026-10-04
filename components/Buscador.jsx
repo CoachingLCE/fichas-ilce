@@ -138,7 +138,7 @@ export default function Buscador({ usuario, irA, setQInscripciones }) {
                       <IconoTipo tipo={v.tipo} size={16} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 500, fontSize: 13.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.titulo}</div>
-                        <div className="muted" style={{ fontSize: 11.5 }}>{v.tipo}{v.sub ? ` · ${v.sub}` : ''}</div>
+                        <div className="muted" style={{ fontSize: 12 }}>{v.tipo}{v.sub ? ` · ${v.sub}` : ''}</div>
                       </div>
                     </div>
                   </div>

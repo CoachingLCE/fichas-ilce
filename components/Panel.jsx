@@ -108,6 +108,12 @@ export default function Panel() {
     const t = new URLSearchParams(window.location.search).get('tab');
     return tabDeUrl(t);
   });
+  // En celular la barra de pestañas se desplaza: al cambiar de pestaña, la activa se centra sola.
+  useEffect(() => {
+    const el = document.querySelector('.topnav-tabs .tnav.on');
+    if (el && el.scrollIntoView) el.scrollIntoView({ inline: 'center', block: 'nearest' });
+  }, [tab]);
+
   useEffect(() => {
     const url = new URL(window.location.href);
     if (url.searchParams.get('tab') !== tab) {
@@ -514,6 +520,27 @@ export default function Panel() {
                 </tbody>
               </table>
             </div>
+            {/* Celular: lista de tarjetas con lo importante (la tabla de arriba se oculta). Tocar una
+                tarjeta abre el mismo detalle de siempre, que tiene todos los datos. */}
+            <div className="mcards" aria-label="Inscripciones">
+              {filtradas.slice(0, 300).map((r) => (
+                <div
+                  key={r.id}
+                  className="mcard"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => abrir(r)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrir(r); } }}
+                >
+                  <div className="mcard-top">
+                    <span className="mcard-nom">{[r.nom, r.ape].filter(Boolean).join(' ') || '—'}</span>
+                    <span>{celda(r, 'estado')}</span>
+                  </div>
+                  <div className="mcard-curso">{celda(r, 'curso')}<span>{celda(r, 'ed')}</span></div>
+                  <div className="mcard-meta"><span>{celda(r, 'fecha')}</span><span>{celda(r, 'pais')}</span><span>{celda(r, 'wa')}</span></div>
+                </div>
+              ))}
+            </div>
           </>
         )}
 
@@ -650,7 +677,7 @@ function DrawerSeccion({ titulo, campos }) {
   if (!visibles.length) return null;
   return (
     <div style={{ marginBottom: 14 }}>
-      <div style={{ fontFamily: 'Jost', fontSize: 11, letterSpacing: 1.5, color: 'rgb(var(--textMuted))', textTransform: 'uppercase', marginBottom: 6 }}>{titulo}</div>
+      <div style={{ fontFamily: 'Jost', fontSize: 12, letterSpacing: 1.5, color: 'rgb(var(--textMuted))', textTransform: 'uppercase', marginBottom: 6 }}>{titulo}</div>
       <div className="kv" style={{ margin: 0 }}>
         {visibles.map(([k, v]) => <div key={k} style={{ display: 'contents' }}><div className="k">{k}</div><div>{v}</div></div>)}
       </div>

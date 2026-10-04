@@ -305,7 +305,7 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
           </div>
         )}
       </div>
-      {!e._nuevo && <p className="muted" style={{ fontSize: 11.5, fontFamily: 'monospace', margin: '-10px 0 14px' }}>{APP_URL}/actividad/{e.slug}</p>}
+      {!e._nuevo && <p className="muted" style={{ fontSize: 12, fontFamily: 'monospace', margin: '-10px 0 14px' }}>{APP_URL}/actividad/{e.slug}</p>}
 
       {tieneRespuestas && (
         <div className="note" style={{ margin: '0 0 16px' }}>

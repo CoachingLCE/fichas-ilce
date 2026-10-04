@@ -86,7 +86,7 @@ export default function Accesos({ usuario }) {
             ))}
           </tbody>
         </table>
-        <p style={{ color: 'rgb(var(--textMuted))', fontSize: 11, marginTop: 8 }}>Los roles se pueden combinar (ej. Coordinador + Academico).</p>
+        <p style={{ color: 'rgb(var(--textMuted))', fontSize: 12, marginTop: 8 }}>Los roles se pueden combinar (ej. Coordinador + Academico).</p>
       </div>
 
       <div className="panel">

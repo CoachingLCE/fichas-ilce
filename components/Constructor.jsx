@@ -336,7 +336,7 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
           );
         })}
         {defsFiltrados.length === 0 && <p className="muted" style={{ fontSize: 12.5, padding: '0 4px' }}>Sin resultados.</p>}
-        <p className="muted" style={{ fontSize: 11, marginTop: 10, padding: '0 4px' }}>Agregar formaciones nuevas llega en el próximo lote.</p>
+        <p className="muted" style={{ fontSize: 12, marginTop: 10, padding: '0 4px' }}>Agregar formaciones nuevas llega en el próximo lote.</p>
       </div>
 
       {/* CENTRO — editor */}
@@ -375,7 +375,7 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
               </button>
             ))}
           </div>
-          <p className="muted" style={{ fontSize: 11.5, marginTop: 8 }}>{estadoActual.explicacion}</p>
+          <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>{estadoActual.explicacion}</p>
         </div>
 
         <div className="ctor-section" ref={refEdiciones} id="ediciones">
@@ -635,7 +635,7 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
                     {eds.slice(0, 3).map((e, i) => (
                       <div key={i} className="wiz-preview-ed">
                         <div style={{ fontWeight: 500 }}>{e.label || 'Edición'}</div>
-                        {e.horarios && <div style={{ fontSize: 11, color: 'rgb(var(--textMuted))' }}>{e.horarios}</div>}
+                        {e.horarios && <div style={{ fontSize: 12, color: 'rgb(var(--textMuted))' }}>{e.horarios}</div>}
                       </div>
                     ))}
                   </div>
