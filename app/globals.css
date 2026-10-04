@@ -12,10 +12,10 @@
   --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px; /* escala de spacing unica */
   --text: 238 240 248;
   --textSec: 154 161 194;
-  --textMuted: 107 114 153;
+  --textMuted: 152 161 198;   /* #98a1c6: contraste AA (antes #6b7299, 3,8:1) */
   --accentTeal: 34 211 238;     /* #22d3ee */
   --accentTeal2: 8 145 178;     /* #0891b2 */
-  --accentPurple: 124 58 237;   /* #7c3aed */
+  --accentPurple: 122 31 150;    /* #7a1f96: violeta de marca */
   --accentMagenta: 192 38 211;  /* #c026d3 */
   /* Grammar de estado (Reportes y afines): un solo significado por color, nunca decorativo.
      Mismos valores que ya se usaban sueltos (rgb(74 222 128) etc.) — acá quedan centralizados. */
@@ -34,11 +34,11 @@
   --border: 226 232 240;
   --text: 15 23 42;
   --textSec: 71 85 105;
-  --textMuted: 148 163 184;
-  --accentTeal: 8 145 178;      /* #0891b2 */
+  --textMuted: 86 104 119;      /* #566877: contraste AA (antes #94a3b8, 2,6:1) */
+  --accentTeal: 3 115 139;      /* #03738b: teal de marca, legible como texto (antes #0891b2, 3,7:1) */
   --accentTeal2: 14 116 144;    /* #0e7490 */
-  --accentPurple: 124 58 237;
-  --accentMagenta: 162 28 175;
+  --accentPurple: 112 22 141;     /* #70168d: violeta de marca (antes #7c3aed) */
+  --accentMagenta: 150 25 143;    /* #96198f: magenta de marca (antes #a21caf) */
   --good: 21 128 61;
   --goodBg: 220 252 231;
   --warn: 161 98 7;
@@ -47,6 +47,18 @@
   --bad: 185 28 28;
   --badBg: 254 226 226;
 }
+/* Controles nativos (checkbox, scrollbars, listas desplegables) respetan el tema */
+:root, [data-theme="dark"] { color-scheme: dark; }
+[data-theme="light"] { color-scheme: light; }
+
+@layer base {
+  /* Foco visible para quien navega con teclado (antes la app no tenía estados de foco) */
+  :focus-visible {
+    outline: 2px solid rgb(var(--accentTeal));
+    outline-offset: 2px;
+  }
+}
+
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
