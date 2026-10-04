@@ -5,6 +5,7 @@ import { tienePermisoEliminarRespuestas } from '../lib/permisos';
 import { SelectDropdown } from './SelectDropdown';
 import ActividadForm from './ActividadForm';
 import { IsologoDefs } from './Isologo';
+import { useDialogos } from './Dialogos';
 
 const slugify = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -171,6 +172,7 @@ function validarPreguntas(e) {
 }
 
 function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otrasActividades, onCerrarAhora, onDespublicar, onEliminar }) {
+  const { confirmar, avisar } = useDialogos();
   const [e, setE] = useState(base);
   const [paso, setPaso] = useState(0);
   const [error, setError] = useState('');
@@ -195,24 +197,24 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
   const setPreg = (i, patch) => set({ preguntas: preguntas.map((p, j) => j === i ? { ...p, ...patch } : p) });
   const tieneRespuestas = !e._nuevo && (e.totalRespuestas || 0) > 0;
 
-  function cambiarTipo(i, tipo) {
+  async function cambiarTipo(i, tipo) {
     if (tipo === preguntas[i].tipo) return;
     // Cambiar el tipo de una pregunta que ya tiene respuestas puede dejar esas respuestas sin
     // sentido (p. ej. pasarla a Verdadero/Falso cuando alguien ya eligió una opción que ya no
     // va a existir) — se confirma antes, no se cambia de una.
-    if (tieneRespuestas && !confirm('Esta actividad ya tiene respuestas registradas. Cambiar el tipo de esta pregunta puede dejar esas respuestas sin sentido (no se van a recalcular). ¿Cambiar igual?')) return;
+    if (tieneRespuestas && !(await confirmar({ titulo: 'Cambiar el tipo de pregunta', textoConfirmar: 'Cambiar tipo', peligro: true, mensaje: 'Esta actividad ya tiene respuestas registradas. Cambiar el tipo de esta pregunta puede dejar esas respuestas sin sentido (no se van a recalcular). ¿Cambiar igual?'}))) return;
     if (tipo === 'vf') setPreg(i, { tipo, opciones: ['Verdadero', 'Falso'], correcta: preguntas[i].correcta <= 1 ? preguntas[i].correcta : 0 });
     else if (tipo === 'abierta') setPreg(i, { tipo, opciones: [], correcta: undefined });
     else setPreg(i, { tipo, opciones: ['', '', ''], correcta: 0 });
   }
   function agregarPreg() { set({ preguntas: [...preguntas, nuevaPreg()] }); }
-  function eliminarPreg(i) {
+  async function eliminarPreg(i) {
     if (preguntas.length <= 1) return;
     // Si la actividad ya tiene respuestas, eliminar una pregunta puede desalinear el puntaje
     // ya calculado de quienes ya respondieron (las respuestas guardadas quedan intactas, pero
     // van a quedar "corridas" respecto de las preguntas que queden) — se confirma antes, en vez
     // de borrar directo como si la actividad no tuviera nada cargado todavía.
-    if (tieneRespuestas && !confirm('Esta actividad ya tiene respuestas registradas. Eliminar esta pregunta no borra esas respuestas, pero el puntaje ya calculado no se va a recalcular. ¿Eliminar igual?')) return;
+    if (tieneRespuestas && !(await confirmar({ titulo: 'Eliminar pregunta', textoConfirmar: 'Eliminar', peligro: true, mensaje: 'Esta actividad ya tiene respuestas registradas. Eliminar esta pregunta no borra esas respuestas, pero el puntaje ya calculado no se va a recalcular. ¿Eliminar igual?'}))) return;
     set({ preguntas: preguntas.filter((_, j) => j !== i) });
   }
   function duplicarPreg(i) {
@@ -707,6 +709,7 @@ function GridActividades({ items, puedeGestionar, onEditar, onDuplicar, onDetall
 // Ficha de detalle de una actividad (solo lectura + acciones)
 // ───────────────────────────────────────────────────────────────────────────
 function DetalleActividad({ a, puedeGestionar, showToast, onEditar, onDuplicar, onVolver, onGuardarCampo }) {
+  const { confirmar, avisar } = useDialogos();
   const efectivo = estadoEfectivoCliente(a);
   const badge = ESTADO_ICO[efectivo] || ESTADO_ICO.Publicada;
   const color = colorCurso(a.curso);
@@ -852,18 +855,18 @@ const Lista = forwardRef(function Lista({ usuario, showToast, puedeGestionar, ir
   // cierran el editor al terminar (no tiene sentido seguir editando algo que ya cambió de estado
   // o que se borró).
   async function cerrarAhora(a) {
-    if (!confirm(`¿Cerrar "${a.titulo}" ahora?\n\nA partir de este momento ya no se van a aceptar nuevas respuestas. La actividad va a mostrarse como "Cerrada" para los estudiantes.`)) return;
+    if (!(await confirmar({ titulo: 'Cerrar actividad', textoConfirmar: 'Cerrar ahora', mensaje: `¿Cerrar "${a.titulo}" ahora?\n\nA partir de este momento ya no se van a aceptar nuevas respuestas. La actividad va a mostrarse como "Cerrada" para los estudiantes.`}))) return;
     await guardarCampo(a, { fechaCierre: hoyISO() });
     cerrarModo(); cargar();
   }
   async function despublicar(a) {
-    if (!confirm(`¿Despublicar "${a.titulo}"?\n\nVa a volver a estado "Borrador": deja de estar visible para los estudiantes hasta que la publiques de nuevo. Las respuestas que ya tiene no se borran.`)) return;
+    if (!(await confirmar({ titulo: 'Despublicar actividad', textoConfirmar: 'Despublicar', mensaje: `¿Despublicar "${a.titulo}"?\n\nVa a volver a estado "Borrador": deja de estar visible para los estudiantes hasta que la publiques de nuevo. Las respuestas que ya tiene no se borran.`}))) return;
     await guardarCampo(a, { estado: 'Borrador' });
     cerrarModo(); cargar();
   }
   async function eliminarActividad(a) {
     const avisoResp = a.totalRespuestas > 0 ? `\n\nYa tiene ${a.totalRespuestas} respuesta${a.totalRespuestas === 1 ? '' : 's'} registrada${a.totalRespuestas === 1 ? '' : 's'}: esas respuestas NO se borran, quedan en el historial, pero la actividad va a desaparecer del listado.` : '';
-    if (!confirm(`¿Eliminar "${a.titulo}"?\n\nEsta acción no se puede deshacer. La actividad deja de estar disponible para siempre.${avisoResp}`)) return;
+    if (!(await confirmar({ titulo: 'Eliminar actividad', textoConfirmar: 'Eliminar', peligro: true, mensaje: `¿Eliminar "${a.titulo}"?\n\nEsta acción no se puede deshacer. La actividad deja de estar disponible para siempre.${avisoResp}`}))) return;
     try {
       const res = await fetch('/api/actividades', {
         method: 'DELETE', headers: { 'Content-Type': 'application/json' },
@@ -1016,6 +1019,7 @@ function ModalRespuestaDetalle({ x, onCerrar }) {
 }
 
 function Respuestas({ usuario, irABuscador, showToast }) {
+  const { confirmar, avisar } = useDialogos();
   const [data, setData] = useState(null);
   const [q, setQ] = useState('');
   const [fCurso, setFCurso] = useState(''); const [fEd, setFEd] = useState(''); const [fAct, setFAct] = useState('');
@@ -1030,7 +1034,7 @@ function Respuestas({ usuario, irABuscador, showToast }) {
   // confirmación (misma UX que ya usa el resto de la app para borrar cosas que no se pueden
   // deshacer, ver EditorActividad.eliminar más arriba en este archivo).
   async function eliminarRespuesta(x) {
-    if (!confirm(`¿Eliminar la respuesta de ${x.nombre || x.email || 'esta persona'} en "${x.actividad}"?\n\nEsta acción no se puede deshacer.`)) return;
+    if (!(await confirmar({ titulo: 'Eliminar respuesta', textoConfirmar: 'Eliminar', peligro: true, mensaje: `¿Eliminar la respuesta de ${x.nombre || x.email || 'esta persona'} en "${x.actividad}"?\n\nEsta acción no se puede deshacer.`}))) return;
     try {
       const res = await fetch('/api/actividades/respuestas', {
         method: 'DELETE',
@@ -1042,7 +1046,7 @@ function Respuestas({ usuario, irABuscador, showToast }) {
       setData((prev) => ({ ...prev, respuestas: (prev.respuestas || []).filter((r) => r.id !== x.id) }));
       showToast && showToast('✓ Respuesta eliminada');
     } catch (e) {
-      showToast ? showToast('✗ ' + (e.message || 'Error de conexión')) : alert(e.message || 'Error de conexión');
+      showToast ? showToast('✗ ' + (e.message || 'Error de conexión')) : avisar(e.message || 'Error de conexión', 'error');
     }
   }
 

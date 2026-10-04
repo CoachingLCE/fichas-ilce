@@ -2,10 +2,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { PAISES, PROVINCIAS_AR } from '../lib/constants';
 import { validarEmail, validarWhatsapp, validarDoc, validarNombre, filtrarTelefono, esArgentina } from '../lib/validacion';
+import { useDialogos } from './Dialogos';
 
 const STEP_NAMES = ['Bienvenida', 'Edición y horario', 'Datos personales', 'Sobre vos', 'Revisión', '¡Listo!'];
 
 export default function FichaWizard({ def }) {
+  const { avisar } = useDialogos();
+  const [errEnvio, setErrEnvio] = useState('');
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({ pais: 'Argentina' });
   const [errs, setErrs] = useState({});
@@ -70,7 +73,7 @@ export default function FichaWizard({ def }) {
     const url = new URL(window.location.href);
     url.searchParams.set('token', token);
     navigator.clipboard?.writeText(url.toString());
-    alert('Enlace copiado. Con ese link retomás la ficha donde la dejaste (en este dispositivo).');
+    avisar('Enlace copiado. Con ese link retomás la ficha donde la dejaste (en este dispositivo).');
   }
 
   // --- validación por paso ---
@@ -108,6 +111,7 @@ export default function FichaWizard({ def }) {
   function go(s) { setStep(s); }
 
   async function enviar() {
+    setErrEnvio('');
     setEnviando(true);
     try {
       const res = await fetch('/api/inscripcion', {
@@ -117,14 +121,14 @@ export default function FichaWizard({ def }) {
       const data = await res.json();
       if (!data.ok) {
         if (data.errores) setErrs(data.errores);
-        alert(data.error || 'No se pudo enviar. Revisá los datos.');
+        setErrEnvio(data.error || 'No se pudo enviar. Revisá los datos.');
         setEnviando(false);
         return;
       }
       try { localStorage.removeItem(draftKey(token)); } catch {}
       setResultado(data); setStep(5);
     } catch (err) {
-      alert('Error de conexión al enviar. Probá de nuevo.');
+      setErrEnvio('Error de conexión al enviar. Probá de nuevo.');
     }
     setEnviando(false);
   }
@@ -294,6 +298,11 @@ export default function FichaWizard({ def }) {
 
         {step > 0 && step < 5 && <button className="linkbtn" onClick={copiarEnlace}>🔗 Copiar enlace para continuar después</button>}
 
+        {step === 4 && errEnvio && (
+          <div role="alert" style={{ background: 'rgb(var(--badBg))', color: 'rgb(var(--bad))', border: '1px solid rgb(var(--bad))', borderRadius: 10, padding: '10px 12px', fontSize: 13, margin: '12px 22px 4px' }}>
+            {errEnvio}
+          </div>
+        )}
         {step < 5 && (
           <div className="f-foot">
             {step === 0 && <button className="btn btn-primary" onClick={next}>Comenzar</button>}

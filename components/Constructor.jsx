@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { APP_URL, cantidadClasesFija, esAsincronica, calcularFechaFinEdicion, colorCurso } from '../lib/constants';
 import { generarHorarios } from '../lib/husos';
+import { useDialogos } from './Dialogos';
 
 // ───────────────────────────────────────────────────────────────────────────
 // Biblioteca de campos estándar ILCE, agrupados. Es la base con la que se
@@ -85,6 +86,7 @@ function relativo(ts, _tick) {
 }
 
 export default function Constructor({ usuario, initialSlug, showToast, onVolver, volverLabel }) {
+  const { confirmar, avisar } = useDialogos();
   const [defs, setDefs] = useState(null);
   const [errorCarga, setErrorCarga] = useState('');
   const [sel, setSel] = useState(null); // índice de la ficha activa en el editor
@@ -173,12 +175,12 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
     }
     setSel(i); setDirty(false); setEdAbierta(null); setErrorGuardado('');
   }
-  function cambiarFicha(i) {
-    if (dirty && !confirm('Tenés cambios sin guardar. ¿Cambiar de ficha sin guardar?')) return;
+  async function cambiarFicha(i) {
+    if (dirty && !(await confirmar({ titulo: 'Cambios sin guardar', textoConfirmar: 'Cambiar sin guardar', peligro: true, mensaje: 'Tenés cambios sin guardar. ¿Cambiar de ficha sin guardar?'}))) return;
     seleccionar(i);
   }
-  function volver() {
-    if (dirty && !confirm('Tenés cambios sin guardar. ¿Volver sin guardar?')) return;
+  async function volver() {
+    if (dirty && !(await confirmar({ titulo: 'Cambios sin guardar', textoConfirmar: 'Volver sin guardar', peligro: true, mensaje: 'Tenés cambios sin guardar. ¿Volver sin guardar?'}))) return;
     if (onVolver) onVolver();
   }
   function irASeccion(id) {

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { APP_URL, estadoFechaReciente, colorCurso } from '../lib/constants';
 import { SelectDropdown } from './SelectDropdown';
 import { tienePermisoEliminarRespuestas } from '../lib/permisos';
+import { useDialogos } from './Dialogos';
 
 const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
@@ -126,6 +127,7 @@ function Lista({ usuario, showToast }) {
 }
 
 function Respuestas({ usuario, showToast }) {
+  const { confirmar, avisar } = useDialogos();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [q, setQ] = useState('');
@@ -138,7 +140,7 @@ function Respuestas({ usuario, showToast }) {
   // Pedido de Diego ("agregar eliminar acá"): mismo criterio y UX que ya usa el borrado de
   // respuestas de actividades (confirmación + baja lógica desde la API).
   async function eliminarRespuesta(x) {
-    if (!confirm(`¿Eliminar la respuesta de ${x.nombre || x.email || 'esta persona'} en "${x.formulario}"?\n\nEsta acción no se puede deshacer.`)) return;
+    if (!(await confirmar({ titulo: 'Eliminar respuesta', textoConfirmar: 'Eliminar', peligro: true, mensaje: `¿Eliminar la respuesta de ${x.nombre || x.email || 'esta persona'} en "${x.formulario}"?\n\nEsta acción no se puede deshacer.`}))) return;
     try {
       const res = await fetch('/api/formularios/respuestas', {
         method: 'DELETE', headers: { 'Content-Type': 'application/json' },

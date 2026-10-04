@@ -2,6 +2,7 @@ import './globals.css';
 import { ThemeProvider } from '../lib/ThemeContext';
 import ErrorBoundary from '../components/ErrorBoundary';
 import RecuperadorDeChunks from '../components/RecuperadorDeChunks';
+import { DialogosProvider } from '../components/Dialogos';
 
 export const metadata = {
   title: 'ILCE · Fichas de Inscripción',
@@ -18,8 +19,10 @@ export default function RootLayout({ children }) {
       </head>
       <body>
         <ThemeProvider>
-          <RecuperadorDeChunks />
-          <ErrorBoundary>{children}</ErrorBoundary>
+          <DialogosProvider>
+            <RecuperadorDeChunks />
+            <ErrorBoundary>{children}</ErrorBoundary>
+          </DialogosProvider>
         </ThemeProvider>
       </body>
     </html>
