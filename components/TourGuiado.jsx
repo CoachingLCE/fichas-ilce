@@ -5,6 +5,7 @@
 // llamando a setTab.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { TOUR_PASOS, TAREAS_AYUDA } from '../lib/tourSteps';
+import { APP_VERSION } from '../lib/version';
 
 export default function TourGuiado({ tab, setTab, permisos }) {
   const [menuAbierto, setMenuAbierto] = useState(false);
@@ -94,13 +95,31 @@ export default function TourGuiado({ tab, setTab, permisos }) {
     setRect(null);
   }
 
+  // Esc cierra el menú de ayuda o el recorrido guiado (accesibilidad por teclado).
+  useEffect(() => {
+    if (!menuAbierto && !activo) return undefined;
+    const alTeclear = (e) => {
+      if (e.key !== 'Escape') return;
+      if (activo) cerrar();
+      else setMenuAbierto(false);
+    };
+    document.addEventListener('keydown', alTeclear);
+    return () => document.removeEventListener('keydown', alTeclear);
+  });
+
   return (
     <>
       <button
         onClick={() => setMenuAbierto((v) => !v)}
-        className="fixed bottom-14 right-4 z-[90] bg-gradient-to-r from-accentPurple to-accentMagenta text-white text-sm font-semibold px-4 py-2.5 rounded-full shadow-lg flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+        aria-label="Necesito ayuda"
+        aria-expanded={menuAbierto}
+        className="fixed bottom-14 right-4 z-[90] h-12 w-12 sm:w-auto sm:px-4 justify-center bg-surface text-text border border-border text-sm font-semibold rounded-full shadow-lg flex items-center gap-2 hover:bg-surface2 transition-colors no-print"
       >
-        ❓ Necesito ayuda
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accentMagenta shrink-0" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01" />
+        </svg>
+        <span className="hidden sm:inline">Necesito ayuda</span>
       </button>
 
       {menuAbierto && !activo && (
@@ -114,7 +133,7 @@ export default function TourGuiado({ tab, setTab, permisos }) {
             >
               Comenzar recorrido
             </button>
-            <p className="text-[11px] text-textMuted mb-1.5 font-semibold">O elegí una tarea puntual:</p>
+            <p className="text-[12px] text-textMuted mb-1.5 font-semibold">O elegí una tarea puntual:</p>
             <div className="flex flex-col gap-1">
               {tareas.map((t) => (
                 <button
@@ -126,6 +145,16 @@ export default function TourGuiado({ tab, setTab, permisos }) {
                 </button>
               ))}
             </div>
+            <button
+              className="mt-3 w-full flex items-center justify-between text-left text-[13px] text-textSec hover:text-text border-t border-border pt-3"
+              onClick={() => {
+                setMenuAbierto(false);
+                window.dispatchEvent(new Event('ilce:novedades'));
+              }}
+            >
+              <span>Novedades de la app</span>
+              <span className="text-textMuted">v{APP_VERSION}</span>
+            </button>
           </div>
         </div>
       )}
@@ -183,7 +212,7 @@ function TourOverlay({ paso, idx, total, rect, buscando, modoTarea, onSiguiente,
         className="fixed bg-surface2 border border-border rounded-2xl p-4 shadow-2xl"
         style={tooltipStyle || { top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 'min(320px, calc(100vw - 28px))' }}
       >
-        {!esFinal && <p className="text-[11px] text-textMuted mb-1.5 font-semibold">{idx + 1} de {total}</p>}
+        {!esFinal && <p className="text-[12px] text-textMuted mb-1.5 font-semibold">{idx + 1} de {total}</p>}
         <h3 className="text-sm font-semibold mb-1.5">{paso.titulo}</h3>
         {buscando ? (
           <p className="text-xs text-textSec mb-3">Cargando…</p>
