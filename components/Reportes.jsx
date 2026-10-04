@@ -1735,7 +1735,7 @@ function ReportesFormularios({ data, irAConFiltro }) {
           <MiniChart series={[{ nombre: 'Respuestas', data: serieMensual }]} />
         </Seccion>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(360px,1fr))', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(360px,100%),1fr))', gap: 16 }}>
           <Seccion titulo="Detalle por formulario" sub="Respuestas, última recibida y ritmo reciente.">
             <div className="tablewrap" style={{ maxHeight: 360 }}>
               <table>

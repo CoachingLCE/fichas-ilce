@@ -69,7 +69,7 @@ export default function Accesos({ usuario }) {
     <div>
       <div className="panel">
         <p style={{ fontSize: 14, fontWeight: 500, margin: '0 0 10px' }}>🔐 Permisos por rol</p>
-        <table style={{ fontSize: 12.5 }}>
+        <table className="perm-tabla" style={{ fontSize: 12.5 }}>
           <tbody>
             {[
               ['Admin', 'Todo el sistema, incluido Constructor y Accesos (exclusivos de Admin).'],
@@ -80,7 +80,7 @@ export default function Accesos({ usuario }) {
               ['Académico', 'Lectura de inscripciones, Dashboard y Reportes; gestiona Actividades (Postwork) y Formularios (puede crearlos, no solo verlos). No asigna docentes ni ve Accesos.']
             ].map(([r, d]) => (
               <tr key={r} style={{ borderBottom: '1px solid rgb(var(--border))' }}>
-                <td style={{ padding: '7px 10px 7px 0', fontWeight: 500, whiteSpace: 'nowrap', verticalAlign: 'top' }}>{r}</td>
+                <td className="perm-rol" style={{ padding: '7px 10px 7px 0', fontWeight: 500, verticalAlign: 'top' }}>{r}</td>
                 <td style={{ padding: '7px 0', color: 'rgb(var(--textSec))' }}>{d}</td>
               </tr>
             ))}
@@ -134,7 +134,7 @@ export default function Accesos({ usuario }) {
 
         <hr style={{ border: 0, borderTop: '1px solid rgb(var(--border))', margin: '4px 0 16px' }} />
         <p style={{ fontSize: 14, fontWeight: 500, marginBottom: 12 }}>Agregar nuevo usuario</p>
-        <form onSubmit={agregarUsuario} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+        <form onSubmit={agregarUsuario} className="form-grid-2">
           <div><label style={lbl}>Email</label><input required type="email" className="ctrl" value={nuevoEmail} onChange={(e) => setNuevoEmail(e.target.value)} placeholder="nombre@institutoilce.com" /></div>
           <div><label style={lbl}>Nombre</label><input required className="ctrl" value={nuevoNombre} onChange={(e) => setNuevoNombre(e.target.value)} /></div>
           <div><label style={lbl}>Contraseña</label><input className="ctrl" value={nuevoPassword} onChange={(e) => setNuevoPassword(e.target.value)} placeholder='Vacío = "Hola123"' /></div>
@@ -148,7 +148,7 @@ export default function Accesos({ usuario }) {
               ))}
             </div>
           </div>
-          <div style={{ gridColumn: 'span 2' }}>
+          <div className="col-full">
             <button type="submit" className="btn btn-primary" style={{ flex: 'none', padding: '11px 22px' }}>+ Dar acceso (envía la contraseña por mail)</button>
           </div>
         </form>

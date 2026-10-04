@@ -1036,10 +1036,10 @@ tr.clickable:hover{background:rgb(var(--surface2))}
    que también usa Formularios.jsx y Actividades.jsx.
    ============================================================ */
 .pcard-wrap{container-type:inline-size}
-.pcard-grid{display:grid;gap:16px;grid-template-columns:repeat(1,1fr);align-items:stretch}
-@container (min-width:700px){.pcard-grid{grid-template-columns:repeat(2,1fr)}}
-@container (min-width:1000px){.pcard-grid{grid-template-columns:repeat(3,1fr)}}
-@container (min-width:1320px){.pcard-grid{grid-template-columns:repeat(4,1fr)}}
+.pcard-grid{display:grid;gap:16px;grid-template-columns:minmax(0,1fr);align-items:stretch}
+@container (min-width:700px){.pcard-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container (min-width:1000px){.pcard-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@container (min-width:1320px){.pcard-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 
 .pcard{
   display:flex;flex-direction:column;gap:12px;height:100%;
@@ -1589,4 +1589,26 @@ thead th{font-weight:600;padding:8px 12px}
   .topnav-tabs::-webkit-scrollbar{display:none}
   .topnav-tabs>*{flex:0 0 auto}
   .navgroup{flex-wrap:nowrap}
+}
+
+/* Tarjetas de fichas en celular: nunca más anchas que la pantalla, y los botones se parten en dos
+   líneas en vez de quedar cortados contra el borde. */
+.pcard{min-width:0}
+@media (max-width:640px){
+  .pcard-actions{flex-wrap:wrap}
+  .pcard-act{flex:1 1 calc(50% - 8px);white-space:normal;text-overflow:clip}
+  .pcard-act-icon{flex:0 0 40px}
+}
+
+/* Accesos: tabla de permisos y formulario de alta que se adaptan a pantallas angostas. */
+.perm-tabla td{white-space:normal}
+.perm-tabla .perm-rol{white-space:nowrap}
+.form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-grid-2 .col-full{grid-column:1/-1}
+@media (max-width:640px){
+  .perm-tabla,.perm-tabla tbody,.perm-tabla tr,.perm-tabla td{display:block;width:100%}
+  .perm-tabla tr{padding:8px 0}
+  .perm-tabla td{padding:0!important}
+  .perm-tabla .perm-rol{white-space:normal;margin-bottom:2px}
+  .form-grid-2{grid-template-columns:1fr}
 }

@@ -27,7 +27,7 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
   // Vista predeterminada: Lista (antes arrancaba en Tarjetas). Si la persona ya eligió una
   // vista antes, se respeta lo guardado; si no hay nada guardado, arranca en "lista".
   const [vista, setVista] = useState('lista');
-  useEffect(() => { try { const v = localStorage.getItem('ilce-fichas-vista'); if (v === 'cards' || v === 'lista') setVista(v); } catch { /* */ } }, []);
+  useEffect(() => { try { const v = localStorage.getItem('ilce-fichas-vista'); if (v === 'cards' || v === 'lista') setVista(v); else if (window.innerWidth <= 640) setVista('cards'); } catch { /* */ } }, []);
   const cambiarVista = (v) => { setVista(v); try { localStorage.setItem('ilce-fichas-vista', v); } catch { /* */ } };
   // Pedido de Diego ("saca este filtro"): se sacó el combo "Ordenar: Nombre / Más recientes /
   // Más inscripciones" de la UI — la lista queda siempre alfabética por curso.

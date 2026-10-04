@@ -32,12 +32,12 @@ export default function Herramientas() {
     <div style={{ maxWidth: 900 }}>
       <h3 style={{ fontSize: 17, margin: '0 0 4px' }}>⚡ Accesos rápidos</h3>
       <p className="muted" style={{ fontSize: 12.5, marginTop: 0, marginBottom: 16 }}>Herramientas de uso diario. Se abren en una pestaña nueva.</p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 12, marginBottom: 26 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(min(220px,100%),1fr))', gap: 12, marginBottom: 26 }}>
         {ACCESOS_RAPIDOS.map((h) => <Tarjeta key={h.nombre} h={h} />)}
       </div>
       <h3 style={{ fontSize: 15, margin: '0 0 4px' }}>🔗 Recursos de ILCE</h3>
       <p className="muted" style={{ fontSize: 12.5, marginTop: 0, marginBottom: 16 }}>Accesos a la web y a los materiales de referencia.</p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(240px,1fr))', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(min(240px,100%),1fr))', gap: 12 }}>
         {RECURSOS.map((r) => <Tarjeta key={r.nombre} h={{ ...r, color: '#0595ad' }} />)}
       </div>
     </div>
