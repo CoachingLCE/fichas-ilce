@@ -1456,6 +1456,7 @@ tr.clickable .repx-cellbar:hover .fl{filter:brightness(1.15)}
    lectura de arriba del cuadro. Una vez iluminado se queda así. */
 .nov-line{opacity:.3;filter:saturate(.3);transition:opacity .55s ease,filter .55s ease}
 .nov-line.nov-lit{opacity:1;filter:none}
+@media (prefers-reduced-motion:reduce){.nov-line{opacity:1;filter:none;transition:none}}
 
 /* Pedido de Diego: el botón "Editar"/"+ Cargar edición" de la lista de Fichas, más chico y
    "estético" — más transparente en vez del gradiente sólido grande. Selector de 3 clases a

@@ -25,15 +25,25 @@ export default function VersionBadge() {
   // llega a ellos). Una vez que un ítem se iluminó, se queda así (no se vuelve a apagar).
   useEffect(() => {
     const root = scrollRef.current;
-    if (!abierto || !root) return;
+    if (!abierto || !root) return undefined;
+    const lineas = root.querySelectorAll('.nov-line');
+    // Sin IntersectionObserver (navegadores muy viejos) se muestran todos encendidos: nunca queda texto apagado.
+    if (typeof IntersectionObserver === 'undefined') { lineas.forEach((el) => el.classList.add('nov-lit')); return undefined; }
     const obs = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) { entry.target.classList.add('nov-lit'); obs.unobserve(entry.target); }
       });
     }, { root, rootMargin: '0px 0px -40% 0px', threshold: 0.15 });
-    root.querySelectorAll('.nov-line').forEach((el) => obs.observe(el));
+    lineas.forEach((el) => obs.observe(el));
     observerRef.current = obs;
-    return () => obs.disconnect();
+    // Los renglones que quedan en la parte de abajo del cuadro nunca llegan a la franja de lectura de arriba: al llegar al
+    // final de la lista (o si no hay scroll) se encienden todos los que faltan, para que el último renglón no quede apagado.
+    const alFondo = () => {
+      if (root.scrollTop + root.clientHeight >= root.scrollHeight - 8) root.querySelectorAll('.nov-line:not(.nov-lit)').forEach((el) => el.classList.add('nov-lit'));
+    };
+    root.addEventListener('scroll', alFondo, { passive: true });
+    alFondo();
+    return () => { obs.disconnect(); root.removeEventListener('scroll', alFondo); };
   }, [abierto, verAnteriores]);
 
   // "Novedades" también se abre desde el botón de Ayuda (en celular el badge flotante no se muestra).
