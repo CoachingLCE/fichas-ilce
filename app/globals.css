@@ -271,7 +271,9 @@ tbody tr{cursor:pointer}tbody tr:hover{background:rgb(var(--surface2))}
 .empty .ico{font-size:40px;margin-bottom:10px}
 .empty h3{font-size:18px;margin:0 0 6px}
 .empty p{font-size:14px;color:rgb(var(--textMuted));margin:0 0 16px}
-.toast{position:fixed;bottom:56px;left:50%;transform:translateX(-50%) translateY(20px);background:rgb(var(--surface2));border:1px solid rgb(var(--border));color:rgb(var(--text));padding:11px 18px;border-radius:12px;font-size:14px;font-weight:600;z-index:100;opacity:0;transition:.25s;pointer-events:none;box-shadow:0 16px 40px -16px rgba(0,0,0,.7)}
+/* Avisos ("Guardado", "Copiado"): mismo diseño en las cinco apps de ILCE — arriba y centrado (así no tapa el botón de ayuda),
+   con un borde de color a la izquierda. Es el mismo de components/Dialogos.jsx. */
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-12px);width:min(92vw,420px);background:rgb(var(--surface));border:1px solid rgb(var(--border));border-left:4px solid rgb(var(--good));color:rgb(var(--text));padding:12px 14px;border-radius:12px;font-size:14px;font-weight:400;z-index:310;opacity:0;transition:.25s;pointer-events:none;box-shadow:0 12px 30px rgba(0,0,0,.35)}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* ===== Constructor 3 zonas (Lote D) ===== */
