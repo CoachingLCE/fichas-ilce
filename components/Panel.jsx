@@ -21,6 +21,7 @@ import Reportes from './Reportes';
 import Buscador from './Buscador';
 import TourGuiado from './TourGuiado';
 import { SelectDropdown, FiltroChip } from './SelectDropdown';
+import { claveLugarFila } from '../lib/localidades';
 
 // Pedido de Diego: misma estructura de orden en las tres tablas de "Respuestas" (Fichas,
 // Actividades, Formularios) — a la izquierda de todo, Fecha y después Nombre; el resto de las
@@ -149,6 +150,8 @@ export default function Panel() {
   const [q, setQ] = useState(() => (typeof window === 'undefined' ? '' : new URLSearchParams(window.location.search).get('q') || ''));
   const [fEstado, setFEstado] = useState(''); const [fCurso, setFCurso] = useState('');
   const [fEd, setFEd] = useState(''); const [fPais, setFPais] = useState('');
+  // Filtros por lugar (vienen del reporte "Por localidad/provincia"): { clave, etiqueta } — la clave es la misma que usa el reporte.
+  const [fLoc, setFLoc] = useState(null); const [fProv, setFProv] = useState(null);
   const [fDesde, setFDesde] = useState(''); const [fHasta, setFHasta] = useState('');
   const [visCols, setVisCols] = useState(new Set(['nom', 'curso', 'ed', 'pais', 'wa', 'estado', 'fecha', 'clickwa']));
   const [colModal, setColModal] = useState(false);
@@ -222,6 +225,8 @@ export default function Panel() {
     else if (campo === 'curso') setFCurso(valor || '');
     else if (campo === 'ed') setFEd(valor || '');
     else if (campo === 'pais') setFPais(valor || '');
+    else if (campo === 'loc') setFLoc(valor || null);
+    else if (campo === 'prov') setFProv(valor || null);
     setTab('inscripciones');
   }
   async function cargarPersonas() {
@@ -254,6 +259,8 @@ export default function Panel() {
       if (fCurso && r.curso !== fCurso) return false;
       if (fEd && r.ed !== fEd) return false;
       if (fPais && r.pais !== fPais) return false;
+      if (fLoc && claveLugarFila(r, 'loc') !== fLoc.clave) return false;
+      if (fProv && claveLugarFila(r, 'prov') !== fProv.clave) return false;
       if (fExterior && (r.pais || '').toLowerCase() === 'argentina') return false;
       if (fDesde && (r.fecha || '') < fDesde) return false;
       if (fHasta && (r.fecha || '') > fHasta) return false;
@@ -265,7 +272,7 @@ export default function Panel() {
       // Más recientes primero (pedido de Diego) — antes quedaba en el orden en que las lee
       // la Sheet, que no es necesariamente cronológico.
     }).sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
-  }, [rows, q, fEstado, fCurso, fEd, fPais, fExterior, fDesde, fHasta]);
+  }, [rows, q, fEstado, fCurso, fEd, fPais, fLoc, fProv, fExterior, fDesde, fHasta]);
 
   // Base para los smart chips: aplica todos los filtros MENOS el estado, así los contadores
   // reflejan el resto de los filtros activos.
@@ -275,6 +282,8 @@ export default function Panel() {
       if (fCurso && r.curso !== fCurso) return false;
       if (fEd && r.ed !== fEd) return false;
       if (fPais && r.pais !== fPais) return false;
+      if (fLoc && claveLugarFila(r, 'loc') !== fLoc.clave) return false;
+      if (fProv && claveLugarFila(r, 'prov') !== fProv.clave) return false;
       if (fExterior && (r.pais || '').toLowerCase() === 'argentina') return false;
       if (fDesde && (r.fecha || '') < fDesde) return false;
       if (fHasta && (r.fecha || '') > fHasta) return false;
@@ -284,9 +293,9 @@ export default function Panel() {
       }
       return true;
     });
-  }, [rows, q, fCurso, fEd, fPais, fExterior, fDesde, fHasta]);
+  }, [rows, q, fCurso, fEd, fPais, fLoc, fProv, fExterior, fDesde, fHasta]);
 
-  function limpiar() { setQ(''); setFEstado(''); setFCurso(''); setFEd(''); setFPais(''); setFExterior(false); setFDesde(''); setFHasta(''); }
+  function limpiar() { setQ(''); setFEstado(''); setFCurso(''); setFEd(''); setFPais(''); setFLoc(null); setFProv(null); setFExterior(false); setFDesde(''); setFHasta(''); }
 
   async function abrir(r) {
     setSel(r); setHistorial([]);
@@ -504,14 +513,16 @@ export default function Panel() {
               <button className="btn-sm" onClick={() => setColModal(true)}>▦ Columnas</button>
               {puedeExportar && <><button className="btn-sm" onClick={exportCSV}> CSV</button><button className="btn-sm solid" onClick={exportXLSX}> Excel</button></>}
             </div>
-            {(q || fCurso || fEd || fPais || fEstado || fDesde || fHasta) && (
+            {(q || fCurso || fEd || fPais || fLoc || fProv || fEstado || fDesde || fHasta) && (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
-                {(() => { const n = [q, fEstado, fCurso, fEd, fPais, (fDesde || fHasta)].filter(Boolean).length; return <span style={{ fontSize: 12.5, color: 'rgb(var(--textMuted))', fontWeight: 500 }}>{n} {n === 1 ? 'filtro activo' : 'filtros activos'}</span>; })()}
+                {(() => { const n = [q, fEstado, fCurso, fEd, fPais, fLoc, fProv, (fDesde || fHasta)].filter(Boolean).length; return <span style={{ fontSize: 12.5, color: 'rgb(var(--textMuted))', fontWeight: 500 }}>{n} {n === 1 ? 'filtro activo' : 'filtros activos'}</span>; })()}
                 {q && <FiltroChip label={`Buscando: "${q}"`} onClear={() => setQ('')} />}
                 {fEstado && <FiltroChip label={`Estado: ${fEstado}`} onClear={() => setFEstado('')} />}
                 {fCurso && <FiltroChip label={`Curso: ${fCurso}`} onClear={() => setFCurso('')} />}
                 {fEd && <FiltroChip label={`Edición: ${fEd}`} onClear={() => setFEd('')} />}
                 {fPais && <FiltroChip label={`País: ${fPais}`} onClear={() => setFPais('')} />}
+                {fLoc && <FiltroChip label={`Localidad: ${fLoc.etiqueta}`} onClear={() => setFLoc(null)} />}
+                {fProv && <FiltroChip label={`Provincia: ${fProv.etiqueta}`} onClear={() => setFProv(null)} />}
                 {(fDesde || fHasta) && <FiltroChip label={`Fecha: ${fDesde || '…'} → ${fHasta || '…'}`} onClear={() => { setFDesde(''); setFHasta(''); }} />}
                 <button className="btn-sm" onClick={limpiar}>Limpiar filtros</button>
               </div>

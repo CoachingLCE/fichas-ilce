@@ -1199,7 +1199,8 @@ tr.clickable:hover .repx-rowarrow{color:rgb(var(--accentTeal))}
    mismo ranking como lista de barras Y como tabla por separado. */
 .repx-cellbar{display:flex;align-items:center;gap:9px;min-width:140px}
 .repx-cellbar .tr{flex:1;height:6px;border-radius:99px;background:rgb(var(--surface2));overflow:hidden}
-.repx-cellbar .fl{height:100%;border-radius:99px;background:linear-gradient(90deg,rgb(var(--accentTeal2)),rgb(var(--accentTeal)))}
+/* display:block: .fl es un <span> (en línea) y sin esto el navegador ignora el ancho y el alto: las barras de relleno nunca se dibujaban */
+.repx-cellbar .fl{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,rgb(var(--accentTeal2)),rgb(var(--accentTeal)))}
 .repx-cellbar .vv{flex:0 0 auto;font-weight:500;font-variant-numeric:tabular-nums;min-width:26px;text-align:right}
 tr.clickable .repx-cellbar:hover .fl{filter:brightness(1.15)}
 

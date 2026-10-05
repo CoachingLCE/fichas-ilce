@@ -11,6 +11,7 @@ import { Fragment, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { ESTADOS, CURSOS, colorCurso, inicialesCurso } from '../lib/constants';
 import { SelectDropdown, FiltroChip } from './SelectDropdown';
 import MiniChart from './MiniChart';
+import { agruparLugares, paisesDisponibles, normTxt as normLugar } from '../lib/localidades';
 
 // Curva suave (Catmull-Rom -> Bézier) en vez de una polyline recta entre cada punto — mismo
 // dato, trazo continuo en vez de quebrado. "cerrar" agrega el tramo de vuelta a la base del
@@ -1062,6 +1063,8 @@ function ReportesResumen({ rows, irAConFiltro }) {
         </Seccion>
       </div>
 
+      <ReportesLugares rows={rows} irAConFiltro={irAConFiltro} />
+
       <Expandible titulo="Por edición">
         {porEdicion.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : (
           <div className="repx-ed-grid">
@@ -1078,6 +1081,109 @@ function ReportesResumen({ rows, irAConFiltro }) {
     </div>
   );
 }
+
+/* ============================ POR LOCALIDAD / PROVINCIA ============================ */
+// Pedido de Diego (05/10/2026): reportes por localidades. La localidad la escribe cada estudiante a mano, así que se
+// agrupan las variantes ("Córdoba", "cordoba", "Cba", "Ciudad de Córdoba"...) y lo que no es un lugar real se cuenta
+// aparte como "sin datos". La lógica de agrupación está en lib/localidades.js; el clic usa la misma clave para filtrar.
+const LUGARES_VISIBLES = 15;
+
+function csvCelda(v) { const t = ('' + (v ?? '')).replace(/"/g, '""'); return /[",\n]/.test(t) ? `"${t}"` : t; }
+
+function ReportesLugares({ rows, irAConFiltro }) {
+  const [nivel, setNivel] = useState('loc');
+  const [pais, setPais] = useState('');
+  const [todas, setTodas] = useState(false);
+  const [buscar, setBuscar] = useState('');
+  const esProv = nivel === 'prov';
+  const paises = useMemo(() => paisesDisponibles(rows), [rows]);
+  const { grupos, sinDatos, considerados } = useMemo(() => agruparLugares(rows, { nivel, pais }), [rows, nivel, pais]);
+  const q = normLugar(buscar);
+  const filtrados = q ? grupos.filter((g) => normLugar(g.nombre).includes(q) || normLugar(g.provincia).includes(q)) : grupos;
+  const visibles = (todas || q) ? filtrados.slice(0, 300) : filtrados.slice(0, LUGARES_VISIBLES);
+  const max = Math.max(1, ...visibles.map((g) => g.total));
+  const conDatos = considerados - sinDatos;
+  const top5 = grupos.slice(0, 5).reduce((s, g) => s + g.total, 0);
+  const pctTop5 = conDatos ? Math.round(top5 / conDatos * 100) : 0;
+  const palabra = esProv ? 'provincia' : 'localidad';
+  const plural = esProv ? 'provincias' : 'localidades';
+
+  function descargar() {
+    const cols = [esProv ? 'Provincia' : 'Localidad', ...(esProv ? [] : ['Provincia']), 'País', 'Fichas', 'Completadas', '% completado'];
+    const filas = grupos.map((g) => [g.nombre, ...(esProv ? [] : [g.varias ? `${g.provincia} (y otras)` : g.provincia]), g.pais, g.total, g.completadas, g.pct + '%']);
+    const csv = '\ufeff' + [cols, ...filas, [], [`Fichas sin ${palabra} válida`, ...Array(cols.length - 2).fill(''), sinDatos]].map((f) => f.map(csvCelda).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = `fichas-por-${palabra}${pais ? '-' + normLugar(pais).replace(/\s+/g, '-') : ''}.csv`; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  }
+
+  return (
+    <Seccion
+      titulo={esProv ? 'Por provincia' : 'Por localidad'}
+      sub={`De qué ${palabra} son las fichas — clickeá una fila para verlas en Fichas completadas. Las distintas formas de escribir el mismo lugar se suman juntas.`}
+      right={
+        <div style={{ display: 'flex', gap: 6 }} role="group" aria-label="Agrupar por">
+          <button type="button" className={'pill' + (!esProv ? ' on' : '')} aria-pressed={!esProv} onClick={() => { setNivel('loc'); setTodas(false); }}>Localidad</button>
+          <button type="button" className={'pill' + (esProv ? ' on' : '')} aria-pressed={esProv} onClick={() => { setNivel('prov'); setTodas(false); }}>Provincia</button>
+        </div>
+      }
+    >
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 10 }}>
+        <select className="fsel" value={pais} onChange={(e) => { setPais(e.target.value); setTodas(false); }} aria-label="País">
+          <option value="">Todos los países</option>
+          {paises.map(([n, c]) => <option key={n} value={n}>{n} ({c})</option>)}
+        </select>
+        <input className="ctrl" style={{ width: 190 }} placeholder={`Buscar ${palabra}…`} aria-label={`Buscar ${palabra}`} value={buscar} onChange={(e) => setBuscar(e.target.value)} />
+        <span style={{ flex: 1 }} />
+        <button type="button" className="btn-sm" onClick={descargar} disabled={grupos.length === 0}>Descargar CSV</button>
+      </div>
+
+      {considerados === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : grupos.length === 0 ? (
+        <p className="muted" style={{ fontSize: 13 }}>Ninguna de las {considerados} fichas tiene una {palabra} válida{pais ? ` en ${pais}` : ''}.</p>
+      ) : (
+        <>
+          <p className="muted" style={{ fontSize: 12.5, margin: '0 0 10px' }}>
+            <b>{grupos.length}</b> {grupos.length === 1 ? palabra : plural} distintas en <b>{conDatos}</b> fichas
+            {grupos.length > 5 && <> · las 5 primeras concentran el <b>{pctTop5}%</b></>}
+            {sinDatos > 0 && <> · <b>{sinDatos}</b> sin {palabra} válida (no se muestran abajo)</>}
+          </p>
+          {filtrados.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Ninguna {palabra} coincide con "{buscar}".</p> : (
+            <div className="tablewrap">
+              <table>
+                <thead><tr>
+                  <th>{esProv ? 'Provincia' : 'Localidad'}</th>
+                  {!esProv && <th>Provincia</th>}
+                  <th>País</th><th>Fichas</th><th>Completadas</th><th>% completado</th><th />
+                </tr></thead>
+                <tbody>{visibles.map((g) => (
+                  <tr key={g.clave} className="clickable" style={{ cursor: irAConFiltro ? 'pointer' : undefined }}
+                    onClick={() => irAConFiltro && irAConFiltro(esProv ? 'prov' : 'loc', { clave: g.clave, etiqueta: g.nombre })}>
+                    <td><b style={{ fontWeight: 600 }}>{g.nombre}</b></td>
+                    {!esProv && <td className="sec" title={g.varias ? 'Hay fichas de este nombre en más de una provincia' : undefined}>{g.provincia || '—'}{g.varias ? ' y otras' : ''}</td>}
+                    <td className="sec">{banderaPais(g.pais) ? banderaPais(g.pais) + ' ' : ''}{g.pais || '—'}</td>
+                    <td><CellBar n={g.total} max={max} /></td>
+                    <td className="sec">{g.completadas}</td>
+                    <td><Pct v={g.pct} /></td>
+                    <td>{irAConFiltro && <Ico.chevronRight />}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+          )}
+          {!q && filtrados.length > LUGARES_VISIBLES && (
+            <div style={{ marginTop: 10 }}>
+              <button type="button" className="btn-sm" onClick={() => setTodas(!todas)}>
+                {todas ? `Ver solo las ${LUGARES_VISIBLES} primeras` : `Ver las ${Math.min(filtrados.length, 300)} ${plural}${filtrados.length > 300 ? ' (primeras 300)' : ''}`}
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </Seccion>
+  );
+}
+
 
 // Tabla compacta de dos columnas (Nombre + Cantidad, número a la derecha), usada en "Por
 // país" y "Origen de inscripciones" en reemplazo de las barras horizontales largas — mismo
