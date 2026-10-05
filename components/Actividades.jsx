@@ -67,7 +67,7 @@ function colorPorPuntaje(puntaje, total) {
 function CeldaFechaRecienteAct({ iso }) {
   const { tipo } = estadoFechaReciente(iso);
   if (tipo === 'hoy') return <span className="badge-fecha-hoy" title={iso}>🟢 Inscrito hoy</span>;
-  if (tipo === 'nueva') return <span className="badge-fecha-nueva" title={iso}>✨ Ficha nueva</span>;
+  if (tipo === 'nueva') return <span className="badge-fecha-nueva" title={iso}> Ficha nueva</span>;
   // Pedido de Diego (03/10/2026): formato D/M/AAAA (sin ceros adelante) en vez de AAAA-MM-DD.
   return <span className="sec" title={iso}>{fmtFechaCorta(iso)}</span>;
 }
@@ -263,7 +263,7 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
       const data = await res.json();
       if (data.ok) {
         setGuardadoEstado('ok');
-        showToast(estadoFinal === 'Publicada' ? '✓ Actividad publicada correctamente' : '✓ Actividad guardada como borrador');
+        showToast(estadoFinal === 'Publicada' ? ' Actividad publicada correctamente' : ' Actividad guardada como borrador');
         onGuardado();
       } else { setGuardadoEstado('error'); setError(data.error || 'No se pudo guardar'); }
     } catch { setGuardadoEstado('error'); setError('Error de conexión'); }
@@ -279,19 +279,19 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
   return (
     <div className="wiz-wrap">
       <div className="wiz-topbar">
-        <button className="btn-sm" onClick={onCancelar} disabled={guardando}>← Volver</button>
+        <button className="btn-sm" onClick={onCancelar} disabled={guardando}> Volver</button>
         <div className="wiz-stepper" style={{ flex: 1 }}>
           {PASOS.map((p, i) => (
             <div key={p.key} style={{ display: 'flex', alignItems: 'center' }}>
               {i > 0 && <span className="wiz-step-arrow">›</span>}
               <div className={'wiz-step' + (i === paso ? ' current' : i < paso ? ' done' : '')} onClick={() => irA(i)}>
-                <span className="wiz-step-ico">{i < paso ? '✓' : i + 1}</span>
+                <span className="wiz-step-ico">{i < paso ? '' : i + 1}</span>
                 <span className="wiz-step-lbl">{p.l}</span>
               </div>
             </div>
           ))}
         </div>
-        <button className="btn-sm" onClick={() => setVistaPrevia('mobile')} title="Ver cómo lo va a ver el estudiante">👁 Vista previa</button>
+        <button className="btn-sm" onClick={() => setVistaPrevia('mobile')} title="Ver cómo lo va a ver el estudiante"> Vista previa</button>
         {!e._nuevo && (
           <div className="repx-more-wrap" ref={menuRef}>
             <button className="btn-sm" onClick={() => setMenuAbierto((v) => !v)} title="Más acciones">⋯</button>
@@ -299,7 +299,7 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
               <div className="repx-more-pop" style={{ minWidth: 180 }}>
                 <button type="button" className="fdrop-opt" onClick={() => { setMenuAbierto(false); onDespublicar && onDespublicar(e); }}>Despublicar</button>
                 <button type="button" className="fdrop-opt" onClick={() => { setMenuAbierto(false); onCerrarAhora && onCerrarAhora(e); }}>Cerrar actividad ahora</button>
-                <button type="button" className="fdrop-opt" style={{ color: 'rgb(248 113 113)' }} onClick={() => { setMenuAbierto(false); onEliminar && onEliminar(e); }}>🗑 Eliminar actividad</button>
+                <button type="button" className="fdrop-opt" style={{ color: 'rgb(248 113 113)' }} onClick={() => { setMenuAbierto(false); onEliminar && onEliminar(e); }}> Eliminar actividad</button>
               </div>
             )}
           </div>
@@ -309,7 +309,7 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
 
       {tieneRespuestas && (
         <div className="note" style={{ margin: '0 0 16px' }}>
-          ⚠ Esta actividad ya tiene <b>{e.totalRespuestas} respuesta{e.totalRespuestas === 1 ? '' : 's'}</b>. Si eliminás o cambiás una pregunta existente (o su opción correcta), el puntaje de las respuestas ya enviadas no se recalcula — las respuestas en sí nunca se borran.
+           Esta actividad ya tiene <b>{e.totalRespuestas} respuesta{e.totalRespuestas === 1 ? '' : 's'}</b>. Si eliminás o cambiás una pregunta existente (o su opción correcta), el puntaje de las respuestas ya enviadas no se recalcula — las respuestas en sí nunca se borran.
         </div>
       )}
 
@@ -349,7 +349,7 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
               onDragOver={(ev) => ev.preventDefault()}
               onDrop={() => { if (dragIdx.current !== null) reordenarPreg(dragIdx.current, i); dragIdx.current = null; }}>
               <div className="preg-card-head">
-                <span className="preg-drag-handle" draggable onDragStart={() => { dragIdx.current = i; }} title="Arrastrar para reordenar">☰</span>
+                <span className="preg-drag-handle" draggable onDragStart={() => { dragIdx.current = i; }} title="Arrastrar para reordenar"></span>
                 <b>Pregunta {i + 1}</b>
                 <select className="fsel" value={p.tipo} onChange={(ev) => cambiarTipo(i, ev.target.value)}>
                   {PREG_TIPOS.map((t) => <option key={t.v} value={t.v}>{t.l}</option>)}
@@ -358,13 +358,13 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
                 <button className="btn-sm" onClick={() => moverPreg(i, -1)} disabled={i === 0} title="Subir">↑</button>
                 <button className="btn-sm" onClick={() => moverPreg(i, 1)} disabled={i === preguntas.length - 1} title="Bajar">↓</button>
                 <button className="btn-sm" onClick={() => duplicarPreg(i)} title="Duplicar pregunta">Duplicar</button>
-                <button className="btn-sm" style={{ color: 'rgb(248 113 113)' }} onClick={() => eliminarPreg(i)} title="Eliminar" disabled={preguntas.length <= 1}>🗑</button>
+                <button className="btn-sm" style={{ color: 'rgb(248 113 113)' }} onClick={() => eliminarPreg(i)} title="Eliminar" disabled={preguntas.length <= 1}></button>
               </div>
               <input className="ctrl" value={p.pregunta} onChange={(ev) => setPreg(i, { pregunta: ev.target.value })} placeholder="Texto de la pregunta" />
               {p.tipo === 'abierta' ? (
                 <p className="muted" style={{ fontSize: 12, margin: '10px 0 0' }}>El estudiante va a escribir su respuesta libremente — no se autocorrige, queda para revisar a mano en "Respuestas".</p>
               ) : (<>
-              <p className="muted" style={{ fontSize: 12, margin: '10px 0 6px' }}>Marcá la opción correcta ✓</p>
+              <p className="muted" style={{ fontSize: 12, margin: '10px 0 6px' }}>Marcá la opción correcta </p>
               {p.tipo === 'vf' ? (
                 p.opciones.map((op, j) => (
                   <div key={j} className="preg-vf-row">
@@ -377,7 +377,7 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
                   <div key={j} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
                     <input type="radio" name={'correcta-' + i} checked={p.correcta === j} onChange={() => setPreg(i, { correcta: j })} title="Correcta" style={{ accentColor: 'rgb(var(--accentMagenta))' }} />
                     <input className="ctrl" value={op} onChange={(ev) => setPreg(i, { opciones: p.opciones.map((x, k) => k === j ? ev.target.value : x) })} placeholder={`Opción ${j + 1}`} />
-                    <button className="btn-sm" onClick={() => setPreg(i, { opciones: p.opciones.filter((_, k) => k !== j), correcta: p.correcta >= p.opciones.length - 1 ? 0 : p.correcta })} disabled={p.opciones.length <= 2}>✕</button>
+                    <button className="btn-sm" onClick={() => setPreg(i, { opciones: p.opciones.filter((_, k) => k !== j), correcta: p.correcta >= p.opciones.length - 1 ? 0 : p.correcta })} disabled={p.opciones.length <= 2}></button>
                   </div>
                 ))}
                 <button className="btn-sm" onClick={() => setPreg(i, { opciones: [...p.opciones, ''] })}>+ Opción</button>
@@ -424,7 +424,7 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
           </label>
           <p className="muted" style={{ fontSize: 12, marginTop: 6, marginLeft: 26 }}>Si lo desmarcás, igual se corrige y se guarda todo — solo no se le muestra el número en pantalla.</p>
           <details className="wiz-avanzado">
-            <summary>⚙ Próximamente</summary>
+            <summary> Próximamente</summary>
             <p className="muted" style={{ fontSize: 12.5 }}>Límite de intentos y tiempo límite por actividad quedan para una próxima etapa: necesitan su propia lógica de control (contar intentos previos, cronómetro con envío automático) para no arriesgar respuestas de estudiantes ya en curso.</p>
           </details>
         </div>
@@ -449,8 +449,8 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
               <div className="detalle-preg" key={i}>
                 <b style={{ fontSize: 13.5 }}>{i + 1}. {p.pregunta || <span className="muted">(sin texto)</span>}</b>
                 {p.tipo === 'abierta'
-                  ? <div className="detalle-op muted">✎ Respuesta abierta — el estudiante escribe libremente</div>
-                  : p.opciones.map((op, j) => <div key={j} className={'detalle-op' + (p.correcta === j ? ' ok' : '')}>{p.correcta === j ? '✓ ' : ''}{op || <span className="muted">(vacía)</span>}</div>)}
+                  ? <div className="detalle-op muted"> Respuesta abierta — el estudiante escribe libremente</div>
+                  : p.opciones.map((op, j) => <div key={j} className={'detalle-op' + (p.correcta === j ? ' ok' : '')}>{p.correcta === j ? ' ' : ''}{op || <span className="muted">(vacía)</span>}</div>)}
               </div>
             ))}
           </div>
@@ -459,8 +459,8 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
             <div className="wiz-preview-shell" style={{ padding: 20, textAlign: 'center' }}>
               <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>Mostrá exactamente la pantalla que va a ver el estudiante, con estas preguntas tal cual están cargadas.</p>
               <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-                <button className="btn-sm solid" onClick={() => setVistaPrevia('mobile')}>📱 Ver en Mobile</button>
-                <button className="btn-sm" onClick={() => setVistaPrevia('desktop')}>🖥 Ver en Desktop</button>
+                <button className="btn-sm solid" onClick={() => setVistaPrevia('mobile')}> Ver en Mobile</button>
+                <button className="btn-sm" onClick={() => setVistaPrevia('desktop')}> Ver en Desktop</button>
               </div>
             </div>
           </div>
@@ -484,16 +484,16 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
       )}
 
       <div className="wiz-nav-btns" style={{ flexWrap: 'wrap', rowGap: 8 }}>
-        {paso > 0 && <button className="btn-sm" onClick={atras} disabled={guardando}>← Atrás</button>}
+        {paso > 0 && <button className="btn-sm" onClick={atras} disabled={guardando}> Atrás</button>}
         <span className="grow" />
         {guardadoEstado && (
           <span style={{ fontSize: 12, fontWeight: 500, color: guardadoEstado === 'error' ? 'rgb(248 113 113)' : guardadoEstado === 'guardando' ? 'rgb(var(--textMuted))' : 'rgb(74 222 128)' }}>
-            {guardadoEstado === 'guardando' ? 'Guardando…' : guardadoEstado === 'error' ? '⚠ Error al guardar' : '✓ Guardado'}
+            {guardadoEstado === 'guardando' ? 'Guardando…' : guardadoEstado === 'error' ? ' Error al guardar' : ' Guardado'}
           </span>
         )}
         {paso < PASOS.length - 1 && <button className="btn-sm" onClick={siguiente}>Siguiente →</button>}
         <button className="btn-sm" onClick={() => guardar('Borrador')} disabled={guardando}>Guardar borrador</button>
-        <button className="btn-sm solid" onClick={clickPublicar} disabled={guardando}>✓ Publicar</button>
+        <button className="btn-sm solid" onClick={clickPublicar} disabled={guardando}> Publicar</button>
       </div>
 
       {vistaPrevia && (
@@ -508,7 +508,7 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
                 <button className={vistaPrevia === 'desktop' ? 'on' : ''} onClick={() => setVistaPrevia('desktop')}>Desktop</button>
                 <button className={vistaPrevia === 'mobile' ? 'on' : ''} onClick={() => setVistaPrevia('mobile')}>Mobile</button>
               </div>
-              <button className="btn-sm" onClick={() => setVistaPrevia(null)}>✕ Cerrar</button>
+              <button className="btn-sm" onClick={() => setVistaPrevia(null)}> Cerrar</button>
             </div>
             <div className="preview-body" style={{ padding: 20, display: 'flex', justifyContent: 'center' }}>
               <IsologoDefs />
@@ -525,7 +525,7 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
           <div className="preview-card" onClick={(ev) => ev.stopPropagation()} style={{ maxWidth: 560 }}>
             <div className="preview-head">
               <div className="preview-kd">Reutilizar una pregunta de otra actividad</div>
-              <button className="btn-sm" onClick={() => setPickerPreguntas(false)}>✕ Cerrar</button>
+              <button className="btn-sm" onClick={() => setPickerPreguntas(false)}> Cerrar</button>
             </div>
             <div className="preview-body" style={{ padding: 16 }}>
               {otrasActividades.filter((a) => (a.preguntas || []).length > 0).map((a) => (
@@ -573,7 +573,7 @@ function agruparPorCurso(lista) {
 // Tabla / Tarjetas (usadas tal cual estén agrupadas o no)
 // ───────────────────────────────────────────────────────────────────────────
 // Celda de tabla que se convierte en un <input> al hacer click (para Edición/Clase),
-// en vez de tener que abrir "✎ Editar" para tocar un solo dato suelto.
+// en vez de tener que abrir " Editar" para tocar un solo dato suelto.
 function CeldaEditable({ valor, placeholder, onGuardar, render, puedeEditar }) {
   const [editando, setEditando] = useState(false);
   const [val, setVal] = useState(valor || '');
@@ -623,7 +623,7 @@ function CursoConPunto({ curso }) {
 function BadgeCreado({ iso }) {
   const { tipo } = estadoFechaReciente(iso, 10);
   if (tipo === 'hoy') return <span className="badge-fecha-hoy" title={'Cargada el ' + iso}>🟢 Cargada hoy</span>;
-  if (tipo === 'nueva') return <span className="badge-fecha-nueva" title={'Cargada el ' + iso}>✨ Nueva</span>;
+  if (tipo === 'nueva') return <span className="badge-fecha-nueva" title={'Cargada el ' + iso}> Nueva</span>;
   return null;
 }
 
@@ -654,9 +654,9 @@ function TablaActividades({ items, puedeGestionar, onEditar, onDuplicar, onDetal
             <td><span className={'fstate fstate-liviana ' + badge.cls}><span className="d" />{efectivo}</span></td>
             <td className="sec">{a.preguntas.length}</td>
             <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-              <a className="btn-sm" href={`${APP_URL}/actividad/${a.slug}`} target="_blank" rel="noreferrer" title="Abrir actividad">👁</a>{' '}
+              <a className="btn-sm" href={`${APP_URL}/actividad/${a.slug}`} target="_blank" rel="noreferrer" title="Abrir actividad"></a>{' '}
               {puedeGestionar && <button className="btn-sm" onClick={() => onDuplicar(a)} title="Duplicar">⧉</button>}{' '}
-              {puedeGestionar && <button className="btn-sm solid" onClick={() => onEditar(a)} title="Editar">✎</button>}
+              {puedeGestionar && <button className="btn-sm solid" onClick={() => onEditar(a)} title="Editar"></button>}
             </td>
           </tr>
         );
@@ -690,12 +690,12 @@ function GridActividades({ items, puedeGestionar, onEditar, onDuplicar, onDetall
             </div>
             <div className="pcard-url">
               <span className="pcard-url-txt">/actividad/{a.slug}</span>
-              <button className="pcard-url-copy" onClick={() => { navigator.clipboard?.writeText(`${APP_URL}/actividad/${a.slug}`); showToast('✓ Enlace copiado'); }} title="Copiar enlace">Copiar</button>
+              <button className="pcard-url-copy" onClick={() => { navigator.clipboard?.writeText(`${APP_URL}/actividad/${a.slug}`); showToast(' Enlace copiado'); }} title="Copiar enlace">Copiar</button>
             </div>
             <div className="pcard-actions">
-              <a className="pcard-act pcard-act-icon" href={`${APP_URL}/actividad/${a.slug}`} target="_blank" rel="noreferrer" title="Ver actividad">👁</a>
+              <a className="pcard-act pcard-act-icon" href={`${APP_URL}/actividad/${a.slug}`} target="_blank" rel="noreferrer" title="Ver actividad"></a>
               {puedeGestionar && <button className="pcard-act" onClick={() => onDuplicar(a)}>⧉ Duplicar</button>}
-              {puedeGestionar && <button className="pcard-act pcard-act-primary" onClick={() => onEditar(a)}>✎ Editar</button>}
+              {puedeGestionar && <button className="pcard-act pcard-act-primary" onClick={() => onEditar(a)}> Editar</button>}
             </div>
           </div>
         );
@@ -717,12 +717,12 @@ function DetalleActividad({ a, puedeGestionar, showToast, onEditar, onDuplicar, 
     <div style={{ maxWidth: 780, margin: '0 auto' }}>
       <div className="panel" style={{ borderLeft: `4px solid ${color}66` }}>
         <div className="sechead">
-          <button className="btn-sm" onClick={onVolver}>← Volver</button>
+          <button className="btn-sm" onClick={onVolver}> Volver</button>
           <span className="grow" />
-          <button className="btn-sm" onClick={() => { navigator.clipboard?.writeText(`${APP_URL}/actividad/${a.slug}`); showToast('✓ Enlace copiado'); }}>Copiar enlace</button>
+          <button className="btn-sm" onClick={() => { navigator.clipboard?.writeText(`${APP_URL}/actividad/${a.slug}`); showToast(' Enlace copiado'); }}>Copiar enlace</button>
           <a className="btn-sm" href={`${APP_URL}/actividad/${a.slug}`} target="_blank" rel="noreferrer">↗ Abrir actividad</a>
           {puedeGestionar && <button className="btn-sm" onClick={() => onDuplicar(a)}>⧉ Duplicar</button>}
-          {puedeGestionar && <button className="btn-sm solid" onClick={() => onEditar(a)}>✎ Editar</button>}
+          {puedeGestionar && <button className="btn-sm solid" onClick={() => onEditar(a)}> Editar</button>}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10 }}>
           <span className="curso-avatar" style={{ background: color + '22', color, width: 42, height: 42, borderRadius: 12, fontSize: 15, flex: '0 0 auto' }}>{inicialesCurso(a.curso)}</span>
@@ -780,7 +780,7 @@ function DetalleActividad({ a, puedeGestionar, showToast, onEditar, onDuplicar, 
             </div>
             {(p.opciones || []).map((op, j) => (
               <div key={j} className={'detalle-op' + (Number(p.correcta) === j ? ' ok' : '')}>
-                {Number(p.correcta) === j && <span className="detalle-op-check">✓</span>}
+                {Number(p.correcta) === j && <span className="detalle-op-check"></span>}
                 {op}
               </div>
             ))}
@@ -873,7 +873,7 @@ const Lista = forwardRef(function Lista({ usuario, showToast, puedeGestionar, ir
         body: JSON.stringify({ solicitanteEmail: usuario.email, slug: a.slug })
       });
       const data = await res.json();
-      if (data.ok) showToast('✓ Actividad eliminada');
+      if (data.ok) showToast(' Actividad eliminada');
       else showToast(data.error || 'No se pudo eliminar');
     } catch { showToast('Error de conexión'); }
     cerrarModo(); cargar();
@@ -893,7 +893,7 @@ const Lista = forwardRef(function Lista({ usuario, showToast, puedeGestionar, ir
         })
       });
       const data = await res.json();
-      if (data.ok) showToast('✓ Guardado');
+      if (data.ok) showToast(' Guardado');
       else { showToast(data.error || 'No se pudo guardar'); cargar(); }
     } catch { showToast('Error de conexión'); cargar(); }
   }
@@ -941,7 +941,7 @@ const Lista = forwardRef(function Lista({ usuario, showToast, puedeGestionar, ir
       <div className="sechead">
         <span className="hcount">{filtradas.length} actividad{filtradas.length === 1 ? '' : 'es'}</span>
         <span className="grow" />
-        {/* El buscador de texto libre queda solo en el ícono 🔎 de arriba del todo (pestaña
+        {/* El buscador de texto libre queda solo en el ícono  de arriba del todo (pestaña
             Buscador, busca en toda la app) — antes había acá un botón "Buscar" que lo
             duplicaba (pedido de Diego: "ES INNECESARIO ESTA ARRIBA", "evitemos botones
             innecesarios y repetidos"); quedan solo los filtros propios de esta lista
@@ -954,7 +954,7 @@ const Lista = forwardRef(function Lista({ usuario, showToast, puedeGestionar, ir
         <button className={'btn-sm' + (agrupar ? ' solid' : '')} onClick={toggleAgrupar} title="Agrupar por curso y edición">▤ Agrupar</button>
         <div className="vista-toggle">
           <button className={vista === 'cards' ? 'on' : ''} onClick={() => cambiarVista('cards')} title="Ver en tarjetas">▦</button>
-          <button className={vista === 'lista' ? 'on' : ''} onClick={() => cambiarVista('lista')} title="Ver en lista">☰</button>
+          <button className={vista === 'lista' ? 'on' : ''} onClick={() => cambiarVista('lista')} title="Ver en lista"></button>
         </div>
         {puedeGestionar && <button className="btn btn-primary" style={{ flex: 'none', padding: '10px 18px' }} onClick={nueva}>+ Nueva actividad</button>}
       </div>
@@ -967,13 +967,13 @@ const Lista = forwardRef(function Lista({ usuario, showToast, puedeGestionar, ir
       )}
 
       {acts.length === 0 ? (
-        <div className="empty"><div className="ico">📝</div><h3>No hay actividades todavía</h3><p>{puedeGestionar ? 'Creá tu primera actividad (Postwork).' : 'Todavía no se cargaron actividades.'}</p></div>
+        <div className="empty"><div className="ico"></div><h3>No hay actividades todavía</h3><p>{puedeGestionar ? 'Creá tu primera actividad (Postwork).' : 'Todavía no se cargaron actividades.'}</p></div>
       ) : filtradas.length === 0 ? (
         <div className="empty empty-sm"><p>No encontramos actividades con estos filtros.</p></div>
       ) : agrupar ? (
         agruparPorCurso(filtradas).map((g) => (
           <details className="acts-grupo" key={g.curso} open>
-            <summary><span className="arw">▶</span><span className="nm">{g.curso}</span><span className="muted">{g.items.length} actividad{g.items.length === 1 ? '' : 'es'}</span></summary>
+            <summary><span className="arw"></span><span className="nm">{g.curso}</span><span className="muted">{g.items.length} actividad{g.items.length === 1 ? '' : 'es'}</span></summary>
             <div className="acts-grupo-body">
               {g.porEdicion.map((sg) => (
                 <div key={sg.edicion || '_sin'}>
@@ -1044,9 +1044,9 @@ function Respuestas({ usuario, irABuscador, showToast }) {
       const d = await res.json();
       if (!d.ok) throw new Error(d.error || 'No se pudo eliminar');
       setData((prev) => ({ ...prev, respuestas: (prev.respuestas || []).filter((r) => r.id !== x.id) }));
-      showToast && showToast('✓ Respuesta eliminada');
+      showToast && showToast(' Respuesta eliminada');
     } catch (e) {
-      showToast ? showToast('✗ ' + (e.message || 'Error de conexión')) : avisar(e.message || 'Error de conexión', 'error');
+      showToast ? showToast(' ' + (e.message || 'Error de conexión')) : avisar(e.message || 'Error de conexión', 'error');
     }
   }
 
@@ -1074,7 +1074,7 @@ function Respuestas({ usuario, irABuscador, showToast }) {
     <>
       <div className="filters">
         {/* Mismo motivo que en la lista de Actividades: el buscador de texto libre ya está en
-            el ícono 🔎 de arriba del todo, este botón local lo duplicaba. */}
+            el ícono  de arriba del todo, este botón local lo duplicaba. */}
         <SelectDropdown placeholder="Curso: todos" searchable value={fCurso} onChange={setFCurso} options={cursos.map((x) => ({ value: x, label: x }))} />
         <SelectDropdown placeholder="Edición: todas" searchable value={fEd} onChange={setFEd} options={ediciones.map((x) => ({ value: x, label: 'Ed. ' + x }))} />
         <SelectDropdown placeholder="Actividad: todas" searchable value={fAct} onChange={setFAct} options={actividades.map((x) => ({ value: x, label: x }))} />
@@ -1109,10 +1109,10 @@ function Respuestas({ usuario, irABuscador, showToast }) {
               {/* Pedido de Diego: "acá falta que se pueda ver" — antes el botón "Ver" solo
                   aparecía si la actividad tenía preguntas abiertas; ahora siempre está para
                   poder revisar el detalle (el modal ya avisa cuando no hay abiertas). */}
-              <td><button className="btn-sm" onClick={() => setDetalleAbierto(x)} title="Ver detalle de la respuesta">✎ Ver{abiertas.length > 0 ? ` (${abiertas.length})` : ''}</button></td>
+              <td><button className="btn-sm" onClick={() => setDetalleAbierto(x)} title="Ver detalle de la respuesta"> Ver{abiertas.length > 0 ? ` (${abiertas.length})` : ''}</button></td>
               {/* Pedido de Diego: "Super Admin puede eliminar rtas" — solo visible con permiso
                   (tienePermisoEliminarRespuestas, hoy equivale a rol Admin). */}
-              {puedeEliminar && <td><button className="btn-sm" style={{ color: 'rgb(248 113 113)' }} onClick={() => eliminarRespuesta(x)} title="Eliminar esta respuesta">🗑</button></td>}
+              {puedeEliminar && <td><button className="btn-sm" style={{ color: 'rgb(248 113 113)' }} onClick={() => eliminarRespuesta(x)} title="Eliminar esta respuesta"></button></td>}
             </tr>
             );
           })}</tbody>

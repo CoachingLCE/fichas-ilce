@@ -97,22 +97,22 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
       });
       const data = await res.json();
       if (!data.ok) throw new Error();
-      showToast('✓ Estado actualizado a ' + nuevo);
+      showToast(' Estado actualizado a ' + nuevo);
     } catch {
       setDefs((arr) => arr.map((x) => x.slug === d.slug ? { ...x, estado: prev } : x));
-      showToast('⚠ No se pudo actualizar');
+      showToast(' No se pudo actualizar');
     }
   }
   function copiarLink(d) {
     navigator.clipboard?.writeText(`${APP_URL}/inscripcion/${d.slug}`);
     setCopiado(d.slug); clearTimeout(copiarLink._t); copiarLink._t = setTimeout(() => setCopiado(null), 1600);
     setMenuAbierto(null);
-    showToast?.('✓ URL copiada');
+    showToast?.(' URL copiada');
   }
   function abrirPublica(d) { window.open(`${APP_URL}/inscripcion/${d.slug}`, '_blank'); setMenuAbierto(null); }
 
   if (construyendo) {
-    return <Constructor usuario={usuario} initialSlug={construyendo} showToast={showToast} onVolver={() => { setConstruyendo(null); cargar(); }} volverLabel="← Volver a Fichas de inscripción" />;
+    return <Constructor usuario={usuario} initialSlug={construyendo} showToast={showToast} onVolver={() => { setConstruyendo(null); cargar(); }} volverLabel=" Volver a Fichas de inscripción" />;
   }
   if (nuevaEdPara) {
     return (
@@ -156,7 +156,7 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
         <span style={{ flex: 1 }} />
         <div className="vista-toggle">
           <button className={vista === 'cards' ? 'on' : ''} onClick={() => cambiarVista('cards')} title="Ver en tarjetas">▦</button>
-          <button className={vista === 'lista' ? 'on' : ''} onClick={() => cambiarVista('lista')} title="Ver en lista">☰</button>
+          <button className={vista === 'lista' ? 'on' : ''} onClick={() => cambiarVista('lista')} title="Ver en lista"></button>
         </div>
       </div>
       <p className="count count-fichas">{filtradas.length} ficha{filtradas.length === 1 ? '' : 's'} encontrada{filtradas.length === 1 ? '' : 's'}</p>
@@ -204,13 +204,13 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
                 <td className="col-url">
                   <div className="url-cell url-chip">
                     <span className="url-txt" title={url}>{url.replace(/^https?:\/\//, '')}</span>
-                    <button className="url-copy" title="Copiar URL" onClick={(e) => { e.stopPropagation(); copiarLink(d); }}>{copiado === d.slug ? '✓' : '📋'}</button>
+                    <button className="url-copy" title="Copiar URL" onClick={(e) => { e.stopPropagation(); copiarLink(d); }}>{copiado === d.slug ? '' : ''}</button>
                   </div>
                 </td>
                 {/* Pedido de Diego: este botón más chico y "estético" (más transparente), sin
                     tocar el .btn-sm.solid de base (se usa en Columnas/CSV/Excel/Actualizar y
                     muchos otros lugares) — clase propia solo para esta columna. */}
-                <td style={{ textAlign: 'right' }}>{puedeEditar && <button className="btn-sm solid fichas-editar-btn" onClick={() => onEditar(d.slug)}>{eds.length ? '✎ Editar' : '+ Cargar edición'}</button>}</td>
+                <td style={{ textAlign: 'right' }}>{puedeEditar && <button className="btn-sm solid fichas-editar-btn" onClick={() => onEditar(d.slug)}>{eds.length ? ' Editar' : '+ Cargar edición'}</button>}</td>
               </tr>
             );
           })}</tbody>
@@ -266,7 +266,7 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
                     if (eds.length === 0) {
                       if (d.estado === 'Publicada') {
                         return (
-                          <span className="pcard-datos-warn">⚠ Sin próxima edición{puedeEditar && <> — <button type="button" className="linklike" onClick={() => onEditar(d.slug)}>agregar edición</button></>}</span>
+                          <span className="pcard-datos-warn"> Sin próxima edición{puedeEditar && <> — <button type="button" className="linklike" onClick={() => onEditar(d.slug)}>agregar edición</button></>}</span>
                         );
                       }
                       return (
@@ -280,7 +280,7 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
                     const det = proximaEdicionDetalle(eds);
                     if (!det) {
                       return (
-                        <span className="pcard-datos-warn">⚠ Sin fecha definida{puedeEditar && <> — <button type="button" className="linklike" onClick={() => onEditar(d.slug)}>gestionar edición</button></>}</span>
+                        <span className="pcard-datos-warn"> Sin fecha definida{puedeEditar && <> — <button type="button" className="linklike" onClick={() => onEditar(d.slug)}>gestionar edición</button></>}</span>
                       );
                     }
                     return (
@@ -291,15 +291,15 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
 
                 <div className="pcard-url">
                   <span className="pcard-url-txt" title={url}>/inscripcion/{d.slug}</span>
-                  <button className="pcard-url-copy" title="Copiar enlace" onClick={(e) => { e.stopPropagation(); copiarLink(d); }}>{copiado === d.slug ? '✓' : '🔗'}</button>
+                  <button className="pcard-url-copy" title="Copiar enlace" onClick={(e) => { e.stopPropagation(); copiarLink(d); }}>{copiado === d.slug ? '' : ''}</button>
                   <button className="pcard-url-copy" title="Abrir enlace" onClick={(e) => { e.stopPropagation(); abrirPublica(d); }}>↗</button>
                 </div>
 
                 <div className="pcard-actions">
-                  {puedeEditar && <button className="pcard-act pcard-act-primary" onClick={() => onEditar(d.slug)}>✎ Editar</button>}
+                  {puedeEditar && <button className="pcard-act pcard-act-primary" onClick={() => onEditar(d.slug)}> Editar</button>}
                   <button className="pcard-act" onClick={() => abrirPublica(d)} title="Ver la ficha pública">Ver pública</button>
                   {onVerInscripciones && <button className="pcard-act" onClick={() => onVerInscripciones(d.curso)} title="Ver inscripciones de este curso">Fichas completadas</button>}
-                  <button className="pcard-act pcard-act-icon" title="Copiar enlace de inscripción" onClick={(e) => { e.stopPropagation(); copiarLink(d); }}>{copiado === d.slug ? '✓' : '🔗'}</button>
+                  <button className="pcard-act pcard-act-icon" title="Copiar enlace de inscripción" onClick={(e) => { e.stopPropagation(); copiarLink(d); }}>{copiado === d.slug ? '' : ''}</button>
                 </div>
               </div>
             );
@@ -426,7 +426,7 @@ function NuevaEdicionPanel({ def, usuario, onVolver, onCreada }) {
     <div>
       <div className="fhead">
         <div>
-          <button className="linklike" onClick={onVolver}>← Volver a Fichas de inscripción</button>
+          <button className="linklike" onClick={onVolver}> Volver a Fichas de inscripción</button>
           <h2 style={{ margin: '6px 0 0' }}>+ Nueva edición</h2>
           <p className="fhead-sub">{def.curso}</p>
         </div>
@@ -482,7 +482,7 @@ function NuevaEdicionPanel({ def, usuario, onVolver, onCreada }) {
                 >
                   <option value="">— Sin asignar todavía —</option>
                   {docentesDelCurso.map((n) => <option key={n} value={n}>{n}</option>)}
-                  <option value="__otro__">✏️ Otro (escribir)…</option>
+                  <option value="__otro__">Otro (escribir)…</option>
                 </select>
               ) : (
                 <>
@@ -490,7 +490,7 @@ function NuevaEdicionPanel({ def, usuario, onVolver, onCreada }) {
                   {docentesDelCurso.length > 0 && (
                     <button type="button" onClick={() => { setModoDocenteLibre(false); setDocente(''); }}
                       style={{ background: 'none', border: 'none', color: 'rgb(var(--accentTeal))', cursor: 'pointer', padding: 0, fontSize: 12, marginBottom: 14, display: 'block' }}>
-                      ← Elegir del equipo docente
+                       Elegir del equipo docente
                     </button>
                   )}
                 </>

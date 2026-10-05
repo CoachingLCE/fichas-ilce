@@ -16,6 +16,7 @@
   --accentTeal: 34 211 238;     /* #22d3ee */
   --accentTeal2: 8 145 178;     /* #0891b2 */
   --accentPurple: 122 31 150;    /* #7a1f96: violeta de marca */
+  --accentPurpleTxt: 190 120 225; /* violeta para TEXTO sobre fondo oscuro: 6,4:1 (el de marca como texto da 2,3:1) */
   --accentMagenta: 192 38 211;  /* #c026d3 */
   /* Grammar de estado (Reportes y afines): un solo significado por color, nunca decorativo.
      Mismos valores que ya se usaban sueltos (rgb(74 222 128) etc.) — acá quedan centralizados. */
@@ -38,6 +39,7 @@
   --accentTeal: 3 115 139;      /* #03738b: teal de marca, legible como texto (antes #0891b2, 3,7:1) */
   --accentTeal2: 14 116 144;    /* #0e7490 */
   --accentPurple: 112 22 141;     /* #70168d: violeta de marca (antes #7c3aed) */
+  --accentPurpleTxt: 112 22 141;  /* violeta de marca como texto sobre fondo claro: 8,9:1 */
   --accentMagenta: 150 25 143;    /* #96198f: magenta de marca (antes #a21caf) */
   --good: 21 128 61;
   --goodBg: 220 252 231;
@@ -65,20 +67,17 @@ html, body { margin: 0; padding: 0; }
 body {
   background: rgb(var(--bg));
   color: rgb(var(--text));
-  /* Pedido de Diego ("qué tipografía estás usando" / "parece todo bold semi bold" / "saca todo
-     eso"): el texto normal de TODA la app venía en 'Dosis' por esta regla — Dosis es una fuente
-     geométrica de trazo parejo, pensada para títulos/display, que se lee más "gorda" que una
-     tipografía de sistema aunque esté en weight 400 (bajarle el weight, como se hizo antes, no
-     alcanzaba porque el problema de fondo era la fuente, no el peso). Dosis se saca de acá; el
-     texto normal pasa a usar la fuente nativa del sistema (más liviana y más legible en tamaños
-     chicos). 'Dosis' se sigue usando a propósito donde ya estaba puesta explícitamente en cada
-     elemento (títulos grandes, números de KPI, etc. — abajo en este mismo archivo), eso no cambia.
-  */
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* Tipografía de marca (decisión de Diego, 04/10/2026): todo el texto en Dosis, como pide el manual.
+     Antes (pedido anterior: "parece todo bold semi bold") el texto normal usaba la fuente del sistema
+     porque Dosis se leía más "gorda" y chica. Ahora Dosis va con size-adjust (ver el bloque de fuentes al
+     final de este archivo: se agranda un 8 %) y en weight 400. SI VUELVE A VERSE PESADA, el cambio es
+     esta única línea: poner  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;  */
+  font-family: var(--font-texto);
   font-weight: 400;
   -webkit-font-smoothing: antialiased;
 }
-h1, h2, h3, .font-display { font-family: 'Dosis', system-ui, sans-serif; letter-spacing: .2px; }
+h1, h2 { letter-spacing: 0; }
+h3, .font-display { font-family: 'Dosis', system-ui, sans-serif; letter-spacing: .2px; }
 
 svg.mark g { fill: none; stroke: url(#ig); stroke-linecap: round; }
 
@@ -436,7 +435,7 @@ tbody tr{cursor:pointer}tbody tr:hover{background:rgb(var(--surface2))}
    (Actividades → Respuestas: Curso/Edición/Actividad; Formularios → Respuestas: Formulario; etc.) */
 .fdrop-btn{width:100%;height:30px;display:flex;align-items:center;justify-content:space-between;gap:6px;padding:0 11px;border-radius:999px;border:1px solid rgb(var(--border));background:rgb(var(--surface));color:rgb(var(--text));font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fdrop-btn:hover{border-color:rgb(var(--accentTeal))}
-.fdrop-btn.on{border-color:rgb(var(--accentPurple));color:rgb(var(--accentPurple))}
+.fdrop-btn.on{border-color:rgb(var(--accentPurple));color:rgb(var(--accentPurpleTxt))}
 .fdrop-btn .fdrop-car{color:rgb(var(--textMuted));flex:none}
 .fdrop-panel{position:absolute;top:calc(100% + 6px);left:0;min-width:100%;width:max-content;max-width:280px;background:rgb(var(--surface));border:1px solid rgb(var(--border));border-radius:10px;box-shadow:0 12px 28px -12px rgba(0,0,0,.35);z-index:30;overflow:hidden}
 .fdrop-search{width:100%;box-sizing:border-box;border:0;border-bottom:1px solid rgb(var(--border));padding:9px 12px;font-size:12.5px;background:transparent;color:rgb(var(--text))}
@@ -444,7 +443,7 @@ tbody tr{cursor:pointer}tbody tr:hover{background:rgb(var(--surface2))}
 .fdrop-list{max-height:260px;overflow:auto;padding:4px}
 .fdrop-opt{padding:8px 10px;border-radius:7px;font-size:12.5px;color:rgb(var(--textSec));cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fdrop-opt:hover{background:rgb(var(--surface2))}
-.fdrop-opt.on{background:rgb(var(--accentPurple) / .15);color:rgb(var(--accentPurple));font-weight:500}
+.fdrop-opt.on{background:rgb(var(--accentPurple) / .15);color:rgb(var(--accentPurpleTxt));font-weight:500}
 .fdrop-empty{padding:10px 12px;font-size:12px;color:rgb(var(--textMuted))}
 .fdrop-vercomo{min-width:0;width:170px}
 .fdrop-vercomo .fdrop-panel{max-width:320px;right:0;left:auto}
@@ -793,7 +792,7 @@ tr.clickable:hover{background:rgb(var(--surface2))}
 
 /* FILTRO ACTIVO con × — violeta suave, coherente con lo seleccionado */
 .chipfilt{padding:4px 11px;display:inline-flex;align-items:center;gap:6px;font-weight:500;
-  background:rgb(var(--accentPurple) / .14);border:1px solid rgb(var(--accentPurple) / .35);color:rgb(var(--accentPurple))}
+  background:rgb(var(--accentPurple) / .14);border:1px solid rgb(var(--accentPurple) / .35);color:rgb(var(--accentPurpleTxt))}
 
 /* ── Fichas: resumen de métricas como bloques (no chips) ── */
 .fstat-cards{display:flex;gap:12px;flex-wrap:wrap;margin:2px 0 6px}
@@ -804,17 +803,17 @@ tr.clickable:hover{background:rgb(var(--surface2))}
 /* ── Ver como (modo vista de solo lectura) ── */
 .vercomo-sel{height:32px;max-width:180px}
 .vercomo-chip{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 6px 0 12px;border-radius:999px;
-  background:rgb(var(--accentPurple) / .15);border:1px solid rgb(var(--accentPurple) / .35);color:rgb(var(--accentPurple));font-size:12.5px;font-weight:500;white-space:nowrap}
+  background:rgb(var(--accentPurple) / .15);border:1px solid rgb(var(--accentPurple) / .35);color:rgb(var(--accentPurpleTxt));font-size:12.5px;font-weight:500;white-space:nowrap}
 .vercomo-chip button{background:rgb(var(--accentPurple) / .25);border:0;color:inherit;border-radius:999px;width:20px;height:20px;cursor:pointer;line-height:1;font-size:12px}
 .vercomo-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;padding:9px 16px;
   background:rgb(var(--accentPurple) / .12);border-bottom:1px solid rgb(var(--accentPurple) / .3);color:rgb(var(--text))}
 .vercomo-banner button{margin-left:auto;background:rgb(var(--accentPurple) / .2);border:1px solid rgb(var(--accentPurple) / .4);
-  color:rgb(var(--accentPurple));border-radius:8px;padding:4px 12px;font-weight:500;cursor:pointer}
+  color:rgb(var(--accentPurpleTxt));border-radius:8px;padding:4px 12px;font-weight:500;cursor:pointer}
 
 /* ── Toggle de vista Tarjetas/Lista ── */
 .vista-toggle{display:inline-flex;border:1px solid rgb(var(--border));border-radius:9px;overflow:hidden;flex:none}
 .vista-toggle button{background:transparent;border:0;color:rgb(var(--textMuted));width:34px;height:32px;cursor:pointer;font-size:15px;line-height:1}
-.vista-toggle button.on{background:rgb(var(--accentPurple) / .15);color:rgb(var(--accentPurple))}
+.vista-toggle button.on{background:rgb(var(--accentPurple) / .15);color:rgb(var(--accentPurpleTxt))}
 .linklike{background:none;border:0;color:rgb(var(--accentTeal));font-weight:400;cursor:pointer;font-size:13px;padding:0}
 .linklike:hover{text-decoration:underline}
 
@@ -1220,7 +1219,7 @@ tr.clickable .repx-cellbar:hover .fl{filter:brightness(1.15)}
    con etiquetas visibles en vez de solo íconos */
 .repx-viewtoggle{display:inline-flex;border:1px solid rgb(var(--border));border-radius:9px;overflow:hidden;flex:none}
 .repx-viewtoggle button{display:flex;align-items:center;gap:6px;background:transparent;border:0;color:rgb(var(--textMuted));padding:0 12px;height:32px;cursor:pointer;font-size:12.5px;font-weight:500}
-.repx-viewtoggle button.on{background:rgb(var(--accentPurple) / .15);color:rgb(var(--accentPurple))}
+.repx-viewtoggle button.on{background:rgb(var(--accentPurple) / .15);color:rgb(var(--accentPurpleTxt))}
 .repx-actcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
 .repx-actcard{background:rgb(var(--surface));border:1px solid rgb(var(--border));border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
 .repx-actcard-t{font-size:13.5px;font-weight:500;line-height:1.25}
@@ -1624,3 +1623,31 @@ thead th{font-weight:600;padding:8px 12px}
   table.tabla-en-tarjetas td[data-titulo]{order:-1;font-size:15px;font-weight:700;padding-bottom:6px!important}
   table.tabla-en-tarjetas td[data-titulo]::before{display:none}
 }
+
+/* ===== Tipografía de marca (manual de ILCE): Dosis para el texto y TeX Gyre Adventor para los títulos.
+   Las fuentes están dentro de la app (carpeta public/fonts): no se piden a Google, así se ven igual en
+   todos los dispositivos. Dosis es más baja y angosta que una letra de sistema, por eso lleva
+   size-adjust (se agranda un 8 % para que se lea del mismo tamaño que antes). ===== */
+@font-face{font-family:'Dosis';src:url('/fonts/dosis-400.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap;size-adjust:108%}
+@font-face{font-family:'Dosis';src:url('/fonts/dosis-500.woff2') format('woff2');font-weight:500;font-style:normal;font-display:swap;size-adjust:108%}
+@font-face{font-family:'Dosis';src:url('/fonts/dosis-600.woff2') format('woff2');font-weight:600;font-style:normal;font-display:swap;size-adjust:108%}
+@font-face{font-family:'Dosis';src:url('/fonts/dosis-700.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap;size-adjust:108%}
+@font-face{font-family:'TeX Gyre Adventor';src:url('/fonts/adventor-400.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'TeX Gyre Adventor';src:url('/fonts/adventor-700.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap}
+:root{--font-texto:'Dosis',system-ui,-apple-system,'Segoe UI',sans-serif;--font-titulo:'TeX Gyre Adventor','Century Gothic','Avant Garde',system-ui,sans-serif}
+h1,h2,.font-display{font-family:var(--font-titulo)}
+button,input,select,textarea{font-family:inherit}
+
+/* ===== Íconos de trazo uniforme (Lucide, licencia ISC) =====
+   Reemplazan a los emoji de la interfaz. Cada ícono es un carácter del rango privado U+E000–U+F8FF que el
+   navegador dibuja con esta fuente (11 KB, 57 íconos), del color y tamaño del texto que lo rodea. Se declara con
+   el mismo nombre que el texto (Dosis / Adventor) y unicode-range, así funciona en cualquier elemento sin tocar
+   estilos. En los textos que usa el sistema (tooltips, listas desplegables, portapapeles, mails, Excel) NO se
+   usan estos caracteres: ahí el texto va sin ícono. Para saber qué ícono es cada carácter: lib/iconos.js */
+/* IMPORTANTE: cada cara de íconos lleva el MISMO peso que la cara de texto con la que se combina (400, 500, 600, 700). Si se declara con un rango (100 900) el navegador elige una sola de las dos y los íconos no se dibujan. */
+@font-face{font-family:'Dosis';src:url('/fonts/iconos.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap;unicode-range:U+E000-F8FF}
+@font-face{font-family:'Dosis';src:url('/fonts/iconos.woff2') format('woff2');font-weight:500;font-style:normal;font-display:swap;unicode-range:U+E000-F8FF}
+@font-face{font-family:'Dosis';src:url('/fonts/iconos.woff2') format('woff2');font-weight:600;font-style:normal;font-display:swap;unicode-range:U+E000-F8FF}
+@font-face{font-family:'Dosis';src:url('/fonts/iconos.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap;unicode-range:U+E000-F8FF}
+@font-face{font-family:'TeX Gyre Adventor';src:url('/fonts/iconos.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap;unicode-range:U+E000-F8FF}
+@font-face{font-family:'TeX Gyre Adventor';src:url('/fonts/iconos.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap;unicode-range:U+E000-F8FF}

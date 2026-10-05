@@ -7,9 +7,9 @@ import { colorCurso } from '../lib/constants';
 // después los parámetros según el tipo (clase + cantidad de preguntas para actividades,
 // cantidad de preguntas para formularios), y recién ahí pasás al editor con todo pre-armado.
 const TIPOS = [
-  { key: 'inscripcion', icono: '📋', label: 'Ficha de inscripción', desc: 'La página pública donde se anotan los estudiantes de un curso.' },
-  { key: 'actividad', icono: '📝', label: 'Actividad', desc: 'Un postwork con preguntas (se autocorrige y da puntaje).' },
-  { key: 'formulario', icono: '🗒️', label: 'Formulario', desc: 'Una encuesta o formulario abierto (sin puntaje).' }
+  { key: 'inscripcion', icono: '', label: 'Ficha de inscripción', desc: 'La página pública donde se anotan los estudiantes de un curso.' },
+  { key: 'actividad', icono: '', label: 'Actividad', desc: 'Un postwork con preguntas (se autocorrige y da puntaje).' },
+  { key: 'formulario', icono: '', label: 'Formulario', desc: 'Una encuesta o formulario abierto (sin puntaje).' }
 ];
 
 export default function CrearWizard({ onCerrar, onCrearActividad, onCrearFormulario, onCrearInscripcion }) {
@@ -107,7 +107,7 @@ export default function CrearWizard({ onCerrar, onCrearActividad, onCrearFormula
         {/* Pie con navegación */}
         <div className="cw-foot">
           {paso > 0
-            ? <button className="cw-btn" onClick={() => setPaso(paso - 1)}>← Atrás</button>
+            ? <button className="cw-btn" onClick={() => setPaso(paso - 1)}> Atrás</button>
             : <button className="cw-btn" onClick={onCerrar}>Cancelar</button>}
           {paso === 1 && <button className="cw-btn cw-btn-primary" onClick={() => setPaso(2)}>Siguiente →</button>}
           {paso === 2 && <button className="cw-btn cw-btn-primary" onClick={finalizar}>Crear y continuar →</button>}

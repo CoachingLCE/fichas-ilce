@@ -6,7 +6,7 @@
 export default function AccesoDenegado({ seccion }) {
   return (
     <div style={{ maxWidth: 460, margin: '80px auto 0', textAlign: 'center', padding: '0 24px' }}>
-      <div style={{ fontSize: 44, marginBottom: 14 }}>🔒</div>
+      <div style={{ fontSize: 44, marginBottom: 14 }}></div>
       <h2 className="font-display" style={{ fontSize: 20, fontWeight: 500, marginBottom: 8 }}>
         No tenés acceso{seccion ? ` a ${seccion}` : ''}
       </h2>

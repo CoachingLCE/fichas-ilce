@@ -46,7 +46,7 @@ export default function Equipo({ usuario }) {
   return (
     <div>
       <div className="note" style={{ marginBottom: 16 }}>
-        📋 Esta pantalla es solo de consulta: acá <b>no se dan de alta ni de baja</b> accesos de docentes. El equipo, su curso/edición y la contraseña se gestionan en{' '}
+         Esta pantalla es solo de consulta: acá <b>no se dan de alta ni de baja</b> accesos de docentes. El equipo, su curso/edición y la contraseña se gestionan en{' '}
         <a href={LINK_PRESENTISMO} target="_blank" rel="noopener noreferrer" style={{ color: 'rgb(var(--accentTeal))', fontWeight: 500 }}>Presentismo ILCE</a>
         {' '}— lo que ves acá es lo que ya está asignado en <b>Fichas</b> (Constructor → Ediciones → Docentes).
       </div>
@@ -54,13 +54,13 @@ export default function Equipo({ usuario }) {
       <div className="sechead">
         <span className="hcount">{porPersona.length} persona(s) · {filtrados.length} asignación(es)</span>
         <span className="grow" />
-        <div className="fsearch" style={{ maxWidth: 260, flex: 'none' }}>🔎 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, email, curso, edición…" /></div>
+        <div className="fsearch" style={{ maxWidth: 260, flex: 'none' }}> <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, email, curso, edición…" /></div>
       </div>
 
       {error && <div className="note" style={{ borderLeftColor: 'rgb(248 113 113)' }}>{error}</div>}
 
       {porPersona.length === 0 ? (
-        <div className="empty"><div className="ico">👥</div><h3>Sin equipo asignado</h3><p>Todavía no hay docentes/staff cargados en ningún curso.</p></div>
+        <div className="empty"><div className="ico"></div><h3>Sin equipo asignado</h3><p>Todavía no hay docentes/staff cargados en ningún curso.</p></div>
       ) : (
         <div className="tablewrap" style={{ maxHeight: '68vh' }}>
           <table>

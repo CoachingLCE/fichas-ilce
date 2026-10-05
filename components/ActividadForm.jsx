@@ -157,7 +157,7 @@ export default function ActividadForm({ act, modoPreview = false }) {
 
   const IndicadorGuardado = ({ compacto }) => {
     if (!guardado) return null;
-    const txt = guardado === 'guardando' ? 'Guardando…' : guardado === 'error' ? '⚠ No se pudo guardar en este dispositivo' : '✓ Respuestas guardadas en este dispositivo';
+    const txt = guardado === 'guardando' ? 'Guardando…' : guardado === 'error' ? ' No se pudo guardar en este dispositivo' : ' Respuestas guardadas en este dispositivo';
     const color = guardado === 'error' ? 'rgb(248 113 113)' : guardado === 'guardando' ? 'rgb(var(--textMuted))' : 'rgb(74 222 128)';
     return <div style={{ fontSize: 12, color, textAlign: compacto ? 'right' : 'left', marginTop: compacto ? 0 : 8 }}>{txt}</div>;
   };
@@ -173,7 +173,7 @@ export default function ActividadForm({ act, modoPreview = false }) {
           <div className="ti">{act.titulo}</div>
         </div>
         <div className="quiz-body" style={{ textAlign: 'center', padding: '40px 30px 8px' }}>
-          <div className="quiz-ring">✓</div>
+          <div className="quiz-ring"></div>
           <h3 style={{ fontSize: 20, margin: '4px 0' }}>Ya completaste esta actividad</h3>
           {yaCompletada.fecha ? (
             <p className="muted" style={{ fontSize: 14 }}>La respondiste el {new Date(yaCompletada.fecha).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}.</p>
@@ -184,7 +184,7 @@ export default function ActividadForm({ act, modoPreview = false }) {
           <p className="muted" style={{ fontSize: 13, marginTop: 14 }}>Ya no podés volver a enviarla ni modificar tus respuestas.</p>
         </div>
         <div className="quiz-postfoot">
-          <a className="quiz-postlink" href="http://campus.institutoilce.com/" target="_blank" rel="noopener noreferrer">← Volver al campus</a>
+          <a className="quiz-postlink" href="http://campus.institutoilce.com/" target="_blank" rel="noopener noreferrer"> Volver al campus</a>
         </div>
       </div></div>
     );
@@ -199,8 +199,8 @@ export default function ActividadForm({ act, modoPreview = false }) {
           <div className="ti">{act.curso}</div>
         </div>
         <div className="quiz-body" style={{ textAlign: 'center', padding: '40px 30px 8px' }}>
-          <div className="quiz-ring">✓</div>
-          <h3 style={{ fontSize: 22, margin: '4px 0' }}>¡Actividad completada! 🎉</h3>
+          <div className="quiz-ring"></div>
+          <h3 style={{ fontSize: 22, margin: '4px 0' }}>¡Actividad completada! </h3>
           {act.mostrarResultado === false ? (
             <p className="muted" style={{ fontSize: 14 }}>Registramos tus respuestas de <b>{act.titulo}</b>{resultado.emailOk ? ` y te enviamos el detalle a ${email}` : ''}.</p>
           ) : (<>
@@ -213,8 +213,8 @@ export default function ActividadForm({ act, modoPreview = false }) {
         {/* Pie fijo al finalizar cualquier actividad, pedido por Diego: volver al campus,
             invitación a la nota del blog, y redes de la comunidad. */}
         <div className="quiz-postfoot">
-          <a className="quiz-postlink" href="http://campus.institutoilce.com/" target="_blank" rel="noopener noreferrer">← Volver al campus</a>
-          <a className="quiz-postlink quiz-postlink-sec" href="https://www.coachingeducativolider.com/blog" target="_blank" rel="noopener noreferrer">☕ Tomate un descanso y leé una nota</a>
+          <a className="quiz-postlink" href="http://campus.institutoilce.com/" target="_blank" rel="noopener noreferrer"> Volver al campus</a>
+          <a className="quiz-postlink quiz-postlink-sec" href="https://www.coachingeducativolider.com/blog" target="_blank" rel="noopener noreferrer"> Tomate un descanso y leé una nota</a>
           <div className="quiz-social">
             <a href="https://www.instagram.com/institutoilce/" target="_blank" rel="noopener noreferrer" title="Instagram" className="quiz-social-btn"><IconInstagram /></a>
             <a href="https://www.whatsapp.com/channel/0029VaBfdccGOj9tAv5s1A0G" target="_blank" rel="noopener noreferrer" title="WhatsApp" className="quiz-social-btn"><IconWhatsapp /></a>

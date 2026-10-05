@@ -20,7 +20,7 @@ function guardarVisto(item) {
   } catch { /* */ }
 }
 
-const ICONO_TIPO = { 'Inscripción': '📋', 'Ficha': '📝', 'Actividad': '🧩', 'Formulario': '🗒️' };
+const ICONO_TIPO = { 'Inscripción': '', 'Ficha': '', 'Actividad': '', 'Formulario': '' };
 const COLOR_TIPO = { 'Inscripción': 'var(--accentTeal)', 'Ficha': 'var(--accentPurple)', 'Actividad': 'var(--accentMagenta)', 'Formulario': 'var(--accentTeal2)' };
 function IconoTipo({ tipo, size = 20 }) {
   const c = COLOR_TIPO[tipo] || 'var(--textMuted)';
@@ -86,9 +86,9 @@ export default function Buscador({ usuario, irA, setQInscripciones }) {
   return (
     <div style={{ maxWidth: 760 }}>
       <div className="busc-hero">
-        <span className="busc-hero-ico">🔎</span>
+        <span className="busc-hero-ico"></span>
         <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, email, teléfono, DNI o curso…" />
-        {q && <button className="busc-hero-clear" onClick={() => setQ('')} title="Limpiar">✕</button>}
+        {q && <button className="busc-hero-clear" onClick={() => setQ('')} title="Limpiar"></button>}
       </div>
       {q.trim().length < 2 && (
         <p className="muted busc-hint">Ejemplos: María González · 11 5555-5555 · Coaching Ontológico</p>
@@ -119,7 +119,7 @@ export default function Buscador({ usuario, irA, setQInscripciones }) {
               <div className="muted" style={{ fontSize: 12, fontWeight: 500, marginBottom: 8 }}>Últimas búsquedas</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {recientes.map((r) => (
-                  <button key={r} className="btn-sm" onClick={() => setQ(r)}>🔍 {r}</button>
+                  <button key={r} className="btn-sm" onClick={() => setQ(r)}> {r}</button>
                 ))}
               </div>
             </div>

@@ -165,14 +165,14 @@ function esValorValido(v) {
 const paisAgrupado = (r) => (esValorValido(r.pais) ? r.pais.trim() : 'Sin datos');
 
 // "¿Cómo llegaste a nosotros?" trae datos históricos con formatos distintos para la misma
-// opción (pedido de Diego: "si pones emoticones, poné en todos" — notó "Instagram" y "✅
+// opción (pedido de Diego: "si pones emoticones, poné en todos" — notó "Instagram" y "
 // Instagram" como si fueran dos canales distintos). Misma normalización que ya usa la
 // distribución de "Campos" más abajo (ver normalizarValorCampo/OPCIONES_ORIGEN): se saca el
 // tilde/check de adelante y se agrupa por la opción canónica de la ficha actual.
 const OPCIONES_ORIGEN = ['Facebook', 'Google', 'Instagram', 'LinkedIn', 'Recomendación'];
 const origenAgrupado = (r) => {
   if (!esValorValido(r.origen)) return 'Sin informar';
-  const v = r.origen.toString().trim().replace(/^[✓✔✅☑️]\s*/, '').trim();
+  const v = r.origen.toString().trim().replace(/^[]\s*/, '').trim();
   if (/^otro\s*:/i.test(v)) return 'Otro';
   const canon = OPCIONES_ORIGEN.find((o) => v.toLowerCase().startsWith(o.toLowerCase()));
   return canon || v;
@@ -190,8 +190,8 @@ const BANDERA_PAIS = {
   'Puerto Rico': '🇵🇷', Cuba: '🇨🇺', Brasil: '🇧🇷', Brazil: '🇧🇷'
 };
 const banderaPais = (pais) => BANDERA_PAIS[pais] || null;
-const ICONO_ORIGEN = { Instagram: '📷', Facebook: '📘', Google: '🔍', LinkedIn: '💼', 'Recomendación': '🗣️', Otro: '✨' };
-const iconoOrigen = (origen) => ICONO_ORIGEN[origen] || '📌';
+const ICONO_ORIGEN = { Instagram: '', Facebook: '', Google: '', LinkedIn: '', 'Recomendación': '', Otro: '' };
+const iconoOrigen = (origen) => ICONO_ORIGEN[origen] || '';
 
 /* ============================ Íconos lineales (sin librerías, sin emoji) ============================ */
 const svgBase = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' };
@@ -571,14 +571,14 @@ export default function Reportes({ usuario, rows, puedeActividades, puedeFormula
     { key: 'med', label: 'Medio de contacto preferido' }
   ];
   // "¿Cómo llegaste a nosotros?" arrastra datos históricos de antes de fichas-ilce (importados
-  // de planillas viejas) con formatos distintos para la misma opción: con un "✓ " adelante, o
+  // de planillas viejas) con formatos distintos para la misma opción: con un " " adelante, o
   // con el detalle de quién recomendó pegado ("Recomendación de estudiante: ..."). Sin agrupar,
   // cada variante aparecía como su propia barra separada — se ve "horrible" y además subestima
   // cada opción real. Se agrupa por la opción canónica de la ficha actual (mismo criterio que ya
   // se usaba para "Otro: <detalle>"), sin perder ni un registro: solo cambia cómo se agrupan.
   const OPCIONES_ORIGEN = ['Facebook', 'Google', 'Instagram', 'LinkedIn', 'Recomendación'];
   function normalizarValorCampo(key, raw) {
-    let v = raw.replace(/^[✓✔•]\s*/, '').trim();
+    let v = raw.replace(/^[•]\s*/, '').trim();
     if (/^otro\s*:/i.test(v)) return 'Otro';
     if (key === 'origen') {
       const canon = OPCIONES_ORIGEN.find((o) => v.toLowerCase().startsWith(o.toLowerCase()));
@@ -962,7 +962,7 @@ function ReportesResumen({ rows, irAConFiltro }) {
       )}
 
       {/* Pedido de Diego ("Nuevas que significa? 31 completadas? HISTORICO? CUANDO?"): la
-          bajada y el ícono ℹ️ de cada número aclaran que estas cifras son todas del MISMO mes
+          bajada y el ícono  de cada número aclaran que estas cifras son todas del MISMO mes
           elegido arriba a la derecha — no son un total histórico. "Completadas"/"Pendientes"
           cuentan, de las fichas CREADAS ese mes, cuántas están en ese estado HOY (el estado
           puede haber cambiado desde que se creó la ficha, por eso no es "completadas ese mismo
@@ -984,12 +984,12 @@ function ReportesResumen({ rows, irAConFiltro }) {
           const hayPend = pend > 0;
           return (<>
             <div className="evol-kpis">
-              <div className="evol-kpi" title={`Fichas creadas en ${nombreMesLargo(mes)}, según su fecha de inscripción.`}><div className="ic" style={{ color: 'rgb(var(--accentTeal))' }}>{Ico.trend({})}</div><div className="n">{nuevas}</div><div className="l">Nuevas ℹ️</div></div>
+              <div className="evol-kpi" title={`Fichas creadas en ${nombreMesLargo(mes)}, según su fecha de inscripción.`}><div className="ic" style={{ color: 'rgb(var(--accentTeal))' }}>{Ico.trend({})}</div><div className="n">{nuevas}</div><div className="l">Nuevas </div></div>
               <div className="evol-kpi" title="De las fichas creadas en este mes, cuántas están Completadas HOY — no es un total histórico ni 'completadas ese mismo día'.">
-                <div className="ic" style={{ color: 'rgb(74 222 128)' }}>{Ico.check({})}</div><div className="n">{comp}</div><div className="l">Completadas ℹ️</div>
+                <div className="ic" style={{ color: 'rgb(74 222 128)' }}>{Ico.check({})}</div><div className="n">{comp}</div><div className="l">Completadas </div>
               </div>
               <div className="evol-kpi" title="De las fichas creadas en este mes, cuántas siguen Pendientes o En revisión hoy.">
-                <div className="ic" style={{ color: 'rgb(251 191 36)' }}>{Ico.clock({})}</div><div className="n">{pend}</div><div className="l">Pendientes ℹ️</div>
+                <div className="ic" style={{ color: 'rgb(251 191 36)' }}>{Ico.clock({})}</div><div className="n">{pend}</div><div className="l">Pendientes </div>
               </div>
               <div className="evol-kpi"><div className="ic" style={{ color: 'rgb(74 222 128)' }}>{Ico.circleDash({})}</div><div className="n">{tasa}%</div><div className="l">Tasa de completitud</div></div>
             </div>

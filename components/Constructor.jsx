@@ -64,7 +64,7 @@ function estadoEdicion(e, asincronica) {
   const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
   const inicio = new Date(e.fecha + 'T00:00:00');
   if (isNaN(inicio)) return null;
-  if (inicio > hoy) return { txt: 'Próxima', cls: 'prog', dot: '📅' };
+  if (inicio > hoy) return { txt: 'Próxima', cls: 'prog', dot: '' };
   if (e.cantidadClases) {
     const finIso = calcularFechaFinEdicion(e.fecha, e.cantidadClases);
     const fin = finIso ? new Date(finIso + 'T00:00:00') : null;
@@ -153,10 +153,10 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
   if (errorCarga) {
     return (
       <div className="empty" style={{ textAlign: 'center', padding: '40px 20px' }}>
-        <p style={{ fontSize: 15, fontWeight: 500, marginBottom: 6 }}>⚠️ No se pudo abrir el Constructor</p>
+        <p style={{ fontSize: 15, fontWeight: 500, marginBottom: 6 }}> No se pudo abrir el Constructor</p>
         <p className="muted" style={{ marginBottom: 16 }}>{errorCarga}</p>
         <button className="btn-sm solid" onClick={() => { setErrorCarga(''); setDefs(null); window.location.reload(); }}>Reintentar</button>
-        {onVolver && <button className="btn-sm" style={{ marginLeft: 8 }} onClick={onVolver}>← Volver</button>}
+        {onVolver && <button className="btn-sm" style={{ marginLeft: 8 }} onClick={onVolver}> Volver</button>}
       </div>
     );
   }
@@ -263,7 +263,7 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
       // viene de la columna "Actualizado" de la Sheet) recién se actualizaría en el próximo
       // GET — esto evita mostrar una fecha vieja hasta tanto se recargue la página.
       setDefs((arr) => arr.map((x, i) => i === sel ? { ...x, actualizado: new Date().toISOString() } : x));
-      if (!silencioso) showToast?.('✓ Cambios guardados');
+      if (!silencioso) showToast?.(' Cambios guardados');
     } catch (e) {
       // Antes el toast era siempre genérico, sin importar la causa real (timeout de
       // Sheets, cuota, JSON cortado, etc.) — mostrar el motivo ayuda a distinguir un
@@ -271,7 +271,7 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
       // queda un estado persistente (no solo el toast, que desaparece solo) para que el
       // 🔴 "Error al guardar" + "Reintentar" sigan visibles hasta que se resuelva.
       setErrorGuardado(e.message || 'Error al guardar');
-      showToast?.('⚠ No pudimos guardar los cambios' + (e.message ? ': ' + e.message : ''));
+      showToast?.(' No pudimos guardar los cambios' + (e.message ? ': ' + e.message : ''));
     }
     setGuardando(false);
   }
@@ -315,7 +315,7 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
       {/* IZQUIERDA — lista compacta de fichas */}
       <div className="ctor-list">
         <div className="ctor-list-head">
-          <button className="linklike" onClick={volver}>{volverLabel || '← Volver'}</button>
+          <button className="linklike" onClick={volver}>{volverLabel || ' Volver'}</button>
           <div className="ctor-list-title">Fichas</div>
         </div>
         {defs.length > 5 && (
@@ -409,14 +409,14 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
                             <>
                               {/* Pedido de Diego: que se entienda cuál fecha es el inicio y cuál
                                   el fin — antes era "fecha → fecha" sin aclarar cuál era cuál. */}
-                              <span>📅 Inicio: {fechaLegible(e.fecha)}</span>
-                              {e.cantidadClases && <span>🏁 Fin: {fechaLegible(calcularFechaFin(e.fecha, e.cantidadClases))}</span>}
+                              <span> Inicio: {fechaLegible(e.fecha)}</span>
+                              {e.cantidadClases && <span> Fin: {fechaLegible(calcularFechaFin(e.fecha, e.cantidadClases))}</span>}
                             </>
                           ) : (
                             <span className="muted">Sin fecha cargada</span>
                           )}
-                          {!asincronica && (e.horaIni || e.horaFin) && <span>🕐 {e.horaIni || '—'}–{e.horaFin || '—'}</span>}
-                          {e.docente && <span>👩‍🏫 Docente: {e.docente}</span>}
+                          {!asincronica && (e.horaIni || e.horaFin) && <span> {e.horaIni || '—'}–{e.horaFin || '—'}</span>}
+                          {e.docente && <span> Docente: {e.docente}</span>}
                           {(e.cantidadClases || fija) && <span>{e.cantidadClases || fija} clases</span>}
                         </div>
                       </div>
@@ -428,7 +428,7 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
                             <button onClick={() => moveEd(i, -1)} disabled={i === 0}>↑ Subir</button>
                             <button onClick={() => moveEd(i, 1)} disabled={i === eds.length - 1}>↓ Bajar</button>
                             <div className="sep" />
-                            <button className="danger" onClick={() => delEd(i)}>🗑 Eliminar</button>
+                            <button className="danger" onClick={() => delEd(i)}> Eliminar</button>
                           </div>
                         )}
                       </div>
@@ -459,12 +459,12 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
                                 placeholder="Cant. de clases" title="Cantidad de encuentros de esta edición" />
                             )}
                             {e.fecha && e.cantidadClases && (
-                              <div className="ctor-fin-destacado">📅 Finaliza el {fechaLegible(calcularFechaFin(e.fecha, e.cantidadClases))}</div>
+                              <div className="ctor-fin-destacado"> Finaliza el {fechaLegible(calcularFechaFin(e.fecha, e.cantidadClases))}</div>
                             )}
 
                             <div className="ctor-ed-sub-lbl">Horarios internacionales</div>
                             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                              <button className="btn-sm solid" onClick={() => updEd(i, { horarios: generarHorarios(e.fecha, e.horaIni, e.horaFin) })} disabled={!e.fecha || !e.horaIni || !e.horaFin}>⚙ Calcular horarios</button>
+                              <button className="btn-sm solid" onClick={() => updEd(i, { horarios: generarHorarios(e.fecha, e.horaIni, e.horaFin) })} disabled={!e.fecha || !e.horaIni || !e.horaFin}> Calcular horarios</button>
                             </div>
                             <input className="ctrl" style={{ marginTop: 8 }} value={e.horarios || ''} onChange={(ev) => updEd(i, { horarios: ev.target.value })} placeholder="Horarios por país (se completan al calcular, o escribilos a mano)" />
                           </>
@@ -509,7 +509,7 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
                     <label className="wiz-campo-check" key={c.id}>
                       <input type="checkbox" checked={c.activo} onChange={() => toggleCampo(c.id)} />
                       <div><div className="nm">{c.nombre}</div><div className="tp">{c.tipo}</div></div>
-                      <button className="btn-sm" style={{ color: 'rgb(248 113 113)' }} onClick={(e) => { e.preventDefault(); eliminarCampoPersonalizado(c.id); }} title="Eliminar campo">🗑</button>
+                      <button className="btn-sm" style={{ color: 'rgb(248 113 113)' }} onClick={(e) => { e.preventDefault(); eliminarCampoPersonalizado(c.id); }} title="Eliminar campo"></button>
                     </label>
                   ))}
                 </div>
@@ -546,7 +546,7 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={() => { if (dragIdx.current !== null) reordenar(dragIdx.current, i); dragIdx.current = null; }}
                       >
-                        <span className="wiz-orden-handle">☰</span>
+                        <span className="wiz-orden-handle"></span>
                         <div style={{ flex: 1 }}><div className="nm">{c.nombre}</div><div className="tp">{c.grupo} · {c.tipo}</div></div>
                         <button className="btn-sm" onClick={() => moverCampo(i, -1)} title="Subir" disabled={i === 0}>↑</button>
                         <button className="btn-sm" onClick={() => moverCampo(i, 1)} title="Bajar" disabled={i === activos.length - 1}>↓</button>
@@ -577,7 +577,7 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
               <div className="wiz-dest-list">
                 {(cfg.destinatarios || []).length === 0 && <p className="muted" style={{ fontSize: 12.5 }}>Sin destinatarios cargados todavía.</p>}
                 {(cfg.destinatarios || []).map((e) => (
-                  <span className="tagchip" key={e}>{e} <button onClick={() => quitarDest(e)} title="Quitar">✕</button></span>
+                  <span className="tagchip" key={e}>{e} <button onClick={() => quitarDest(e)} title="Quitar"></button></span>
                 ))}
               </div>
               <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
@@ -594,7 +594,7 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
               <textarea className="ctrl" value={cfg.mensajePost || ''} onChange={(e) => updCfg({ mensajePost: e.target.value })} placeholder="¡Listo! Ya tenemos tu ficha, en breve te contactamos." />
 
               <details className="wiz-avanzado">
-                <summary>⚙ Avanzado</summary>
+                <summary> Avanzado</summary>
                 <label style={lbl}>URL de redirección tras completar (opcional)</label>
                 <input className="ctrl" value={cfg.avanzado?.redireccion || ''} onChange={(e) => updCfg({ avanzado: { ...cfg.avanzado, redireccion: e.target.value } })} placeholder="https://..." />
               </details>
@@ -624,7 +624,7 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
             <div className="wiz-preview-body">
               {d.estado !== 'Publicada' ? (
                 <div style={{ textAlign: 'center', padding: '20px 6px', color: 'rgb(var(--textSec))', fontSize: 13.5 }}>
-                  {d.estado === 'Cerrada' ? '🔒 Inscripciones cerradas' : '📝 Ficha en borrador (no visible al público)'}
+                  {d.estado === 'Cerrada' ? ' Inscripciones cerradas' : ' Ficha en borrador (no visible al público)'}
                 </div>
               ) : (<>
                 <div style={{ fontFamily: 'Jost', fontWeight: 500, fontSize: 15, marginBottom: 4 }}>{d.titulo || 'Ficha de inscripción'}</div>

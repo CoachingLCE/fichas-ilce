@@ -28,15 +28,15 @@ export default function Accesos({ usuario }) {
     e.preventDefault(); setMensaje('');
     const r = await fetch('/api/usuarios', { method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ solicitanteEmail: usuario.email, nuevoEmail, nombre: nuevoNombre, roles: nuevoRoles, password: nuevoPassword }) }).then((res) => res.json());
-    if (r.error) { setMensaje(`⚠️ ${r.error}`); return; }
-    setMensaje(r.emailEnviado ? `✓ Usuario creado y contraseña enviada a ${nuevoEmail}` : `Usuario creado, pero no se pudo enviar el mail a ${nuevoEmail}.`);
+    if (r.error) { setMensaje(` ${r.error}`); return; }
+    setMensaje(r.emailEnviado ? ` Usuario creado y contraseña enviada a ${nuevoEmail}` : `Usuario creado, pero no se pudo enviar el mail a ${nuevoEmail}.`);
     setNuevoEmail(''); setNuevoNombre(''); setNuevoPassword(''); setNuevoRoles(['Inscripciones']); cargarUsuarios();
   }
   async function restablecer(targetEmail) {
     setEnviandoA(targetEmail); setMensaje('');
     const r = await fetch('/api/usuarios', { method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ solicitanteEmail: usuario.email, targetEmail, nuevaPassword: '' }) }).then((res) => res.json());
-    setMensaje(r.emailEnviado ? `✓ Contraseña reseteada a "Hola123" y enviada a ${targetEmail}` : `Contraseña reseteada, pero no se pudo enviar el mail.`);
+    setMensaje(r.emailEnviado ? ` Contraseña reseteada a "Hola123" y enviada a ${targetEmail}` : `Contraseña reseteada, pero no se pudo enviar el mail.`);
     setEnviandoA(''); cargarUsuarios();
   }
   function empezarEdicionRoles(u) { setEditandoRoles(u.Email); setRolesEnEdicion((u.Roles || '').split(/[,+]/).map((r) => r.trim()).filter(Boolean)); }
@@ -44,21 +44,21 @@ export default function Accesos({ usuario }) {
     setMensaje('');
     const r = await fetch('/api/usuarios', { method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ solicitanteEmail: usuario.email, targetEmail: email, nuevosRoles: rolesEnEdicion }) }).then((res) => res.json());
-    setMensaje(r.error ? `⚠️ ${r.error}` : `✓ Roles actualizados para ${email}`);
+    setMensaje(r.error ? ` ${r.error}` : ` Roles actualizados para ${email}`);
     setEditandoRoles(null); cargarUsuarios();
   }
   async function toggleActivo(u) {
     setMensaje('');
     const r = await fetch('/api/usuarios', { method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ solicitanteEmail: usuario.email, targetEmail: u.Email, activo: !u.Activo }) }).then((res) => res.json());
-    setMensaje(r.error ? `⚠️ ${r.error}` : (u.Activo ? `Usuario ${u.Email} desactivado` : `✓ Usuario ${u.Email} reactivado`));
+    setMensaje(r.error ? ` ${r.error}` : (u.Activo ? `Usuario ${u.Email} desactivado` : ` Usuario ${u.Email} reactivado`));
     cargarUsuarios();
   }
   async function confirmarYEliminar() {
     if (!confirmarEliminar) return; setMensaje('');
     const r = await fetch('/api/usuarios', { method: 'DELETE', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ solicitanteEmail: usuario.email, targetEmail: confirmarEliminar.Email }) }).then((res) => res.json());
-    setMensaje(r.error ? `⚠️ ${r.error}` : `✓ Usuario ${confirmarEliminar.Email} eliminado`);
+    setMensaje(r.error ? ` ${r.error}` : ` Usuario ${confirmarEliminar.Email} eliminado`);
     setConfirmarEliminar(null); cargarUsuarios();
   }
 
@@ -68,7 +68,7 @@ export default function Accesos({ usuario }) {
   return (
     <div>
       <div className="panel">
-        <p style={{ fontSize: 14, fontWeight: 500, margin: '0 0 10px' }}>🔐 Permisos por rol</p>
+        <p style={{ fontSize: 14, fontWeight: 500, margin: '0 0 10px' }}> Permisos por rol</p>
         <table className="perm-tabla" style={{ fontSize: 12.5 }}>
           <tbody>
             {[
@@ -113,7 +113,7 @@ export default function Accesos({ usuario }) {
                   </div>
                 ) : (
                   <button className="btn-sm" onClick={() => empezarEdicionRoles(u)} title="Editar roles">
-                    {nombreVisibleRoles((u.Roles || '').split(/[,+]/).map((r) => r.trim()).filter(Boolean))} ✏️
+                    {nombreVisibleRoles((u.Roles || '').split(/[,+]/).map((r) => r.trim()).filter(Boolean))} 
                   </button>
                 )}
                 {u.passwordActual ? (
@@ -126,7 +126,7 @@ export default function Accesos({ usuario }) {
                   {enviandoA === u.Email ? 'Enviando…' : 'Restablecer'}
                 </button>
                 <button className="btn-sm" onClick={() => toggleActivo(u)}>{u.Activo ? 'Desactivar' : 'Reactivar'}</button>
-                <button className="btn-sm" style={{ color: 'rgb(248 113 113)', borderColor: 'rgba(248,113,113,.3)' }} onClick={() => setConfirmarEliminar(u)}>🗑</button>
+                <button className="btn-sm" style={{ color: 'rgb(248 113 113)', borderColor: 'rgba(248,113,113,.3)' }} onClick={() => setConfirmarEliminar(u)}></button>
               </div>
             ))}
           </div>

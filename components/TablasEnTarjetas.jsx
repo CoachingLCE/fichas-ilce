@@ -9,7 +9,9 @@ import { useEffect } from 'react';
 // tarjeta lo da el CSS (ver "tabla-en-tarjetas" en globals.css). Una tabla puede excluirse
 // agregándole el atributo data-sin-tarjetas.
 const ANCHO_MAX_CELULAR = 640;
-const MAX_COLUMNAS = 10;
+// Más de 8 columnas dan tarjetas demasiado altas (10 líneas) para recorrer una lista larga: esas tablas
+// quedan como tabla que se desplaza de costado.
+const MAX_COLUMNAS = 8;
 
 function limpiar(txt) {
   return (txt || '').replace(/[▲▼↑↓↕⇅]/g, '').replace(/\s+/g, ' ').trim();

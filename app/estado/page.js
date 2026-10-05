@@ -44,11 +44,11 @@ export default async function Home() {
       <section style={card}>
         <h2 style={{ fontSize: 16, marginTop: 0 }}>Estado de la Sheet</h2>
         {errorFatal ? (
-          <p style={{ color: 'rgb(var(--accentMagenta))' }}>❌ No se pudo conectar: {errorFatal}</p>
+          <p style={{ color: 'rgb(var(--accentMagenta))' }}> No se pudo conectar: {errorFatal}</p>
         ) : (
           <>
             <p style={{ margin: '0 0 12px', color: estado.okGlobal ? 'rgb(74 222 128)' : 'rgb(251 191 36)' }}>
-              {estado.okGlobal ? '✓ Conexión OK — el service account tiene acceso.' : '⚠ Conexión parcial — revisá las pestañas marcadas.'}
+              {estado.okGlobal ? ' Conexión OK — el service account tiene acceso.' : ' Conexión parcial — revisá las pestañas marcadas.'}
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '8px 16px', fontSize: 14 }}>
               <b style={{ color: 'rgb(var(--textMuted))' }}>Pestaña</b>
@@ -93,7 +93,7 @@ export default async function Home() {
 function FilaEstado({ r }) {
   return (
     <>
-      <span>{r.ok ? '✓' : '❌'} {r.tab}</span>
+      <span>{r.ok ? '' : ''} {r.tab}</span>
       <span style={{ color: 'rgb(var(--textSec))' }}>{r.ok ? r.headers : '—'}</span>
       <span style={{ color: 'rgb(var(--textSec))' }}>{r.ok ? r.filas : (r.error || '—')}</span>
     </>

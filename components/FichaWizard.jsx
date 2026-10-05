@@ -46,7 +46,7 @@ export default function FichaWizard({ def }) {
   }, [draftKey]);
 
   function chipHora(dt) {
-    return '✓ Guardado ' + dt.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+    return ' Guardado ' + dt.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
   }
 
   // --- autoguardado en el navegador (sin costo), con debounce ---
@@ -156,7 +156,7 @@ export default function FichaWizard({ def }) {
         </div>
 
         {recover && step < 5 && (
-          <div className="recover">📄 <b>Recuperamos tu ficha</b> guardada el {new Date(recover.ts).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}. Seguimos donde la dejaste.
+          <div className="recover"> <b>Recuperamos tu ficha</b> guardada el {new Date(recover.ts).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}. Seguimos donde la dejaste.
             <div style={{ marginTop: 10, display: 'flex', gap: 8 }}>
               <button className="btn-ghost btn" style={{ padding: '7px 12px', fontSize: 13 }} onClick={() => setRecover(null)}>Continuar</button>
               <button className="btn-ghost btn" style={{ padding: '7px 12px', fontSize: 13 }} onClick={() => { try { localStorage.removeItem(draftKey(token)); } catch {}; setForm({ pais: 'Argentina' }); setStep(0); setRecover(null); }}>Empezar de nuevo</button>
@@ -169,7 +169,7 @@ export default function FichaWizard({ def }) {
             <div className="f-steps">{[0, 1, 2, 3, 4].map((i) => <span key={i} className={i < step ? 'done' : (i === step ? 'cur' : '')} />)}</div>
             <div className="f-meta">
               <span className="st">Paso {step + 1} de 5 · {STEP_NAMES[step]}</span>
-              <span className={'saved' + (saving ? ' saving' : '')}>{saving ? 'Guardando…' : (saved ? '✓ Guardado automáticamente' : '✓ Guardado')}</span>
+              <span className={'saved' + (saving ? ' saving' : '')}>{saving ? 'Guardando…' : (saved ? ' Guardado automáticamente' : ' Guardado')}</span>
             </div>
           </div>
         )}
@@ -281,14 +281,14 @@ export default function FichaWizard({ def }) {
 
           {step === 5 && (
             <div className="success">
-              <div className="ring">✓</div>
+              <div className="ring"></div>
               <h3 className="success-title">¡Inscripción enviada con éxito!</h3>
               <p className="success-sub">Guardamos tu ficha correctamente.</p>
               {resultado?.emailOk
                 ? <p className="success-email">Te enviamos un correo de confirmación a <b>{form.email}</b>.</p>
                 : <p className="success-email">El correo de confirmación a <b>{form.email}</b> puede demorar unos minutos.</p>}
               <div className="success-actions">
-                <a className="btn btn-wa" href={`https://api.whatsapp.com/send?phone=5491163245246&text=${encodeURIComponent(`Hola, ya cargué la ficha de inscripción de la edición de ${def.curso}.`)}`} target="_blank" rel="noreferrer">💬 Consultar por WhatsApp</a>
+                <a className="btn btn-wa" href={`https://api.whatsapp.com/send?phone=5491163245246&text=${encodeURIComponent(`Hola, ya cargué la ficha de inscripción de la edición de ${def.curso}.`)}`} target="_blank" rel="noreferrer"> Consultar por WhatsApp</a>
                 <button className="btn btn-ghost btn-block" onClick={nuevaFicha}>Cargar otra ficha</button>
               </div>
               <a className="success-home" href="/">Volver al inicio</a>
@@ -296,7 +296,7 @@ export default function FichaWizard({ def }) {
           )}
         </div>
 
-        {step > 0 && step < 5 && <button className="linkbtn" onClick={copiarEnlace}>🔗 Copiar enlace para continuar después</button>}
+        {step > 0 && step < 5 && <button className="linkbtn" onClick={copiarEnlace}> Copiar enlace para continuar después</button>}
 
         {step === 4 && errEnvio && (
           <div role="alert" style={{ background: 'rgb(var(--badBg))', color: 'rgb(var(--bad))', border: '1px solid rgb(var(--bad))', borderRadius: 10, padding: '10px 12px', fontSize: 13, margin: '12px 22px 4px' }}>
@@ -307,11 +307,11 @@ export default function FichaWizard({ def }) {
           <div className="f-foot">
             {step === 0 && <button className="btn btn-primary" onClick={next}>Comenzar</button>}
             {step > 0 && step < 4 && (<>
-              <button className="btn btn-ghost" onClick={prev}>← Atrás</button>
+              <button className="btn btn-ghost" onClick={prev}> Atrás</button>
               <button className="btn btn-primary" onClick={next}>{step === 3 ? 'Revisar →' : 'Siguiente →'}</button>
             </>)}
             {step === 4 && (<>
-              <button className="btn btn-ghost" onClick={prev} disabled={enviando}>← Atrás</button>
+              <button className="btn btn-ghost" onClick={prev} disabled={enviando}> Atrás</button>
               <button className="btn btn-teal" style={{ flex: 1 }} onClick={enviar} disabled={enviando}>{enviando ? 'Enviando…' : 'Enviar inscripción'}</button>
             </>)}
           </div>

@@ -297,7 +297,7 @@ export default function Panel() {
     if (data.ok) {
       setRows((prev) => prev.map((x) => x.id === sel.id ? { ...x, estado: nuevo } : x));
       setSel((s) => ({ ...s, estado: nuevo })); abrir({ ...sel, estado: nuevo });
-      showToast('✓ Estado actualizado');
+      showToast(' Estado actualizado');
     } else showToast(data.error || 'No se pudo cambiar');
   }
 
@@ -366,7 +366,7 @@ export default function Panel() {
             <button className={'tnav' + (tab === 'emails' ? ' on' : '') + (tienePermisoEmails(usuario) ? '' : ' dim')} onClick={() => setTab('emails')}>Emails</button>
             <button className={'tnav' + (tab === 'equipo' ? ' on' : '') + (tienePermisoAsignarDocentes(usuario) ? '' : ' dim')} onClick={() => setTab('equipo')} title="Equipo Docente">Equipo</button>
             {/* El Constructor de fichas ya no es una pestaña aparte: se abre desde "Fichas de
-                inscripción" (✎ Editar / + Cargar edición en cada ficha), para que todo lo de fichas
+                inscripción" ( Editar / + Cargar edición en cada ficha), para que todo lo de fichas
                 quede junto en una sola hoja. */}
           </div>
           <div className="navgroup">
@@ -375,20 +375,20 @@ export default function Panel() {
             <button className={'tnav' + (tab === 'auditoria' ? ' on' : '') + (tienePermisoAuditoria(usuario) ? '' : ' dim')} onClick={() => setTab('auditoria')} title="Historial de acciones">Historial</button>
             {/* Pedido de Diego: el buscador y el selector de tema van a la derecha de "Historial
                 de acciones" — antes vivían sueltos en la esquina superior derecha (topnav-right). */}
-            <button data-tour="nav-buscador" className={'iconbtn' + (tab === 'buscador' ? ' on' : '')} title="Buscar en fichas, inscripciones, actividades y formularios" aria-label="Buscar" onClick={() => setTab('buscador')}>🔎</button>
+            <button data-tour="nav-buscador" className={'iconbtn' + (tab === 'buscador' ? ' on' : '')} title="Buscar en fichas, inscripciones, actividades y formularios" aria-label="Buscar" onClick={() => setTab('buscador')}></button>
             <ThemeSelector />
           </div>
         </nav>
         <div className="topnav-right">
           {puedeVerComoOtro(usuarioReal) && (verComo
-            ? <div data-tour="ver-como" className="vercomo-chip">👁 {verComo.nombre}<button onClick={() => setVerComo(null)} title="Salir del modo vista">✕</button></div>
+            ? <div data-tour="ver-como" className="vercomo-chip"> {verComo.nombre}<button onClick={() => setVerComo(null)} title="Salir del modo vista"></button></div>
             : (
               // Antes era un <select> nativo de 180px: en varios navegadores la lista
               // desplegada hereda ese mismo ancho y los nombres/roles largos aparecían
               // recortados. Este dropdown propio no tiene ese límite.
               <div data-tour="ver-como">
                 <SelectDropdown
-                  className="fdrop-vercomo" placeholder="👁 Ver como…" value="" hidePlaceholderOption searchable
+                  className="fdrop-vercomo" placeholder=" Ver como…" value="" hidePlaceholderOption searchable
                   onOpen={cargarPersonas}
                   onChange={(email) => { const p = personas.find((x) => x.email === email); if (p) setVerComo(p); }}
                   options={personas.map((p) => ({ value: p.email, label: `${p.nombre} — ${nombreVisibleRoles(p.roles)}` }))}
@@ -403,12 +403,12 @@ export default function Panel() {
         </div>
         </div>
       </header>
-      {verComo && <div className="vercomo-banner">👁 Modo vista — estás viendo la app como <b>{verComo.nombre}</b> ({nombreVisibleRoles(verComo.roles)}), en solo lectura. <button onClick={() => setVerComo(null)}>Salir del modo vista</button></div>}
+      {verComo && <div className="vercomo-banner"> Modo vista — estás viendo la app como <b>{verComo.nombre}</b> ({nombreVisibleRoles(verComo.roles)}), en solo lectura. <button onClick={() => setVerComo(null)}>Salir del modo vista</button></div>}
 
       <div className="main">
         <div className="topbar">
           <div>{(() => { const DESC = { fichas: 'Aquí encontrás las fichas de inscripción de cada curso: sus ediciones y las páginas públicas donde se anotan los estudiantes.', inscripciones: 'Aquí encontrás todas las inscripciones cargadas. Buscalas, filtralas y cambiá su estado.', reportes: 'Aquí encontrás el resumen general y las métricas y el análisis de inscripciones, actividades y cursos.', emails: 'Aquí están los correos automáticos que envía el sistema y sus plantillas.', actividadesyformularios: 'Aquí gestionás las actividades y postworks de cada curso, y los formularios públicos (encuestas, inscripciones y trámites).', respuestas: 'Aquí encontrás las respuestas ya cargadas de actividades y de formularios.', equipo: 'Aquí encontrás al equipo docente y su asignación a cursos y ediciones.', constructor: 'Aquí armás y editás las fichas de inscripción de cada curso.', herramientas: 'Herramientas internas del sistema.', accesos: 'Aquí gestionás quién entra al sistema y con qué permisos.', auditoria: 'Aquí encontrás el historial de acciones realizadas en el sistema.', buscador: 'Aquí buscás inscripciones en todos los cursos a la vez.' }; return <p className="section-lead">{DESC[tab] || ''}</p>; })()}</div>
-          {/* El buscador de texto libre vive en un solo lugar: el ícono 🔎 de arriba del todo
+          {/* El buscador de texto libre vive en un solo lugar: el ícono  de arriba del todo
               (pestaña Buscador, busca en toda la app). Acá había un botón "Buscar" que lo
               duplicaba — se saca (pedido de Diego: "evitemos botones innecesarios y
               repetidos"), mismo criterio ya aplicado en Actividades y Formularios. */}
@@ -446,9 +446,9 @@ export default function Panel() {
                 dos. Mismo componente, "Respuestas fichas" queda marcada como la actual. */}
             {(tienePermisoVerRespuestasActividades(usuario) || tienePermisoVerRespuestasFormularios(usuario)) && (
               <div className="subtabs-pill">
-                <button className="on" title="Estás viendo las inscripciones (Fichas completadas)">📋 Respuestas fichas</button>
-                {tienePermisoVerRespuestasActividades(usuario) && <button onClick={() => { setTab('respuestas'); setVistaResp('actividades'); }}>📝 Respuestas actividades</button>}
-                {tienePermisoVerRespuestasFormularios(usuario) && <button onClick={() => { setTab('respuestas'); setVistaResp('formularios'); }}>🗒️ Respuestas formularios</button>}
+                <button className="on" title="Estás viendo las inscripciones (Fichas completadas)"> Respuestas fichas</button>
+                {tienePermisoVerRespuestasActividades(usuario) && <button onClick={() => { setTab('respuestas'); setVistaResp('actividades'); }}> Respuestas actividades</button>}
+                {tienePermisoVerRespuestasFormularios(usuario) && <button onClick={() => { setTab('respuestas'); setVistaResp('formularios'); }}> Respuestas formularios</button>}
               </div>
             )}
             {/* Los números/KPIs (Total, últimos 7 días, pendientes, etc.) se movieron a la
@@ -493,7 +493,7 @@ export default function Panel() {
             <div className="filters">
               <span className="spacer" />
               <button className="btn-sm" onClick={() => setColModal(true)}>▦ Columnas</button>
-              {puedeExportar && <><button className="btn-sm" onClick={exportCSV}>⬇ CSV</button><button className="btn-sm solid" onClick={exportXLSX}>⬇ Excel</button></>}
+              {puedeExportar && <><button className="btn-sm" onClick={exportCSV}> CSV</button><button className="btn-sm solid" onClick={exportXLSX}> Excel</button></>}
             </div>
             {(q || fCurso || fEd || fPais || fEstado || fDesde || fHasta) && (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
@@ -563,8 +563,8 @@ export default function Panel() {
             <>
               {puedeAct && puedeForm && (
                 <div className="subtabs-pill">
-                  <button className={elegida === 'actividades' ? 'on' : ''} onClick={() => setVistaAyF('actividades')}>📝 Actividades</button>
-                  <button className={elegida === 'formularios' ? 'on' : ''} onClick={() => setVistaAyF('formularios')}>🗒️ Formularios</button>
+                  <button className={elegida === 'actividades' ? 'on' : ''} onClick={() => setVistaAyF('actividades')}> Actividades</button>
+                  <button className={elegida === 'formularios' ? 'on' : ''} onClick={() => setVistaAyF('formularios')}> Formularios</button>
                 </div>
               )}
               {elegida === 'actividades'
@@ -581,9 +581,9 @@ export default function Panel() {
           return (
             <>
               <div className="subtabs-pill">
-                <button onClick={() => setTab('inscripciones')} title="Ver las inscripciones (Fichas completadas)">📋 Respuestas fichas</button>
-                {puedeAct && <button className={elegida === 'actividades' ? 'on' : ''} onClick={() => setVistaResp('actividades')}>📝 Respuestas actividades</button>}
-                {puedeForm && <button className={elegida === 'formularios' ? 'on' : ''} onClick={() => setVistaResp('formularios')}>🗒️ Respuestas formularios</button>}
+                <button onClick={() => setTab('inscripciones')} title="Ver las inscripciones (Fichas completadas)"> Respuestas fichas</button>
+                {puedeAct && <button className={elegida === 'actividades' ? 'on' : ''} onClick={() => setVistaResp('actividades')}> Respuestas actividades</button>}
+                {puedeForm && <button className={elegida === 'formularios' ? 'on' : ''} onClick={() => setVistaResp('formularios')}> Respuestas formularios</button>}
               </div>
               {elegida === 'actividades'
                 ? <Actividades usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} irABuscador={() => setTab('buscador')} irAReportes={() => setTab('reportes')} subInicial="respuestas" />
@@ -607,7 +607,7 @@ export default function Panel() {
                   <div className="dr-name">{(sel.nom + ' ' + sel.ape).trim() || '—'}</div>
                   <div style={{ fontSize: 12, color: 'rgb(var(--textMuted))', marginTop: 2 }}>{sel.curso}{sel.ed ? ` · ${sel.ed}` : ''} · ID {sel.id}</div>
                 </div>
-                <button className="btn-sm" onClick={() => setSel(null)}>✕</button>
+                <button className="btn-sm" onClick={() => setSel(null)}></button>
               </div>
               <div style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                 <span className={'badge b-' + (sel.estado || '').replace(/\s/g, '')}>{sel.estado}</span>
@@ -616,8 +616,8 @@ export default function Panel() {
                 </select>
               </div>
               <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {sel.em && <button className="btn-sm" onClick={() => { navigator.clipboard?.writeText(sel.em); showToast('✓ Email copiado'); }}>✉ Copiar email</button>}
-                {sel.wa && <button className="btn-sm" onClick={() => { navigator.clipboard?.writeText(sel.wa); showToast('✓ WhatsApp copiado'); }}>💬 Copiar WhatsApp</button>}
+                {sel.em && <button className="btn-sm" onClick={() => { navigator.clipboard?.writeText(sel.em); showToast(' Email copiado'); }}> Copiar email</button>}
+                {sel.wa && <button className="btn-sm" onClick={() => { navigator.clipboard?.writeText(sel.wa); showToast(' WhatsApp copiado'); }}> Copiar WhatsApp</button>}
                 {sel.wa && <a className="btn-sm" href={`https://wa.me/${digits(sel.wa)}`} target="_blank" rel="noreferrer">↗ Abrir WhatsApp</a>}
               </div>
             </div>
@@ -702,7 +702,7 @@ function fechaAmigable(iso) {
 function celda(r, k) {
   if (k === 'nom') return <span className="ins-name">{[r.nom, r.ape].filter(Boolean).join(' ') || '—'}</span>;
   if (k === 'estado') return <span className={'badge b-' + (r.estado || '').replace(/\s/g, '')}>{r.estado}</span>;
-  if (k === 'pais') return r.pais ? <span className="sec">{esArgentina(r.pais) ? '🇦🇷' : '🌎'} {r.pais}</span> : '';
+  if (k === 'pais') return r.pais ? <span className="sec">{esArgentina(r.pais) ? '🇦🇷' : ''} {r.pais}</span> : '';
   if (k === 'ed') return r.ed ? <span className="sec">Ed. {r.ed}</span> : '';
   // Pedido de Diego: que esta tabla se parezca más a como está armada la de "Próximas
   // clases" de disponibilidad-zoom — ahí el curso no es un chip con fondo/borde, es un
@@ -716,7 +716,7 @@ function celda(r, k) {
   ) : '';
   if (k === 'wa') return <span className="sec">{r.wa}</span>;
   if (k === 'fecha') return <CeldaFechaReciente iso={r.fecha} />;
-  if (k === 'clickwa') return r.clickWa ? <span className="badge-click-wa" title={'Clic el ' + r.clickWa}>✓ Clic</span> : <span className="sec">—</span>;
+  if (k === 'clickwa') return r.clickWa ? <span className="badge-click-wa" title={'Clic el ' + r.clickWa}> Clic</span> : <span className="sec">—</span>;
   return r[k] || '';
 }
 // Mismo criterio que la pestaña Respuestas de Actividades (estadoFechaReciente): hoy aparte,
@@ -725,7 +725,7 @@ function celda(r, k) {
 function CeldaFechaReciente({ iso }) {
   const { tipo } = estadoFechaReciente(iso);
   if (tipo === 'hoy') return <span className="badge-fecha-hoy" title={iso}>🟢 Inscrito hoy</span>;
-  if (tipo === 'nueva') return <span className="badge-fecha-nueva" title={iso}>✨ Ficha nueva</span>;
+  if (tipo === 'nueva') return <span className="badge-fecha-nueva" title={iso}> Ficha nueva</span>;
   return <span className="sec" title={iso}>{fechaAmigable(iso)}</span>;
 }
 function fmtFecha(iso) {

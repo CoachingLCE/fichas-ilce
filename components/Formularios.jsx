@@ -65,9 +65,9 @@ function Lista({ usuario, showToast }) {
     } catch { setConteos({}); }
   })(); /* eslint-disable-next-line */ }, []);
   const nResp = (f) => (conteos ? (conteos[normNombre(f.titulo)] || 0) : null);
-  if (error) return <div className="empty"><div className="ico">⚠️</div><h3>No se pudo cargar</h3><p>{error}. Revisá que exista la pestaña “Formularios” en la Sheet.</p></div>;
+  if (error) return <div className="empty"><div className="ico"></div><h3>No se pudo cargar</h3><p>{error}. Revisá que exista la pestaña “Formularios” en la Sheet.</p></div>;
   if (!forms) return <div className="spin" />;
-  if (forms.length === 0) return <div className="empty"><div className="ico">📝</div><h3>No hay formularios cargados</h3><p>Pegá las definiciones en la pestaña Formularios de la Sheet.</p></div>;
+  if (forms.length === 0) return <div className="empty"><div className="ico"></div><h3>No hay formularios cargados</h3><p>Pegá las definiciones en la pestaña Formularios de la Sheet.</p></div>;
   return (
     <div>
       <div className="sechead">
@@ -75,7 +75,7 @@ function Lista({ usuario, showToast }) {
         <span className="grow" />
         <div className="vista-toggle">
           <button className={vista === 'cards' ? 'on' : ''} onClick={() => cambiarVista('cards')} title="Ver en tarjetas">▦</button>
-          <button className={vista === 'lista' ? 'on' : ''} onClick={() => cambiarVista('lista')} title="Ver en lista">☰</button>
+          <button className={vista === 'lista' ? 'on' : ''} onClick={() => cambiarVista('lista')} title="Ver en lista"></button>
         </div>
       </div>
       {vista === 'lista' ? (
@@ -90,8 +90,8 @@ function Lista({ usuario, showToast }) {
               <td>{nResp(f) === null ? <span className="sec">…</span> : (nResp(f) > 0 ? <span className="cnt" style={{ fontWeight: 500 }}>{nResp(f)}</span> : <span className="sec">0</span>)}</td>
               <td className="sec">/formulario/{f.slug}</td>
               <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                <button className="btn-sm" onClick={() => { navigator.clipboard?.writeText(`${APP_URL}/formulario/${f.slug}`); showToast('✓ Enlace copiado'); }}>Copiar</button>{' '}
-                <a className="btn-sm solid" href={`${APP_URL}/formulario/${f.slug}`} target="_blank" rel="noreferrer">👁</a>
+                <button className="btn-sm" onClick={() => { navigator.clipboard?.writeText(`${APP_URL}/formulario/${f.slug}`); showToast(' Enlace copiado'); }}>Copiar</button>{' '}
+                <a className="btn-sm solid" href={`${APP_URL}/formulario/${f.slug}`} target="_blank" rel="noreferrer"></a>
               </td>
             </tr>
           ))}</tbody>
@@ -112,10 +112,10 @@ function Lista({ usuario, showToast }) {
               </div>
               <div className="pcard-url">
                 <span className="pcard-url-txt">/formulario/{f.slug}</span>
-                <button className="pcard-url-copy" onClick={() => { navigator.clipboard?.writeText(`${APP_URL}/formulario/${f.slug}`); showToast('✓ Enlace copiado'); }} title="Copiar enlace">Copiar</button>
+                <button className="pcard-url-copy" onClick={() => { navigator.clipboard?.writeText(`${APP_URL}/formulario/${f.slug}`); showToast(' Enlace copiado'); }} title="Copiar enlace">Copiar</button>
               </div>
               <div className="pcard-actions">
-                <a className="pcard-act pcard-act-primary" style={{ flex: 1, justifyContent: 'center' }} href={`${APP_URL}/formulario/${f.slug}`} target="_blank" rel="noreferrer">👁 Abrir</a>
+                <a className="pcard-act pcard-act-primary" style={{ flex: 1, justifyContent: 'center' }} href={`${APP_URL}/formulario/${f.slug}`} target="_blank" rel="noreferrer"> Abrir</a>
               </div>
             </div>
           ))}
@@ -149,8 +149,8 @@ function Respuestas({ usuario, showToast }) {
       const d = await res.json();
       if (!d.ok) throw new Error(d.error || 'No se pudo eliminar');
       setData((arr) => arr.filter((r) => r.id !== x.id));
-      showToast && showToast('✓ Respuesta eliminada');
-    } catch (e) { showToast && showToast('⚠ ' + (e.message || 'No se pudo eliminar')); }
+      showToast && showToast(' Respuesta eliminada');
+    } catch (e) { showToast && showToast(' ' + (e.message || 'No se pudo eliminar')); }
   }
 
   async function cargar() {
@@ -180,24 +180,24 @@ function Respuestas({ usuario, showToast }) {
   const ordenarPor = (col) => setOrden((o) => (o.col === col ? { col, dir: o.dir === 'asc' ? 'desc' : 'asc' } : { col, dir: 'asc' }));
   const flecha = (col) => (orden.col === col ? (orden.dir === 'asc' ? ' ▲' : ' ▼') : '');
   const fmt = (iso) => { const d = new Date(iso); return isNaN(d) ? iso : d.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }); };
-  if (error) return <div className="empty"><div className="ico">⚠️</div><h3>No se pudo cargar</h3><p>{error}. Revisá que exista la pestaña “RespuestasFormularios” en la Sheet.</p></div>;
+  if (error) return <div className="empty"><div className="ico"></div><h3>No se pudo cargar</h3><p>{error}. Revisá que exista la pestaña “RespuestasFormularios” en la Sheet.</p></div>;
   if (!data) return <div className="spin" />;
   return (
     <div>
-      {/* Pedido de Diego: el buscador de texto vive en un solo lugar (el ícono 🔎 de arriba de
+      {/* Pedido de Diego: el buscador de texto vive en un solo lugar (el ícono  de arriba de
           todo) — se saca este cuadro de búsqueda repetido. El combo de Formulario pasa a
           SelectDropdown (mismo look "chip" chico que el resto de los filtros de la app). */}
       <div className="filters">
         <SelectDropdown placeholder="Formulario: todos" searchable value={fForm} onChange={setFForm} options={forms.map((x) => ({ value: x, label: x }))} />
         {fForm && <button className="btn-sm" onClick={() => setFForm('')}>Limpiar</button>}
         <span className="spacer" />
-        <button className="btn-sm solid" onClick={() => setImportarAbierto(true)}>📥 Importar respuestas históricas</button>
+        <button className="btn-sm solid" onClick={() => setImportarAbierto(true)}> Importar respuestas históricas</button>
       </div>
       {importarAbierto && (
         <ImportarRespuestas
           usuario={usuario}
           onCerrar={() => setImportarAbierto(false)}
-          onImportado={() => { setImportarAbierto(false); setData(null); cargar(); showToast && showToast('✓ Respuestas importadas'); }}
+          onImportado={() => { setImportarAbierto(false); setData(null); cargar(); showToast && showToast(' Respuestas importadas'); }}
         />
       )}
       <p className="count">{filtradas.length} respuesta(s)</p>
@@ -229,7 +229,7 @@ function Respuestas({ usuario, showToast }) {
                 {/* Pedido de Diego: "agregar eliminar acá" — mismo permiso y UX que el borrado
                     de respuestas de actividades. stopPropagation para no disparar el toggle
                     de Ver/Ocultar de la fila al hacer clic en el tacho. */}
-                {puedeEliminar && <td><button className="btn-sm" style={{ color: 'rgb(248 113 113)' }} onClick={(e) => { e.stopPropagation(); eliminarRespuesta(x); }} title="Eliminar esta respuesta">🗑</button></td>}
+                {puedeEliminar && <td><button className="btn-sm" style={{ color: 'rgb(248 113 113)' }} onClick={(e) => { e.stopPropagation(); eliminarRespuesta(x); }} title="Eliminar esta respuesta"></button></td>}
               </tr>
               {abierto === x.id && (
                 <tr><td colSpan={puedeEliminar ? 8 : 7} style={{ background: 'rgb(var(--surface2))' }}>
@@ -318,7 +318,7 @@ function ImportarRespuestas({ usuario, onCerrar, onImportado }) {
   return (
     <div className="mwrap on">
       <div className="modal" style={{ maxWidth: 540 }}>
-        <h3>📥 Importar respuestas históricas</h3>
+        <h3> Importar respuestas históricas</h3>
         <p className="muted" style={{ fontSize: 12.5, margin: '4px 0 14px' }}>
           Subí el archivo tal cual lo bajaste de Google Forms (Respuestas → ⋮ → Descargar respuestas, en .csv o .xlsx).
           Se lee acá mismo en tu navegador — nada se transcribe a mano, así no hay riesgo de cargar mal un nombre o un email de un estudiante real.
@@ -360,7 +360,7 @@ function ImportarRespuestas({ usuario, onCerrar, onImportado }) {
           </div>
         </>) : (<>
           <div className="note" style={{ borderLeftColor: 'rgb(74 222 128)', marginBottom: 14 }}>
-            ✓ Se importaron <b>{resultado.importadas}</b> respuesta(s) nueva(s).
+             Se importaron <b>{resultado.importadas}</b> respuesta(s) nueva(s).
             {resultado.omitidasDuplicadas > 0 && <><br />{resultado.omitidasDuplicadas} ya estaban cargadas (mismo email y fecha) y se omitieron para no duplicar.</>}
             {resultado.omitidasSinEmail > 0 && <><br />{resultado.omitidasSinEmail} fila(s) no tenían un email detectable y se omitieron.</>}
           </div>

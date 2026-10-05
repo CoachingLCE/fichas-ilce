@@ -9,13 +9,13 @@ const CATS = [
   // inscripción, ver app/api/inscripcion/route.js) no matcheaba ninguna categoría — quedaba
   // como "otro" (un punto gris, sin ícono ni chip propio) y se perdía entre el resto de las
   // acciones. Ahora tiene su propia categoría para que se pueda ver/filtrar de un vistazo.
-  { id: 'ficha', icono: '📋', color: 'rgb(74 222 128)', test: (a) => /ficha (enviad|completad)/i.test(a) },
+  { id: 'ficha', icono: '', color: 'rgb(74 222 128)', test: (a) => /ficha (enviad|completad)/i.test(a) },
   { id: 'crear', icono: '🟢', color: '#4ade80', test: (a) => /(cre[oó]|agreg[oó]|dio acceso|public[oó]|nueva|nuevo|import[oó]|carg[oó])/i.test(a) },
-  { id: 'editar', icono: '✏️', color: '#fbbf24', test: (a) => /(edit[oó]|corrig|actualiz[oó]|modific[oó]|renombr[oó])/i.test(a) },
-  { id: 'estado', icono: '📌', color: 'rgb(var(--accentTeal))', test: (a) => /(estado|inscri|aprob|revisi)/i.test(a) },
-  { id: 'eliminar', icono: '🗑️', color: '#f87171', test: (a) => /(elimin[oó]|quit[oó]|borr[oó]|archiv[oó]|baja|rechaz)/i.test(a) },
-  { id: 'mail', icono: '📧', color: 'rgb(var(--accentMagenta))', test: (a) => /(mail|correo|email|envi[oó])/i.test(a) },
-  { id: 'login', icono: '🔑', color: '#60a5fa', test: (a) => /(inici[oó] sesi[oó]n|login|ingres[oó])/i.test(a) }
+  { id: 'editar', icono: '', color: '#fbbf24', test: (a) => /(edit[oó]|corrig|actualiz[oó]|modific[oó]|renombr[oó])/i.test(a) },
+  { id: 'estado', icono: '', color: 'rgb(var(--accentTeal))', test: (a) => /(estado|inscri|aprob|revisi)/i.test(a) },
+  { id: 'eliminar', icono: '', color: '#f87171', test: (a) => /(elimin[oó]|quit[oó]|borr[oó]|archiv[oó]|baja|rechaz)/i.test(a) },
+  { id: 'mail', icono: '', color: 'rgb(var(--accentMagenta))', test: (a) => /(mail|correo|email|envi[oó])/i.test(a) },
+  { id: 'login', icono: '', color: '#60a5fa', test: (a) => /(inici[oó] sesi[oó]n|login|ingres[oó])/i.test(a) }
 ];
 function catAccion(a) {
   const t = a || '';
@@ -77,15 +77,15 @@ export default function Auditoria({ usuario }) {
   if (!eventos) return <div className="spin" />;
 
   const CHIPS = [
-    ['', 'Todas'], ['ficha', '📋 Ficha completada'], ['crear', '🟢 Creó'], ['editar', '✏️ Editó'], ['estado', '📌 Estado'],
-    ['eliminar', '🗑️ Eliminó'], ['mail', '📧 Correo'], ['login', '🔑 Login']
+    ['', 'Todas'], ['ficha', ' Ficha completada'], ['crear', '🟢 Creó'], ['editar', ' Editó'], ['estado', ' Estado'],
+    ['eliminar', ' Eliminó'], ['mail', ' Correo'], ['login', ' Login']
   ];
   return (
     <div>
       <div className="sechead">
         <span className="hcount">{filtrados.length} acción(es) registradas</span>
         <span className="grow" />
-        <div className="fsearch" style={{ maxWidth: 260, flex: 'none' }}>🔎 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por usuario, acción, detalle…" /></div>
+        <div className="fsearch" style={{ maxWidth: 260, flex: 'none' }}> <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por usuario, acción, detalle…" /></div>
       </div>
       <div className="fchips" style={{ marginBottom: 12 }}>
         {CHIPS.map(([id, label]) => (
@@ -93,7 +93,7 @@ export default function Auditoria({ usuario }) {
         ))}
       </div>
       {filtrados.length === 0 ? (
-        <div className="empty"><div className="ico">🧾</div><h3>Sin registros</h3><p>No hay acciones para ese filtro.</p></div>
+        <div className="empty"><div className="ico"></div><h3>Sin registros</h3><p>No hay acciones para ese filtro.</p></div>
       ) : (
         <div className="tablewrap" style={{ maxHeight: '68vh' }}>
           <table>
