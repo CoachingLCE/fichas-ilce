@@ -3,6 +3,7 @@ import { ThemeProvider } from '../lib/ThemeContext';
 import ErrorBoundary from '../components/ErrorBoundary';
 import RecuperadorDeChunks from '../components/RecuperadorDeChunks';
 import { DialogosProvider } from '../components/Dialogos';
+import TablasEnTarjetas from '../components/TablasEnTarjetas';
 
 export const metadata = {
   title: 'ILCE · Fichas de Inscripción',
@@ -21,6 +22,7 @@ export default function RootLayout({ children }) {
         <ThemeProvider>
           <DialogosProvider>
             <RecuperadorDeChunks />
+            <TablasEnTarjetas />
             <ErrorBoundary>{children}</ErrorBoundary>
           </DialogosProvider>
         </ThemeProvider>

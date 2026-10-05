@@ -1612,3 +1612,15 @@ thead th{font-weight:600;padding:8px 12px}
   .perm-tabla .perm-rol{white-space:normal;margin-bottom:2px}
   .form-grid-2{grid-template-columns:1fr}
 }
+
+/* Tablas en celular: una tarjeta por fila, con el nombre de la columna al lado de cada dato (lo agrega
+   components/TablasEnTarjetas.jsx). En pantallas grandes no cambia nada. */
+@media (max-width:640px){
+  table.tabla-en-tarjetas thead{display:none}
+  table.tabla-en-tarjetas,table.tabla-en-tarjetas tbody{display:block;width:100%;min-width:0!important}
+  table.tabla-en-tarjetas tbody tr{display:flex;flex-direction:column;padding:10px 12px;margin:0 0 8px;border:1px solid rgb(var(--border));border-radius:12px;background:rgb(var(--surface2))}
+  table.tabla-en-tarjetas td[data-label]{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;padding:3px 0!important;border:0!important;white-space:normal!important;max-width:100%;overflow-wrap:anywhere}
+  table.tabla-en-tarjetas td[data-label]::before{content:attr(data-label);min-width:96px;font-size:12px;font-weight:600;color:rgb(var(--textMuted))}
+  table.tabla-en-tarjetas td[data-titulo]{order:-1;font-size:15px;font-weight:700;padding-bottom:6px!important}
+  table.tabla-en-tarjetas td[data-titulo]::before{display:none}
+}
