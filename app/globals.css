@@ -1651,3 +1651,38 @@ button,input,select,textarea{font-family:inherit}
 @font-face{font-family:'Dosis';src:url('/fonts/iconos.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap;unicode-range:U+E000-F8FF}
 @font-face{font-family:'TeX Gyre Adventor';src:url('/fonts/iconos.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap;unicode-range:U+E000-F8FF}
 @font-face{font-family:'TeX Gyre Adventor';src:url('/fonts/iconos.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap;unicode-range:U+E000-F8FF}
+
+/* ===== Barra lateral de navegación (escritorio) — igual a la de Gestión, Cronograma y Presentismo =====
+   Decisión de Diego (04/10/2026): que las apps de ILCE parezcan de la misma empresa. En pantallas >= 1024 px la
+   barra de arriba (.topnav) se muestra como una columna fija a la izquierda, con los grupos ya existentes
+   (Gestión, Configuración), un ícono por pestaña y el usuario abajo. En tablet y celular no cambia nada. */
+.tnav-ico,.topnav-brand-txt{display:none}
+.navtools{display:contents}
+@media (min-width:1024px){
+  body.con-menu-lateral{padding-left:248px}
+  .topnav,.topnav.topnav-oculto{position:fixed;top:0;left:0;bottom:0;width:248px;padding:0;border-bottom:0;border-right:1px solid rgb(var(--border));background:rgb(var(--surface));backdrop-filter:none;transform:none;overflow-y:auto;z-index:30}
+  .topnav-inner{max-width:none;margin:0;width:100%;height:100%;padding:16px 12px;flex-direction:column;align-items:stretch;flex-wrap:nowrap;row-gap:0;column-gap:0}
+  .topnav-tabs{flex-direction:column;align-items:stretch;flex-wrap:nowrap;gap:2px;flex:1 1 auto;padding-top:0;overflow:visible;order:0;flex-basis:auto}
+  .topnav-brand{flex-direction:column;align-items:flex-start;gap:6px;padding:4px 8px 14px}
+  .topnav-brand-txt{display:block;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:rgb(var(--textMuted))}
+  .topnav-tabs>.btn.btn-primary{width:100%;height:40px!important;margin:0 0 12px!important;justify-content:center}
+  .tnav-ico{display:inline-block;width:18px;font-size:18px;line-height:1;text-align:center;flex:0 0 auto}
+  .topnav-tabs .tnav{position:relative;display:flex;align-items:center;justify-content:flex-start;gap:10px;width:100%;height:32px;padding:0 12px;border:0;border-radius:8px;background:transparent;box-shadow:none;font-size:14px;font-weight:500;color:rgb(var(--textSec))}
+  .topnav-tabs .tnav:hover{background:rgb(var(--surface2));color:rgb(var(--text));border-color:transparent}
+  .topnav-tabs .tnav.on{background:rgb(var(--accentPurple) / .15);color:rgb(var(--accentMagenta));font-weight:600}
+  .topnav-tabs .tnav.on::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:3px;border-radius:0 3px 3px 0;background:rgb(var(--accentMagenta))}
+  .navgroup{display:flex;flex-direction:column;gap:2px;margin-top:16px}
+  .navgroup-label{display:block;padding:0 12px 4px;font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgb(var(--textMuted))}
+  .navtools{display:flex;align-items:center;gap:8px;padding:10px 4px 0}
+  .topnav-right{flex-direction:column;align-items:stretch;gap:10px;margin:12px 0 0;padding-top:12px;border-top:1px solid rgb(var(--border));flex:0 0 auto}
+  .topnav-user{display:block;text-align:left;order:-1}
+  .topnav-user b{font-size:13.5px}
+  .topnav-right .btn-sm{align-self:flex-start}
+  .topnav-right .vercomo-chip,.topnav-right .fdrop-vercomo,.topnav-right [data-tour="ver-como"]{width:100%;max-width:none}
+  /* "Ver como" queda al pie de la barra: el desplegable se abre hacia ARRIBA y del ancho de la barra (si se abriera hacia abajo
+     o alineado a la derecha, una lista larga de personas se saldría de la pantalla). */
+  .topnav-right .fdrop-vercomo .fdrop-panel{top:auto;bottom:calc(100% + 6px);left:0;right:auto;width:100%;max-width:none;min-width:0}
+  .topnav-right .fdrop-vercomo .fdrop-opt{white-space:normal;line-height:1.25}
+  .topnav-right .fdrop-vercomo .fdrop-list{max-height:min(300px,45vh)}
+}
+@media (max-width:1023px){ .tnav-ico{display:inline-block;margin-right:6px;font-size:15px;line-height:1;vertical-align:-1px} }

@@ -109,6 +109,12 @@ export default function Panel() {
     return tabDeUrl(t);
   });
   // En celular la barra de pestañas se desplaza: al cambiar de pestaña, la activa se centra sola.
+  // Deja lugar a la barra lateral en pantallas grandes (ver .con-menu-lateral en globals.css).
+  useEffect(() => {
+    document.body.classList.add('con-menu-lateral');
+    return () => document.body.classList.remove('con-menu-lateral');
+  }, []);
+
   useEffect(() => {
     const el = document.querySelector('.topnav-tabs .tnav.on');
     if (el && el.scrollIntoView) el.scrollIntoView({ inline: 'center', block: 'nearest' });
@@ -343,6 +349,7 @@ export default function Panel() {
               toda la barra de navegación. Ahora es el primer elemento de esta misma fila. */}
           <div className="topnav-brand">
             <Isologo size={32} />
+            <span className="topnav-brand-txt">Fichas</span>
           </div>
           {/* "+ Crear" va primero, antes que Fichas — es el punto de entrada único para dar de
               alta una Inscripción, Actividad o Formulario (ver el selector más abajo). */}
@@ -354,29 +361,31 @@ export default function Panel() {
           {/* "Fichas de inscripción" y "Fichas completadas" quedan unificadas bajo una sola
               pestaña ("Fichas"), con sub-pestañas adentro — antes competían visualmente
               como si fueran dos módulos del mismo nivel. */}
-          <button className={'tnav' + (tab === 'fichas' ? ' on' : '')} onClick={() => setTab('fichas')} title="Fichas de inscripción">Fichas</button>
-          <button className={'tnav' + (tab === 'actividadesyformularios' ? ' on' : '') + ((tienePermisoActividades(usuario) || tienePermisoFormularios(usuario)) ? '' : ' dim')} onClick={() => { setTab('actividadesyformularios'); setVistaAyF(null); }} title="Actividades y formularios">Actividades</button>
-          <button className={'tnav' + ((tab === 'respuestas' || tab === 'inscripciones') ? ' on' : '') + ((tienePermisoVerRespuestasActividades(usuario) || tienePermisoVerRespuestasFormularios(usuario)) ? '' : ' dim')} onClick={() => { setTab('respuestas'); setVistaResp(null); }} title="Respuestas de fichas, actividades y formularios">Respuestas</button>
+          <button className={'tnav' + (tab === 'fichas' ? ' on' : '')} onClick={() => setTab('fichas')} title="Fichas de inscripción"><span className="tnav-ico" aria-hidden="true"></span>Fichas</button>
+          <button className={'tnav' + (tab === 'actividadesyformularios' ? ' on' : '') + ((tienePermisoActividades(usuario) || tienePermisoFormularios(usuario)) ? '' : ' dim')} onClick={() => { setTab('actividadesyformularios'); setVistaAyF(null); }} title="Actividades y formularios"><span className="tnav-ico" aria-hidden="true"></span>Actividades</button>
+          <button className={'tnav' + ((tab === 'respuestas' || tab === 'inscripciones') ? ' on' : '') + ((tienePermisoVerRespuestasActividades(usuario) || tienePermisoVerRespuestasFormularios(usuario)) ? '' : ' dim')} onClick={() => { setTab('respuestas'); setVistaResp(null); }} title="Respuestas de fichas, actividades y formularios"><span className="tnav-ico" aria-hidden="true"></span>Respuestas</button>
           {/* El Dashboard se fusionó dentro de Reportes (v0.89.0): todo lo que mostraba
               (KPIs, Atención, Evolución, Por curso/estado/edición/país/origen) ahora vive
               en la pestaña "Reportes" → "Resumen", así que la pestaña aparte se saca. */}
-          <button className={'tnav' + (tab === 'reportes' ? ' on' : '') + (tienePermisoDashboard(usuario) ? '' : ' dim')} onClick={() => setTab('reportes')}>Reportes</button>
+          <button className={'tnav' + (tab === 'reportes' ? ' on' : '') + (tienePermisoDashboard(usuario) ? '' : ' dim')} onClick={() => setTab('reportes')}><span className="tnav-ico" aria-hidden="true"></span>Reportes</button>
           <div className="navgroup">
             <span className="navgroup-label">Gestión</span>
-            <button className={'tnav' + (tab === 'emails' ? ' on' : '') + (tienePermisoEmails(usuario) ? '' : ' dim')} onClick={() => setTab('emails')}>Emails</button>
-            <button className={'tnav' + (tab === 'equipo' ? ' on' : '') + (tienePermisoAsignarDocentes(usuario) ? '' : ' dim')} onClick={() => setTab('equipo')} title="Equipo Docente">Equipo</button>
+            <button className={'tnav' + (tab === 'emails' ? ' on' : '') + (tienePermisoEmails(usuario) ? '' : ' dim')} onClick={() => setTab('emails')}><span className="tnav-ico" aria-hidden="true"></span>Emails</button>
+            <button className={'tnav' + (tab === 'equipo' ? ' on' : '') + (tienePermisoAsignarDocentes(usuario) ? '' : ' dim')} onClick={() => setTab('equipo')} title="Equipo Docente"><span className="tnav-ico" aria-hidden="true"></span>Equipo</button>
             {/* El Constructor de fichas ya no es una pestaña aparte: se abre desde "Fichas de
                 inscripción" ( Editar / + Cargar edición en cada ficha), para que todo lo de fichas
                 quede junto en una sola hoja. */}
           </div>
           <div className="navgroup">
             <span className="navgroup-label">Configuración</span>
-            <button className={'tnav' + (tab === 'accesos' ? ' on' : '') + (tienePermisoAccesos(usuario) ? '' : ' dim')} onClick={() => setTab('accesos')}>Accesos</button>
-            <button className={'tnav' + (tab === 'auditoria' ? ' on' : '') + (tienePermisoAuditoria(usuario) ? '' : ' dim')} onClick={() => setTab('auditoria')} title="Historial de acciones">Historial</button>
+            <button className={'tnav' + (tab === 'accesos' ? ' on' : '') + (tienePermisoAccesos(usuario) ? '' : ' dim')} onClick={() => setTab('accesos')}><span className="tnav-ico" aria-hidden="true"></span>Accesos</button>
+            <button className={'tnav' + (tab === 'auditoria' ? ' on' : '') + (tienePermisoAuditoria(usuario) ? '' : ' dim')} onClick={() => setTab('auditoria')} title="Historial de acciones"><span className="tnav-ico" aria-hidden="true"></span>Historial</button>
             {/* Pedido de Diego: el buscador y el selector de tema van a la derecha de "Historial
                 de acciones" — antes vivían sueltos en la esquina superior derecha (topnav-right). */}
+            <div className="navtools">
             <button data-tour="nav-buscador" className={'iconbtn' + (tab === 'buscador' ? ' on' : '')} title="Buscar en fichas, inscripciones, actividades y formularios" aria-label="Buscar" onClick={() => setTab('buscador')}></button>
             <ThemeSelector />
+            </div>
           </div>
         </nav>
         <div className="topnav-right">
