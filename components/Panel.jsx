@@ -295,6 +295,28 @@ export default function Panel() {
     });
   }, [rows, q, fCurso, fEd, fPais, fLoc, fProv, fExterior, fDesde, fHasta]);
 
+  // Base para los chips de Curso: aplica todos los filtros MENOS el curso (incluido el estado), así los contadores reflejan el resto.
+  // Pedido de Diego ("acá también debería haber chips"): antes se habían sacado los combos de Curso/Edición/País a favor de chips,
+  // pero el de Curso nunca se agregó, y esta pantalla no tenía forma de filtrar por curso (solo llegando desde Reportes).
+  const baseParaCursos = useMemo(() => {
+    const qq = norm(q);
+    return (rows || []).filter((r) => {
+      if (fEstado && r.estado !== fEstado) return false;
+      if (fEd && r.ed !== fEd) return false;
+      if (fPais && r.pais !== fPais) return false;
+      if (fLoc && claveLugarFila(r, 'loc') !== fLoc.clave) return false;
+      if (fProv && claveLugarFila(r, 'prov') !== fProv.clave) return false;
+      if (fExterior && (r.pais || '').toLowerCase() === 'argentina') return false;
+      if (fDesde && (r.fecha || '') < fDesde) return false;
+      if (fHasta && (r.fecha || '') > fHasta) return false;
+      if (qq) {
+        const hay = [r.nom, r.ape, r.em, r.doc, digits(r.wa), r.curso, r.ed].map(norm).join(' ');
+        if (!hay.includes(qq) && !digits(r.wa).includes(digits(qq))) return false;
+      }
+      return true;
+    });
+  }, [rows, q, fEstado, fEd, fPais, fLoc, fProv, fExterior, fDesde, fHasta]);
+
   function limpiar() { setQ(''); setFEstado(''); setFCurso(''); setFEd(''); setFPais(''); setFLoc(null); setFProv(null); setFExterior(false); setFDesde(''); setFHasta(''); }
 
   async function abrir(r) {
@@ -505,6 +527,20 @@ export default function Panel() {
                       ))}
                     </div>
                   </div>
+                  {cursos.length > 1 && (
+                    <div className="fgroup-col">
+                      <div className="fgroup-label">Curso</div>
+                      <div className="fchips fchips-sm" role="group" aria-label="Filtrar por curso">
+                        <button className={'fchip' + (fCurso === '' ? ' on' : '')} onClick={() => setFCurso('')}>Todos <span className="cnt">{baseParaCursos.length}</span></button>
+                        {cursos.map((c) => (
+                          <button key={c} className={'fchip' + (fCurso === c ? ' on' : '')} onClick={() => setFCurso(fCurso === c ? '' : c)} aria-pressed={fCurso === c}>
+                            <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 99, background: colorCurso(c), display: 'inline-block' }} />
+                            {c} <span className="cnt">{baseParaCursos.filter((r) => r.curso === c).length}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })()}

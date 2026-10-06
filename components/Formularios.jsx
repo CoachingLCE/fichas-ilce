@@ -132,6 +132,7 @@ function Respuestas({ usuario, showToast }) {
   const [error, setError] = useState('');
   const [q, setQ] = useState('');
   const [fForm, setFForm] = useState('');
+  const [fCurso, setFCurso] = useState(''); // '' = todos · SIN_CURSO = las que no están relacionadas con ningún curso
   const [abierto, setAbierto] = useState(null);
   const [importarAbierto, setImportarAbierto] = useState(false);
   const [orden, setOrden] = useState({ col: 'fecha', dir: 'desc' });
@@ -163,14 +164,25 @@ function Respuestas({ usuario, showToast }) {
   }
   useEffect(() => { cargar(); /* eslint-disable-next-line */ }, []);
   const forms = useMemo(() => [...new Set((data || []).map((x) => x.formulario).filter(Boolean))].sort(), [data]);
+  // Un formulario puede no estar relacionado con ningún curso (su respuesta guarda curso vacío): se agrupa como "Sin curso".
+  const SIN_CURSO = '__sin_curso__';
+  const cursoDe = (x) => x.curso || SIN_CURSO;
+  const cursosF = useMemo(() => {
+    const set = [...new Set((data || []).map(cursoDe))];
+    return set.filter((c) => c !== SIN_CURSO).sort().concat(set.includes(SIN_CURSO) ? [SIN_CURSO] : []);
+  }, [data]);
   const filtradas = useMemo(() => {
     const qq = norm(q);
     return (data || []).filter((x) => {
       if (fForm && x.formulario !== fForm) return false;
+      if (fCurso && cursoDe(x) !== fCurso) return false;
       if (qq && !norm(`${x.nombre} ${x.email} ${x.curso} ${x.edicion}`).includes(qq)) return false;
       return true;
     });
-  }, [data, q, fForm]);
+  }, [data, q, fForm, fCurso]);
+  // Contadores de los chips: cada grupo aplica el filtro del OTRO grupo y no el suyo, para que al elegir algo no se vacíen.
+  const paraChipsForm = useMemo(() => (data || []).filter((x) => (!fCurso || cursoDe(x) === fCurso) && (!q || norm(`${x.nombre} ${x.email} ${x.curso} ${x.edicion}`).includes(norm(q)))), [data, q, fCurso]);
+  const paraChipsCurso = useMemo(() => (data || []).filter((x) => (!fForm || x.formulario === fForm) && (!q || norm(`${x.nombre} ${x.email} ${x.curso} ${x.edicion}`).includes(norm(q)))), [data, q, fForm]);
   const ordenadas = useMemo(() => {
     const { col, dir } = orden;
     const val = (x) => (col === 'fecha' ? (x.fecha || '') : (x[col] || '')).toString().toLowerCase();
@@ -188,11 +200,39 @@ function Respuestas({ usuario, showToast }) {
           todo) — se saca este cuadro de búsqueda repetido. El combo de Formulario pasa a
           SelectDropdown (mismo look "chip" chico que el resto de los filtros de la app). */}
       <div className="filters">
-        <SelectDropdown placeholder="Formulario: todos" searchable value={fForm} onChange={setFForm} options={forms.map((x) => ({ value: x, label: x }))} />
-        {fForm && <button className="btn-sm" onClick={() => setFForm('')}>Limpiar</button>}
+        {(fForm || fCurso) && <button className="btn-sm" onClick={() => { setFForm(''); setFCurso(''); }}>Limpiar</button>}
         <span className="spacer" />
         <button className="btn-sm solid" onClick={() => setImportarAbierto(true)}> Importar respuestas históricas</button>
       </div>
+      {(forms.length > 1 || cursosF.length > 1) && (
+        <div className="fgroup-row">
+          {forms.length > 1 && (
+            <div className="fgroup-col">
+              <div className="fgroup-label">Formulario</div>
+              <div className="fchips fchips-sm" role="group" aria-label="Filtrar por formulario">
+                <button className={'fchip' + (fForm === '' ? ' on' : '')} onClick={() => setFForm('')}>Todos <span className="cnt">{paraChipsForm.length}</span></button>
+                {forms.map((f) => (
+                  <button key={f} className={'fchip' + (fForm === f ? ' on' : '')} onClick={() => setFForm(fForm === f ? '' : f)} aria-pressed={fForm === f}>{f} <span className="cnt">{paraChipsForm.filter((x) => x.formulario === f).length}</span></button>
+                ))}
+              </div>
+            </div>
+          )}
+          {cursosF.length > 1 && (
+            <div className="fgroup-col">
+              <div className="fgroup-label">Curso</div>
+              <div className="fchips fchips-sm" role="group" aria-label="Filtrar por curso">
+                <button className={'fchip' + (fCurso === '' ? ' on' : '')} onClick={() => setFCurso('')}>Todos <span className="cnt">{paraChipsCurso.length}</span></button>
+                {cursosF.map((c) => (
+                  <button key={c} className={'fchip' + (fCurso === c ? ' on' : '')} onClick={() => setFCurso(fCurso === c ? '' : c)} aria-pressed={fCurso === c}>
+                    {c !== SIN_CURSO && <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 99, background: colorCurso(c), display: 'inline-block' }} />}
+                    {c === SIN_CURSO ? 'Sin curso' : c} <span className="cnt">{paraChipsCurso.filter((x) => cursoDe(x) === c).length}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
       {importarAbierto && (
         <ImportarRespuestas
           usuario={usuario}

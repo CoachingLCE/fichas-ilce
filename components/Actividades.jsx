@@ -1125,6 +1125,17 @@ function Respuestas({ usuario, irABuscador, showToast }) {
       // Más recientes primero, mismo criterio que la tabla de Fichas completadas (pedido de Diego).
     }).sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
   }, [r, q, fCurso, fEd, fAct]);
+  // Chips de curso (pedido de Diego: "acá también debería haber chips"): reemplazan al combo "Curso: todos". Los contadores
+  // aplican todos los filtros MENOS el de curso, así al elegir uno los demás siguen mostrando cuántas respuestas tendrían.
+  const baseSinCurso = useMemo(() => {
+    const qq = norm(q);
+    return r.filter((x) => {
+      if (fEd && x.edicion !== fEd) return false;
+      if (fAct && x.actividad !== fAct) return false;
+      if (qq && !norm(`${x.nombre} ${x.email}`).includes(qq)) return false;
+      return true;
+    });
+  }, [r, q, fEd, fAct]);
   if (!data) return <div className="spin" />;
 
   // Nota: antes acá había una barra de KPIs (respuestas/estudiantes/actividades/promedio) que
@@ -1135,11 +1146,21 @@ function Respuestas({ usuario, irABuscador, showToast }) {
       <div className="filters">
         {/* Mismo motivo que en la lista de Actividades: el buscador de texto libre ya está en
             el ícono  de arriba del todo, este botón local lo duplicaba. */}
-        <SelectDropdown placeholder="Curso: todos" searchable value={fCurso} onChange={setFCurso} options={cursos.map((x) => ({ value: x, label: x }))} />
         <SelectDropdown placeholder="Edición: todas" searchable value={fEd} onChange={setFEd} options={ediciones.map((x) => ({ value: x, label: 'Ed. ' + x }))} />
         <SelectDropdown placeholder="Actividad: todas" searchable value={fAct} onChange={setFAct} options={actividades.map((x) => ({ value: x, label: x }))} />
         {(q || fCurso || fEd || fAct) && <button className="btn-sm" onClick={() => { setQ(''); setFCurso(''); setFEd(''); setFAct(''); }}>Limpiar</button>}
       </div>
+      {cursos.length > 1 && (
+        <div className="fchips fchips-sm" role="group" aria-label="Filtrar por curso">
+          <button className={'fchip' + (fCurso === '' ? ' on' : '')} onClick={() => setFCurso('')}>Todos <span className="cnt">{baseSinCurso.length}</span></button>
+          {cursos.map((c) => (
+            <button key={c} className={'fchip' + (fCurso === c ? ' on' : '')} onClick={() => setFCurso(fCurso === c ? '' : c)} aria-pressed={fCurso === c}>
+              <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 99, background: colorCurso(c), display: 'inline-block' }} />
+              {c} <span className="cnt">{baseSinCurso.filter((x) => x.curso === c).length}</span>
+            </button>
+          ))}
+        </div>
+      )}
       {data.alcance === 'docente' && <p className="muted" style={{ fontSize: 12, marginTop: -4, marginBottom: 10 }}>Mostrando solo tus cursos/ediciones asignados.</p>}
       {filtradas.length === 0 ? <div className="empty empty-sm"><p>No encontramos respuestas con estos filtros.</p></div> : (
         <div className="tablewrap"><table>
