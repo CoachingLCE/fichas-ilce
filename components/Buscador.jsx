@@ -127,7 +127,7 @@ export default function Buscador({ usuario, irA, setQInscripciones }) {
           <div>
             <div className="muted" style={{ fontSize: 12, fontWeight: 500, marginBottom: 8 }}>Últimos vistos</div>
             {vistos.length === 0 ? (
-              <p className="muted" style={{ fontSize: 13 }}>Todavía no abriste ningún resultado desde el buscador.</p>
+              <p className="vacio vacio-chico">Todavía no abriste ningún resultado desde el buscador.</p>
             ) : (
               <div style={{ display: 'grid', gap: 8 }}>
                 {vistos.map((v, i) => (

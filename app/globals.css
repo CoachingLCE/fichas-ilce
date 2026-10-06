@@ -177,7 +177,7 @@ table{width:100%;border-collapse:collapse;font-size:13.5px}
 thead th{position:sticky;top:0;text-align:left;font-weight:500;color:rgb(var(--textMuted));font-size:12px;letter-spacing:.3px;padding:10px 13px;background:rgb(var(--surface2));border-bottom:1px solid rgb(var(--border));white-space:nowrap}
 tbody td{padding:9px 13px;border-bottom:1px solid rgb(var(--border));white-space:nowrap}
 tbody tr{cursor:pointer}tbody tr:hover{background:rgb(var(--surface2))}
-.badge{font-size:12px;font-weight:500;padding:3px 9px;border-radius:999px;display:inline-block}
+.badge{font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;display:inline-block}
 .b-Aprobada,.b-Inscrito{background:rgb(15 46 34);color:rgb(74 222 128)}
 .b-Completa,.b-Completada{background:rgb(12 34 56);color:rgb(96 165 250)}
 .b-Enrevisión{background:rgba(150,25,143,.16);color:#d879d1}
@@ -782,7 +782,7 @@ tr.clickable:hover{background:rgb(var(--surface2))}
 .fchip.on .cnt,.pill.on .cnt,.pill.on-teal .cnt{opacity:.85;color:inherit}
 
 /* ESTADO — badge coloreado por estado, fondo suave */
-.badge{padding:3px 10px;border:1px solid transparent;display:inline-flex;align-items:center;font-weight:500}
+.badge{padding:3px 10px;border:1px solid transparent;display:inline-flex;align-items:center;font-weight:600}
 
 /* CATEGORÍA — curso, tono teal de marca */
 .cchip{padding:3px 10px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;
@@ -1690,3 +1690,11 @@ button,input,select,textarea{font-family:inherit}
   .topnav-right .fdrop-vercomo .fdrop-list{max-height:min(300px,45vh)}
 }
 @media (max-width:1023px){ .tnav-ico{display:inline-block;margin-right:6px;font-size:15px;line-height:1;vertical-align:-1px} }
+
+/* Estados vacíos (pedido de la auditoría; igual en todas las apps de ILCE): cuando una lista, tabla o filtro no tiene nada
+   para mostrar, un recuadro punteado con un ícono y el texto centrado, en lugar de una línea gris suelta.
+   .vacio-chico es la misma pieza para espacios apretados (paneles laterales, tarjetas chicas). */
+.vacio{display:block;text-align:center;padding:22px 16px;margin:4px 0;border:1px dashed rgb(var(--textMuted) / .45);border-radius:12px;color:rgb(var(--textMuted));font-size:14px;line-height:1.45}
+.vacio::before{content:'\e0f7';display:block;font-size:24px;line-height:1;margin-bottom:8px;opacity:.6}
+.vacio-chico{padding:12px;font-size:12.5px}
+.vacio-chico::before{font-size:18px;margin-bottom:4px}

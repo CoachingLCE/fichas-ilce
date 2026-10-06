@@ -651,7 +651,7 @@ export default function Panel() {
               <div className="tl">
                 {historial.length ? historial.slice().reverse().map((ev, i) => (
                   <div className="ev" key={i}><div className="t">{fmtFecha(ev.fecha)}</div><div className="d">{ev.accion}{ev.detalle ? ` · ${ev.detalle}` : ''}{ev.usuario ? ` (${ev.usuario})` : ''}</div></div>
-                )) : <p className="muted" style={{ fontSize: 13 }}>Sin eventos registrados.</p>}
+                )) : <p className="vacio vacio-chico">Sin eventos registrados.</p>}
               </div>
             </div>
           </>

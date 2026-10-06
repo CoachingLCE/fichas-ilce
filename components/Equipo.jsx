@@ -60,7 +60,7 @@ export default function Equipo({ usuario }) {
       {error && <div className="note" style={{ borderLeftColor: 'rgb(248 113 113)' }}>{error}</div>}
 
       {porPersona.length === 0 ? (
-        <div className="empty"><div className="ico"></div><h3>Sin equipo asignado</h3><p>Todavía no hay docentes/staff cargados en ningún curso.</p></div>
+        <div className="empty"><div className="ico"></div><h3>Sin equipo asignado</h3><p className="vacio">Todavía no hay docentes/staff cargados en ningún curso.</p></div>
       ) : (
         <div className="tablewrap" style={{ maxHeight: '68vh' }}>
           <table>

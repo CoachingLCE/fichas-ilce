@@ -1029,7 +1029,7 @@ function ReportesResumen({ rows, irAConFiltro }) {
         {/* Pedido de Diego: "estirar para que no haya scroll" — antes el contenedor tenía un
             alto fijo (400px) con scroll interno aunque hubiera pocos cursos; ahora crece
             según la cantidad real de filas. */}
-        {porCursoDetalle.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : (
+        {porCursoDetalle.length === 0 ? <p className="vacio vacio-chico">Sin datos todavía.</p> : (
           <div className="tablewrap">
             <table>
               <thead><tr><th>Curso</th><th>Fichas</th><th>Completadas</th><th>Pendientes</th><th>En revisión</th><th>% completado</th><th /></tr></thead>
@@ -1051,13 +1051,13 @@ function ReportesResumen({ rows, irAConFiltro }) {
 
       <div className="repx-duo">
         <Seccion titulo="Por país" sub="De dónde son las fichas — clickeá una fila para verla en Fichas completadas.">
-          {porPais.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : (
+          {porPais.length === 0 ? <p className="vacio vacio-chico">Sin datos todavía.</p> : (
             <TablaCompacta filas={porPais} dirtyLabel="Sin datos" onClick={irAConFiltro ? (k) => irAConFiltro('pais', k) : undefined} icono={banderaPais} />
           )}
         </Seccion>
 
         <Seccion titulo="Origen de inscripciones" sub="Por qué canal llegó cada ficha.">
-          {porOrigen.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : (
+          {porOrigen.length === 0 ? <p className="vacio vacio-chico">Sin datos todavía.</p> : (
             <TablaCompacta filas={porOrigen} dirtyLabel="Sin informar" icono={iconoOrigen} />
           )}
         </Seccion>
@@ -1066,7 +1066,7 @@ function ReportesResumen({ rows, irAConFiltro }) {
       <ReportesLugares rows={rows} irAConFiltro={irAConFiltro} />
 
       <Expandible titulo="Por edición">
-        {porEdicion.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : (
+        {porEdicion.length === 0 ? <p className="vacio vacio-chico">Sin datos todavía.</p> : (
           <div className="repx-ed-grid">
             {porEdicion.map(([k, v]) => {
               const onClick = irAConFiltro ? () => irAConFiltro('ed', k) : undefined;
@@ -1139,7 +1139,7 @@ function ReportesLugares({ rows, irAConFiltro }) {
         <button type="button" className="btn-sm" onClick={descargar} disabled={grupos.length === 0}>Descargar CSV</button>
       </div>
 
-      {considerados === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : grupos.length === 0 ? (
+      {considerados === 0 ? <p className="vacio vacio-chico">Sin datos todavía.</p> : grupos.length === 0 ? (
         <p className="muted" style={{ fontSize: 13 }}>Ninguna de las {considerados} fichas tiene una {palabra} válida{pais ? ` en ${pais}` : ''}.</p>
       ) : (
         <>
@@ -1265,7 +1265,7 @@ function ReportesInscripciones({ rows, irAConFiltro }) {
         <div className="repx-funnel-groups">
           <div>
             <div className="repx-funnel-grouplbl"><span>Proceso de inscripción</span><b>{embudoProceso.reduce((s, e) => s + e.n, 0)} fichas</b></div>
-            {embudoProceso.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : embudoProceso.map((e) => (
+            {embudoProceso.length === 0 ? <p className="vacio vacio-chico">Sin datos todavía.</p> : embudoProceso.map((e) => (
               <div key={e.estado} style={{ marginBottom: 4 }}>
                 <Barra label={e.estado} n={e.n} max={maxEmbudo} claseFill={e.estado === 'Completada' || e.estado === 'Inscrito' ? '' : 'm'} onClick={irAConFiltro ? () => irAConFiltro('estado', e.estado) : undefined} />
                 <div style={{ fontSize: 12, color: 'rgb(var(--textMuted))', textAlign: 'right', marginTop: -4, marginBottom: 6 }}>{rows.length ? Math.round(e.n / rows.length * 100) : 0}% del total</div>
@@ -1291,7 +1291,7 @@ function ReportesInscripciones({ rows, irAConFiltro }) {
       </Seccion>
 
       <Seccion titulo="Distribución por curso">
-        {porCursoDetalle.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : (
+        {porCursoDetalle.length === 0 ? <p className="vacio vacio-chico">Sin datos todavía.</p> : (
           <div className="tablewrap" style={{ maxHeight: 380 }}>
             <table>
               <thead><tr><th>Curso</th><th>Fichas</th><th>Completadas</th><th>% completado</th><th /></tr></thead>
@@ -1310,7 +1310,7 @@ function ReportesInscripciones({ rows, irAConFiltro }) {
       </Seccion>
 
       <Expandible titulo="Desglose mensual por curso">
-        {porMesYCurso.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : (
+        {porMesYCurso.length === 0 ? <p className="vacio vacio-chico">Sin datos todavía.</p> : (
           <div className="tablewrap tablewrap-ancha" style={{ maxHeight: 340 }}>
             <table>
               <thead><tr><th>Mes</th>{cursosConDatos.map((c) => <th key={c}>{c}</th>)}<th>Total</th></tr></thead>
@@ -1405,7 +1405,7 @@ function ReportesActividades({ data, actividades, irAPreguntas }) {
           </div>
         </div>
       }>
-        {actividades.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Todavía no hay actividades.</p> :
+        {actividades.length === 0 ? <p className="vacio vacio-chico">Todavía no hay actividades.</p> :
         vistaAct === 'tarjetas' ? (
           <div className="repx-actcards">
             {ordenadas.map((a) => (
@@ -1505,7 +1505,7 @@ function ReportesPreguntas({ actividades, tabla }) {
         </div>
       }>
         {ordenadas.length === 0 ? (
-          <p className="muted" style={{ fontSize: 13 }}>No hay preguntas que cumplan el mínimo de respuestas con estos filtros.</p>
+          <p className="vacio vacio-chico">No hay preguntas que cumplan el mínimo de respuestas con estos filtros.</p>
         ) : (
           <div className="tablewrap tablewrap-ancha" style={{ maxHeight: 460 }}>
             <table>
@@ -1614,7 +1614,7 @@ function ReportesRespuestas({ actividades, detalle }) {
       {actElegida && preguntasFiltradas.map((p) => (
         <Seccion key={p.idx} titulo={`${p.idx + 1}. ${p.pregunta}`} sub={p.tipo === 'abierta' ? `Respuesta abierta · ${p.total} respuesta${p.total === 1 ? '' : 's'} (no se autocorrige)` : `${p.total} respuesta${p.total === 1 ? '' : 's'}`}>
           {p.tipo === 'abierta' ? (
-            p.lista.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Todavía no hay respuestas para esta pregunta.</p> : (
+            p.lista.length === 0 ? <p className="vacio vacio-chico">Todavía no hay respuestas para esta pregunta.</p> : (
               <div className="tablewrap" style={{ maxHeight: 340 }}>
                 <table>
                   <thead><tr><th>Fecha</th><th>Estudiante</th><th>Respuesta</th></tr></thead>
@@ -1658,7 +1658,7 @@ function ReportesCampos({ distribucion }) {
         const max = Math.max(1, ...c.opciones.map((o) => o.n));
         return (
           <Seccion key={c.key} titulo={c.label} sub={c.sinDato > 0 ? `${c.sinDato} ficha${c.sinDato === 1 ? '' : 's'} sin este dato.` : undefined}>
-            {c.opciones.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : (
+            {c.opciones.length === 0 ? <p className="vacio vacio-chico">Sin datos todavía.</p> : (
               <div>{c.opciones.map((o) => (
                 <div key={o.valor} style={{ marginBottom: 4 }}>
                   <Barra label={o.valor} n={o.n} max={max} />
@@ -1695,7 +1695,7 @@ function ReportesCursos({ tabla, puedeActividades, irAConFiltro }) {
         <RepKpi icon={<Ico.check />} n={puedeActividades ? (partProm == null ? '—' : partProm + '%') : '—'} label="Participación promedio" sub={!puedeActividades ? 'Requiere permiso de Actividades' : null} />
       </div>
 
-      {tabla.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : (
+      {tabla.length === 0 ? <p className="vacio vacio-chico">Sin datos todavía.</p> : (
         <Seccion titulo="Cursos" sub="Clickeá una fila para ver el detalle del curso.">
           <div className="tablewrap tablewrap-ancha" style={{ maxHeight: 460 }}>
             <table>
@@ -1775,7 +1775,7 @@ function ReportesEstudiantes({ tabla, puedeActividades, irAConFiltro }) {
           </select>
         </div>
       }>
-        {ordenadas.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p> : (
+        {ordenadas.length === 0 ? <p className="vacio vacio-chico">Sin datos todavía.</p> : (
           <div className="tablewrap tablewrap-ancha" style={{ maxHeight: 460 }}>
             <table>
               <thead><tr><th>Estudiante</th><th>Curso</th><th>Edición</th><th>Actividades realizadas</th><th>% participación</th></tr></thead>
@@ -1835,7 +1835,7 @@ function ReportesFormularios({ data, irAConFiltro }) {
       </div>
 
       {data.length === 0 ? (
-        <p className="muted" style={{ fontSize: 13 }}>Todavía no hay respuestas de formularios para mostrar.</p>
+        <p className="vacio vacio-chico">Todavía no hay respuestas de formularios para mostrar.</p>
       ) : (<>
         <Seccion titulo="Evolución temporal" sub="Respuestas recibidas por mes (últimos 12 meses con datos).">
           <MiniChart series={[{ nombre: 'Respuestas', data: serieMensual }]} />

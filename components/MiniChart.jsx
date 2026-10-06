@@ -8,7 +8,7 @@ export default function MiniChart({ series, height = 180, formatValue = (v) => v
   const innerW = w - padL - padR, innerH = h - padT - padB;
   const principal = series[0];
   const puntos = (principal && principal.data) || [];
-  if (puntos.length === 0) return <p className="muted" style={{ fontSize: 13 }}>Sin datos todavía.</p>;
+  if (puntos.length === 0) return <p className="vacio vacio-chico">Sin datos todavía.</p>;
 
   const max = Math.max(1, ...series.flatMap((s) => s.data.map((d) => d.v)));
   const n = puntos.length;

@@ -335,7 +335,7 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
             </button>
           );
         })}
-        {defsFiltrados.length === 0 && <p className="muted" style={{ fontSize: 12.5, padding: '0 4px' }}>Sin resultados.</p>}
+        {defsFiltrados.length === 0 && <p className="vacio vacio-chico">Sin resultados.</p>}
         <p className="muted" style={{ fontSize: 12, marginTop: 10, padding: '0 4px' }}>Agregar formaciones nuevas llega en el próximo lote.</p>
       </div>
 

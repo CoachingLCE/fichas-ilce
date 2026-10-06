@@ -538,7 +538,7 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
                   ))}
                 </div>
               ))}
-              {otrasActividades.filter((a) => (a.preguntas || []).length > 0).length === 0 && <p className="muted">No hay otras actividades con preguntas todavía.</p>}
+              {otrasActividades.filter((a) => (a.preguntas || []).length > 0).length === 0 && <p className="vacio">No hay otras actividades con preguntas todavía.</p>}
             </div>
           </div>
         </div>

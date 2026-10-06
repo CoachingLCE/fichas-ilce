@@ -93,7 +93,7 @@ export default function Auditoria({ usuario }) {
         ))}
       </div>
       {filtrados.length === 0 ? (
-        <div className="empty"><div className="ico"></div><h3>Sin registros</h3><p>No hay acciones para ese filtro.</p></div>
+        <div className="empty"><div className="ico"></div><h3>Sin registros</h3><p className="vacio">No hay acciones para ese filtro.</p></div>
       ) : (
         <div className="tablewrap" style={{ maxHeight: '68vh' }}>
           <table>
