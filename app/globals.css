@@ -1276,7 +1276,7 @@ tr.clickable .repx-cellbar:hover .fl{filter:brightness(1.15)}
 .detalle-preg-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px}
 .detalle-preg-num{flex:0 0 auto;width:22px;height:22px;border-radius:999px;background:rgb(var(--surface2));color:rgb(var(--textSec));font-size:12px;font-weight:500;display:flex;align-items:center;justify-content:center;margin-top:1px}
 .detalle-op{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;font-size:13.5px;margin-top:4px;color:rgb(var(--textSec))}
-.detalle-op.ok{background:rgba(74,222,128,.12);color:rgb(74 222 128);font-weight:500}
+.detalle-op.ok{background:rgb(var(--good) / .12);color:rgb(var(--good));font-weight:500} /* con el token del tema: el verde fijo de antes casi no se leía en modo claro */
 .detalle-op-check{flex:0 0 auto;width:16px;height:16px;border-radius:999px;background:rgb(74 222 128);color:#06240f;font-size:12px;font-weight:500;display:flex;align-items:center;justify-content:center}
 
 /* ============================================================
@@ -1698,3 +1698,7 @@ button,input,select,textarea{font-family:inherit}
 .vacio::before{content:'\e0f7';display:block;font-size:24px;line-height:1;margin-bottom:8px;opacity:.6}
 .vacio-chico{padding:12px;font-size:12.5px}
 .vacio-chico::before{font-size:18px;margin-bottom:4px}
+
+/* Detalle de una respuesta: la opción elegida que estuvo MAL, hermana de .detalle-op.ok (verde). */
+.detalle-op.mal{background:rgb(var(--bad) / .12);color:rgb(var(--bad));font-weight:500}
+.detalle-op-cruz{flex:0 0 auto;width:16px;height:16px;border-radius:999px;background:rgb(var(--bad));color:#fff;font-size:12px;font-weight:500;display:flex;align-items:center;justify-content:center}

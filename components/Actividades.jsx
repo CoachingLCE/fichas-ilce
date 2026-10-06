@@ -935,6 +935,16 @@ const Lista = forwardRef(function Lista({ usuario, showToast, puedeGestionar, ir
   const filtradas = ordenarActividades(filtradasSinOrden, orden);
   const archivadasOcultas = (!fEstado && !mostrarArch) ? acts.filter((a) => estadoEfectivoCliente(a) === 'Archivada').length : 0;
   const hayFiltros = q || fCurso || fEd || fEstado;
+  // Chips por curso (pedido de Diego): en vez del combo "Curso: todos". Los contadores aplican todos los filtros MENOS el de curso,
+  // así al elegir un curso los demás siguen mostrando cuántas actividades tendrían (mismo criterio que los chips de Fichas).
+  const baseSinCurso = acts.filter((a) => {
+    const efectivo = estadoEfectivoCliente(a);
+    if (fEstado) { if (efectivo !== fEstado) return false; }
+    else if (efectivo === 'Archivada' && !mostrarArch) return false;
+    if (fEd && (a.edicion || '') !== fEd) return false;
+    if (qq && ![a.titulo, a.curso, a.clase, a.edicion, a.estado, a.slug].filter(Boolean).join(' ').toLowerCase().includes(qq)) return false;
+    return true;
+  });
 
   return (
     <div>
@@ -946,7 +956,6 @@ const Lista = forwardRef(function Lista({ usuario, showToast, puedeGestionar, ir
             duplicaba (pedido de Diego: "ES INNECESARIO ESTA ARRIBA", "evitemos botones
             innecesarios y repetidos"); quedan solo los filtros propios de esta lista
             (Curso/Edición/Estado), que el buscador global no cubre. */}
-        <SelectDropdown placeholder="Curso: todos" searchable value={fCurso} onChange={setFCurso} options={cursosDisp.map((c) => ({ value: c, label: c }))} />
         <SelectDropdown placeholder="Edición: todas" searchable value={fEd} onChange={setFEd} options={edicionesDisp.map((ed) => ({ value: ed, label: 'Ed. ' + ed }))} />
         <SelectDropdown placeholder="Estado: todos" value={fEstado} onChange={setFEstado} options={['Publicada', 'Programada', 'Borrador', 'Archivada'].map((x) => ({ value: x, label: x }))} />
         {hayFiltros && <button className="btn-sm" onClick={() => { setQ(''); setFCurso(''); setFEd(''); setFEstado(''); }}>Limpiar</button>}
@@ -958,6 +967,18 @@ const Lista = forwardRef(function Lista({ usuario, showToast, puedeGestionar, ir
         </div>
         {puedeGestionar && <button className="btn btn-primary" style={{ flex: 'none', padding: '10px 18px' }} onClick={nueva}>+ Nueva actividad</button>}
       </div>
+
+      {cursosDisp.length > 1 && (
+        <div className="fchips fchips-sm" role="group" aria-label="Filtrar por curso">
+          <button className={'fchip' + (fCurso === '' ? ' on' : '')} onClick={() => setFCurso('')}>Todos <span className="cnt">{baseSinCurso.length}</span></button>
+          {cursosDisp.map((c) => (
+            <button key={c} className={'fchip' + (fCurso === c ? ' on' : '')} onClick={() => setFCurso(fCurso === c ? '' : c)} aria-pressed={fCurso === c}>
+              <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 99, background: colorCurso(c), display: 'inline-block' }} />
+              {c} <span className="cnt">{baseSinCurso.filter((a) => a.curso === c).length}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {archivadasOcultas > 0 && (
         <label className="acts-toggle-arch" style={{ marginBottom: 10 }}>
@@ -998,20 +1019,59 @@ const Lista = forwardRef(function Lista({ usuario, showToast, puedeGestionar, ir
 // Pedido de Diego: poder leer las respuestas de desarrollo (abiertas) — antes esta pantalla
 // solo mostraba el puntaje total, sin ninguna forma de ver lo que escribió cada estudiante.
 function ModalRespuestaDetalle({ x, onCerrar }) {
-  const abiertas = (x.detalle || []).filter((d) => d.tipo === 'abierta');
+  // Pedido de Diego (06/10/2026): al apretar "Ver" en una respuesta, además de lo que escribió en las preguntas abiertas,
+  // hay que poder ver las preguntas CERRADAS (opción múltiple) con lo que eligió y si estuvo bien o mal, y cuál era la correcta.
+  // Antes solo recorría las abiertas y, si no había, decía "no tiene preguntas de respuesta abierta" aunque hubiera 10 cerradas.
+  const [soloIncorrectas, setSoloIncorrectas] = useState(false);
+  const todas = (x.detalle || []).map((d, i) => ({ ...d, n: i + 1 }));
+  const cerradas = todas.filter((d) => d.tipo !== 'abierta');
+  const abiertas = todas.filter((d) => d.tipo === 'abierta');
+  const incorrectas = cerradas.filter((d) => d.ok === false);
+  const verCerradas = soloIncorrectas ? incorrectas : cerradas;
   return (
     <div className="mwrap on" onClick={onCerrar}>
-      <div className="modal" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
+      <div className="modal" style={{ maxWidth: 600, maxHeight: '88vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
         <h3 style={{ marginTop: 0 }}>{x.actividad}</h3>
-        <p className="muted" style={{ fontSize: 12.5, marginTop: -6 }}>{x.nombre || x.email} · {x.curso}{x.edicion ? ` · Ed. ${x.edicion}` : ''} · {x.puntaje}/{x.total} en las cerradas</p>
-        {abiertas.length === 0 ? (
-          <p className="muted">Esta actividad no tiene preguntas de respuesta abierta.</p>
-        ) : abiertas.map((d, i) => (
-          <div key={i} className="detalle-preg">
-            <b style={{ fontSize: 13.5 }}>{d.pregunta}</b>
-            <div className="detalle-op" style={{ whiteSpace: 'pre-wrap' }}>{d.respuesta ? String(d.respuesta) : <span className="muted">(sin responder)</span>}</div>
-          </div>
-        ))}
+        <p className="muted" style={{ fontSize: 12.5, marginTop: -6 }}>{x.nombre || x.email} · {x.curso}{x.edicion ? ` · Ed. ${x.edicion}` : ''}{cerradas.length ? ` · ${x.puntaje}/${x.total} correctas en las cerradas` : ''}</p>
+        {todas.length === 0 && <p className="muted">No encontramos las preguntas de esta actividad (puede haberse modificado o eliminado después de que se respondió).</p>}
+        {cerradas.length > 0 && (
+          <>
+            <div className="fchips fchips-sm" style={{ marginBottom: 10 }}>
+              <button className={'fchip' + (!soloIncorrectas ? ' on' : '')} onClick={() => setSoloIncorrectas(false)}>Todas <span className="cnt">{cerradas.length}</span></button>
+              <button className={'fchip' + (soloIncorrectas ? ' on' : '')} onClick={() => setSoloIncorrectas(true)} disabled={incorrectas.length === 0}>Incorrectas <span className="cnt">{incorrectas.length}</span></button>
+            </div>
+            {verCerradas.map((d) => (
+              <div key={d.n} className="detalle-preg">
+                <div className="detalle-preg-head">
+                  <span className="detalle-preg-num">{d.n}</span>
+                  <b style={{ fontSize: 13.5 }}>{d.pregunta}</b>
+                </div>
+                <div className={'detalle-op ' + (d.ok ? 'ok' : 'mal')}>
+                  <span className={d.ok ? 'detalle-op-check' : 'detalle-op-cruz'} aria-hidden="true">{d.ok ? '✓' : '✕'}</span>
+                  <span><span className="muted" style={{ fontWeight: 500 }}>{d.ok ? 'Respondió (correcta): ' : 'Respondió: '}</span>{d.opcionElegida != null && d.opcionElegida !== '' ? d.opcionElegida : <i>(sin responder)</i>}</span>
+                </div>
+                {!d.ok && d.opcionCorrecta != null && (
+                  <div className="detalle-op ok"><span className="detalle-op-check" aria-hidden="true">✓</span><span><span className="muted" style={{ fontWeight: 500 }}>Correcta: </span>{d.opcionCorrecta}</span></div>
+                )}
+              </div>
+            ))}
+            {soloIncorrectas && incorrectas.length === 0 && <p className="muted">No hay respuestas incorrectas.</p>}
+          </>
+        )}
+        {abiertas.length > 0 && (
+          <>
+            <div className="sectitle" style={{ margin: '14px 0 8px', fontSize: 12.5, letterSpacing: 1, textTransform: 'uppercase', color: 'rgb(var(--textMuted))' }}>Respuestas abiertas</div>
+            {abiertas.map((d) => (
+              <div key={d.n} className="detalle-preg">
+                <div className="detalle-preg-head">
+                  <span className="detalle-preg-num">{d.n}</span>
+                  <b style={{ fontSize: 13.5 }}>{d.pregunta}</b>
+                </div>
+                <div className="detalle-op" style={{ whiteSpace: 'pre-wrap' }}>{d.respuesta ? String(d.respuesta) : <span className="muted">(sin responder)</span>}</div>
+              </div>
+            ))}
+          </>
+        )}
         <button className="btn-sm" style={{ marginTop: 14 }} onClick={onCerrar}>Cerrar</button>
       </div>
     </div>

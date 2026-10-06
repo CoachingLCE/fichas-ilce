@@ -33,6 +33,8 @@ export async function GET(req) {
       pregunta: p.pregunta, tipo: p.tipo || 'multiple',
       respuesta: r[i],
       opcionElegida: (p.tipo !== 'abierta' && r[i] != null && p.opciones) ? p.opciones[Number(r[i])] : undefined,
+      // La opción correcta viaja solo a este panel (quienes ya tienen permiso de ver respuestas), para poder mostrar en qué se equivocó cada estudiante.
+      opcionCorrecta: (p.tipo !== 'abierta' && p.opciones && p.correcta != null) ? p.opciones[Number(p.correcta)] : undefined,
       ok: p.tipo === 'abierta' ? null : (r[i] != null && Number(r[i]) === Number(p.correcta))
     }));
     return {

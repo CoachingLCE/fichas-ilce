@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { appendRow } from '../../../lib/sheets';
 import { TABS } from '../../../lib/constants';
 import { getFormulario } from '../../../lib/formularios';
+import { cursoAGuardar } from '../../../lib/formularioCurso';
 import { validarEmail, validarValorCampo } from '../../../lib/validacion';
 
 export const dynamic = 'force-dynamic';
@@ -27,7 +28,7 @@ export async function POST(req) {
   const id = 'FR' + Date.now().toString(36).toUpperCase();
   try {
     await appendRow(TABS.RESPUESTAS_FORM, [
-      id, new Date().toISOString(), form.titulo, r.curso || '', r.email || '', r.nombre || '', r.edicion || '', JSON.stringify(r)
+      id, new Date().toISOString(), form.titulo, cursoAGuardar(form, r), r.email || '', r.nombre || '', r.edicion || '', JSON.stringify(r)
     ]);
   } catch (e) {
     return NextResponse.json({ ok: false, error: 'No se pudo guardar' }, { status: 500 });

@@ -1,11 +1,12 @@
 'use client';
 import { useState } from 'react';
 import { CURSOS } from '../lib/constants';
+import { cursoInicial } from '../lib/formularioCurso';
 import { validarEmail, inferirTipoCampo, validarValorCampo, filtrarTelefono } from '../lib/validacion';
 import { Isologo } from './Isologo';
 
 export default function FormularioForm({ form }) {
-  const [val, setVal] = useState({ curso: CURSOS[0].nombre });
+  const [val, setVal] = useState({ curso: cursoInicial(form) }); // '' = sin curso (ver cursoInicial)
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
   const [error, setError] = useState('');
