@@ -5,7 +5,7 @@ import { cursoInicial } from '../lib/formularioCurso';
 import { validarEmail, inferirTipoCampo, validarValorCampo, filtrarTelefono } from '../lib/validacion';
 import { Isologo } from './Isologo';
 
-export default function FormularioForm({ form }) {
+export default function FormularioForm({ form, vistaPrevia = false }) {
   const [val, setVal] = useState({ curso: cursoInicial(form) }); // '' = sin curso (ver cursoInicial)
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
@@ -14,6 +14,7 @@ export default function FormularioForm({ form }) {
   const set = (k, v) => { setVal((s) => ({ ...s, [k]: v })); setError(''); };
 
   async function enviar() {
+    if (vistaPrevia) return; // en la vista previa del constructor no se envía nada
     if (!validarEmail(val.email)) { setError('Ingresá un correo válido.'); return; }
     for (const c of form.campos) {
       if (c.required && (val[c.key] == null || String(val[c.key]).trim() === '')) { setError('Completá: ' + c.label); return; }
@@ -171,7 +172,7 @@ export default function FormularioForm({ form }) {
         {error && <div className="err" style={{ display: 'block', marginTop: 6 }}>{error}</div>}
       </div>
       <div className="quiz-foot">
-        <button className="btn btn-teal quiz-submit" onClick={enviar} disabled={enviando}>{enviando ? 'Enviando…' : 'Enviar respuestas'}</button>
+        <button className="btn btn-teal quiz-submit" onClick={enviar} disabled={enviando || vistaPrevia}>{enviando ? 'Enviando…' : 'Enviar respuestas'}</button>
       </div>
     </div></div>
   );

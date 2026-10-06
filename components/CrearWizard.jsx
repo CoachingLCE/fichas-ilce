@@ -9,7 +9,7 @@ import { colorCurso } from '../lib/constants';
 const TIPOS = [
   { key: 'inscripcion', icono: '', label: 'Ficha de inscripción', desc: 'La página pública donde se anotan los estudiantes de un curso.' },
   { key: 'actividad', icono: '', label: 'Actividad', desc: 'Un postwork con preguntas (se autocorrige y da puntaje).' },
-  { key: 'formulario', icono: '', label: 'Formulario', desc: 'Una encuesta o formulario abierto (sin puntaje).' }
+  { key: 'formulario', icono: '', label: 'Formulario', desc: 'Una encuesta o formulario abierto (sin puntaje). Puede no tener curso.' }
 ];
 
 export default function CrearWizard({ onCerrar, onCrearActividad, onCrearFormulario, onCrearInscripcion }) {
@@ -22,6 +22,9 @@ export default function CrearWizard({ onCerrar, onCrearActividad, onCrearFormula
   const tipoInfo = TIPOS.find((t) => t.key === tipo);
 
   function elegirTipo(k) {
+    // Un formulario puede no estar relacionado con ningún curso (pedido de Diego): no se pide curso acá, se elige adentro del
+    // constructor (con "Sin curso ni programa" como opción). Ficha y actividad siguen pidiendo su curso.
+    if (k === 'formulario') { onCrearFormulario({}); return; }
     setTipo(k);
     setPaso(1);
   }

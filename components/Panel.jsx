@@ -22,6 +22,7 @@ import Buscador from './Buscador';
 import TourGuiado from './TourGuiado';
 import { SelectDropdown, FiltroChip } from './SelectDropdown';
 import { claveLugarFila } from '../lib/localidades';
+import ConstructorFormulario from './ConstructorFormulario';
 
 // Pedido de Diego: misma estructura de orden en las tres tablas de "Respuestas" (Fichas,
 // Actividades, Formularios) — a la izquierda de todo, Fecha y después Nombre; el resto de las
@@ -196,6 +197,8 @@ export default function Panel() {
   // "Respuestas" es la misma idea pero para ver las respuestas ya cargadas de cada una.
   // null = todavía no se eligió nada, se ve el selector.
   const [vistaAyF, setVistaAyF] = useState(null);
+  // Constructor de formularios: null = cerrado · { slug: null } = formulario nuevo · { slug: 'x' } = editar ese formulario.
+  const [ctorForm, setCtorForm] = useState(null);
   const [vistaResp, setVistaResp] = useState(null);
   useEffect(() => {
     if (tab === 'fichas' && accionAlEntrar === 'ficha') { fichasRef.current?.abrirConstructor(preseedCrear?.curso); setAccionAlEntrar(null); setPreseedCrear(null); }
@@ -212,8 +215,8 @@ export default function Panel() {
     else { setPreseedCrear({ curso }); setAccionAlEntrar('ficha'); setTab('fichas'); }
   }
   function crearFormulario() {
-    setCrearAbierto(false); setVistaAyF('formularios'); setTab('actividadesyformularios');
-    showToast('El alta guiada de formularios llega en el proximo lote — por ahora se cargan en la pestaña Formularios de la Sheet.');
+    // Pedido de Diego: un formulario puede no tener curso, así que acá ya no se pide: se elige adentro del constructor.
+    setCrearAbierto(false); setVistaAyF('formularios'); setTab('actividadesyformularios'); setCtorForm({ slug: null });
   }
   function editarFicha(slug) { setConstructorSlug(slug); setTab('constructor'); }
   function verInscripcionesDe(curso) { setFCurso(curso); setTab('inscripciones'); }
@@ -615,6 +618,9 @@ export default function Panel() {
           if (!puedeAct && !puedeForm) return <AccesoDenegado seccion="Actividades y formularios" />;
           // Toggle fijo arriba: Actividades | Formularios (cada uno con sus propias sub-pestañas adentro).
           const elegida = vistaAyF || (puedeForm && !puedeAct ? 'formularios' : 'actividades');
+          if (ctorForm && puedeForm) {
+            return <ConstructorFormulario key={ctorForm.slug || 'nuevo'} usuario={usuario} slugInicial={ctorForm.slug} showToast={showToast} onVolver={() => setCtorForm(null)} />;
+          }
           return (
             <>
               {puedeAct && puedeForm && (
@@ -625,7 +631,7 @@ export default function Panel() {
               )}
               {elegida === 'actividades'
                 ? <Actividades ref={actividadesRef} usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} irABuscador={() => setTab('buscador')} irAReportes={() => setTab('reportes')} />
-                : <Formularios usuario={usuario} showToast={showToast} />}
+                : <Formularios usuario={usuario} showToast={showToast} onNuevo={() => setCtorForm({ slug: null })} onEditar={(slug) => setCtorForm({ slug })} />}
             </>
           );
         })()}

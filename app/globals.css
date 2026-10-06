@@ -1702,3 +1702,60 @@ button,input,select,textarea{font-family:inherit}
 /* Detalle de una respuesta: la opción elegida que estuvo MAL, hermana de .detalle-op.ok (verde). */
 .detalle-op.mal{background:rgb(var(--bad) / .12);color:rgb(var(--bad));font-weight:500}
 .detalle-op-cruz{flex:0 0 auto;width:16px;height:16px;border-radius:999px;background:rgb(var(--bad));color:#fff;font-size:12px;font-weight:500;display:flex;align-items:center;justify-content:center}
+
+/* ===== Constructor de formularios (estilo "Nueva edición" de Presentismo): formulario a la izquierda, vista previa a la derecha ===== */
+.cf-wrap{max-width:1040px;margin:0 auto}
+.cf-top{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-bottom:14px}
+.cf-h1{font-size:24px;margin:0 0 2px;letter-spacing:-.2px}
+.cf-sub{margin:0;color:rgb(var(--textSec));font-size:14.5px}
+.cf-bad{background:rgb(var(--bad) / .1);border:1px solid rgb(var(--bad));color:rgb(var(--bad));border-radius:10px;padding:9px 12px;margin-bottom:14px;font-size:13.5px}
+.cf-grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;align-items:start}
+@media(max-width:960px){.cf-grid{grid-template-columns:1fr}.cf-side{order:-1}}
+.cf-card{background:rgb(var(--surface2));border:1px solid rgb(var(--border));border-radius:16px;padding:22px}
+.cf-side{position:sticky;top:78px}
+@media(max-width:960px){.cf-side{position:static}}
+.cf-sec{margin-bottom:24px}
+.cf-sec-t{font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:rgb(var(--textMuted));font-weight:600;margin:0 0 12px;display:flex;align-items:center;gap:10px}
+.cf-sec-t:after{content:"";flex:1;height:1px;background:rgb(var(--border))}
+.cf-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:620px){.cf-row{grid-template-columns:1fr}}
+.cf-f{margin-bottom:14px}
+.cf-f>label{display:block;font-size:13px;font-weight:600;color:rgb(var(--textSec));margin-bottom:5px}
+.cf-req{color:rgb(var(--accentMagenta))}
+.cf-err{font-size:12px;color:rgb(var(--bad));margin-top:4px}
+.cf-help{font-size:12px;color:rgb(var(--textMuted));margin-top:4px}
+.ctrl.err{border-color:rgb(var(--bad))}
+.cf-modos{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:700px){.cf-modos{grid-template-columns:1fr}}
+.cf-modo{background:rgb(var(--bg));border:1.5px solid rgb(var(--border));border-radius:12px;padding:11px 12px;text-align:left;cursor:pointer;color:rgb(var(--text));font:inherit}
+.cf-modo b{display:block;font-size:14px;margin-bottom:2px}
+.cf-modo span{font-size:12.5px;color:rgb(var(--textMuted));line-height:1.3;display:block}
+.cf-modo:hover{border-color:rgb(var(--accentTeal))}
+.cf-modo.on{border-color:rgb(var(--accentTeal));background:rgb(var(--accentTeal) / .08)}
+.cf-curso{display:flex;align-items:center;gap:10px}
+.cf-dot{width:10px;height:10px;border-radius:99px;flex:none}
+.cf-sw{display:flex;align-items:center;gap:9px;font-size:14px;cursor:pointer;margin-bottom:14px}
+.cf-q{border:1px solid rgb(var(--border));border-radius:12px;padding:12px 12px 8px;margin-bottom:10px;background:rgb(var(--bg))}
+.cf-q-lock{display:flex;gap:10px;align-items:center;border-style:dashed;background:transparent;opacity:.9}
+.cf-q-h{display:flex;gap:8px;align-items:center;margin-bottom:9px}
+.cf-q-h .ctrl{flex:1}
+.cf-q-n{width:22px;height:22px;border-radius:99px;background:rgb(var(--surface2));border:1px solid rgb(var(--border));display:flex;align-items:center;justify-content:center;font-size:12px;color:rgb(var(--textSec));flex:none}
+.cf-q-r{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:0 0 8px 30px}
+.cf-q-r label{display:flex;align-items:center;gap:6px;font-size:13px;color:rgb(var(--textSec));font-weight:500}
+.cf-q-r select.ctrl{width:auto;padding:6px 10px;font-size:13.5px}
+.cf-ops{margin:0 0 8px 30px}.cf-ops textarea{min-height:76px;resize:vertical}
+.cf-x{color:rgb(var(--bad))}
+.cf-acts{display:flex;gap:10px;flex-wrap:wrap;padding-top:6px}
+.cf-pv-t{font-size:12px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:rgb(var(--textMuted));margin:0 0 10px}
+.cf-pv{max-height:70vh;overflow:auto;border-radius:14px}
+.cf-pv .quizstage{min-height:0;padding:0;background:none}
+.cf-pv .quizcard{width:100%;box-shadow:none}
+.cf-pv .quiz-band{padding:16px 18px}.cf-pv .quiz-body{padding:16px 18px 6px;min-height:0}
+.cf-sum{margin-top:14px}
+.cf-sum>div{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid rgb(var(--border));font-size:13px}
+.cf-sum>div:last-child{border:0}.cf-sum span{color:rgb(var(--textMuted))}.cf-sum b{text-align:right;word-break:break-all;font-weight:600}
+
+.cf-seg{display:inline-flex;border:1px solid rgb(var(--border));border-radius:9px;overflow:hidden}
+.cf-seg button{background:transparent;border:0;padding:7px 14px;font:inherit;font-weight:600;font-size:13.5px;color:rgb(var(--textSec));cursor:pointer;white-space:nowrap}
+.cf-seg button.on{background:linear-gradient(90deg,rgb(var(--accentPurple)),rgb(var(--accentMagenta)));color:#fff}
+.cf-acts .btn{flex:none;padding:10px 22px}

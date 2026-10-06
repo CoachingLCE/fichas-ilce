@@ -22,17 +22,17 @@ function BadgeCreado({ iso }) {
 // lugar (pedido de Diego: "SACA RESPUESTAS DE ACA", "evitemos botones innecesarios y
 // repetidos") — se saca; "Formularios" (listado) sigue siendo la vista de esta sección cuando
 // se entra desde "Actividades y formularios".
-export default function Formularios({ usuario, showToast, subInicial }) {
+export default function Formularios({ usuario, showToast, subInicial, onNuevo, onEditar }) {
   const sub = subInicial || 'lista';
   return (
     <div>
-      {sub === 'lista' && <Lista usuario={usuario} showToast={showToast} />}
+      {sub === 'lista' && <Lista usuario={usuario} showToast={showToast} onNuevo={onNuevo} onEditar={onEditar} />}
       {sub === 'respuestas' && <Respuestas usuario={usuario} showToast={showToast} />}
     </div>
   );
 }
 
-function Lista({ usuario, showToast }) {
+function Lista({ usuario, showToast, onNuevo, onEditar }) {
   const [forms, setForms] = useState(null);
   const [error, setError] = useState('');
   // Mismo patrón de "dos vistas" (tarjetas/lista) que ya existe en Actividades, con su propia
@@ -67,12 +67,13 @@ function Lista({ usuario, showToast }) {
   const nResp = (f) => (conteos ? (conteos[normNombre(f.titulo)] || 0) : null);
   if (error) return <div className="empty"><div className="ico"></div><h3>No se pudo cargar</h3><p>{error}. Revisá que exista la pestaña “Formularios” en la Sheet.</p></div>;
   if (!forms) return <div className="spin" />;
-  if (forms.length === 0) return <div className="empty"><div className="ico"></div><h3>No hay formularios cargados</h3><p>Pegá las definiciones en la pestaña Formularios de la Sheet.</p></div>;
+  if (forms.length === 0) return <div className="empty"><div className="ico"></div><h3>No hay formularios todavía</h3><p>Creá el primero con el constructor.</p>{onNuevo && <button className="btn btn-primary" style={{ flex: 'none', padding: '10px 18px' }} onClick={onNuevo}>+ Nuevo formulario</button>}</div>;
   return (
     <div>
       <div className="sechead">
         <span className="hcount">{forms.length} formulario{forms.length === 1 ? '' : 's'}</span>
         <span className="grow" />
+        {onNuevo && <button className="btn btn-primary" style={{ flex: 'none', padding: '10px 18px' }} onClick={onNuevo}>+ Nuevo formulario</button>}
         <div className="vista-toggle">
           <button className={vista === 'cards' ? 'on' : ''} onClick={() => cambiarVista('cards')} title="Ver en tarjetas">▦</button>
           <button className={vista === 'lista' ? 'on' : ''} onClick={() => cambiarVista('lista')} title="Ver en lista"></button>
@@ -91,6 +92,7 @@ function Lista({ usuario, showToast }) {
               <td className="sec">/formulario/{f.slug}</td>
               <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                 <button className="btn-sm" onClick={() => { navigator.clipboard?.writeText(`${APP_URL}/formulario/${f.slug}`); showToast(' Enlace copiado'); }}>Copiar</button>{' '}
+                {onEditar && <><button className="btn-sm" onClick={() => onEditar(f.slug)}>Editar</button>{' '}</>}
                 <a className="btn-sm solid" href={`${APP_URL}/formulario/${f.slug}`} target="_blank" rel="noreferrer"></a>
               </td>
             </tr>
@@ -115,6 +117,7 @@ function Lista({ usuario, showToast }) {
                 <button className="pcard-url-copy" onClick={() => { navigator.clipboard?.writeText(`${APP_URL}/formulario/${f.slug}`); showToast(' Enlace copiado'); }} title="Copiar enlace">Copiar</button>
               </div>
               <div className="pcard-actions">
+                {onEditar && <button className="pcard-act" onClick={() => onEditar(f.slug)}>Editar</button>}
                 <a className="pcard-act pcard-act-primary" style={{ flex: 1, justifyContent: 'center' }} href={`${APP_URL}/formulario/${f.slug}`} target="_blank" rel="noreferrer"> Abrir</a>
               </div>
             </div>
