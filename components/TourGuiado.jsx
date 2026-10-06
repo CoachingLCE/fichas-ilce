@@ -12,16 +12,22 @@ export default function TourGuiado({ tab, setTab, permisos }) {
   const [activo, setActivo] = useState(false);
   const [pasoId, setPasoId] = useState(null);
   const [modoTarea, setModoTarea] = useState(false);
+  const [secuencia, setSecuencia] = useState([]); // pasos de la tarea elegida (uno solo en las tareas simples)
   const [rect, setRect] = useState(null);
   const [buscando, setBuscando] = useState(false);
 
   const permitido = useCallback((p) => !p.requiere || permisos[p.requiere], [permisos]);
-  const pasos = useMemo(() => TOUR_PASOS.filter(permitido), [permitido]);
+  // `pasosTodos` incluye los pasos que solo viven dentro de una tarea (soloTarea); el recorrido completo no los usa.
+  const pasosTodos = useMemo(() => TOUR_PASOS.filter(permitido), [permitido]);
+  const pasos = useMemo(() => pasosTodos.filter((p) => !p.soloTarea), [pasosTodos]);
   const tareas = useMemo(() => TAREAS_AYUDA.filter(permitido), [permitido]);
 
-  const idx = pasoId ? pasos.findIndex((p) => p.id === pasoId) : -1;
-  const pasoActual = idx >= 0 ? pasos[idx] : null;
+  const lista = modoTarea ? pasosTodos : pasos;
+  const idx = pasoId ? lista.findIndex((p) => p.id === pasoId) : -1;
+  const pasoActual = idx >= 0 ? lista[idx] : null;
   const total = pasos.length;
+  // Posición dentro de la tarea (para mostrar "1 de 3" cuando tiene más de un paso).
+  const posTarea = modoTarea ? secuencia.indexOf(pasoId) : -1;
 
   const ubicarElemento = useCallback(() => {
     if (!pasoActual || !pasoActual.selector) { setRect(null); return; }
@@ -74,18 +80,30 @@ export default function TourGuiado({ tab, setTab, permisos }) {
     setPasoId(pasos[0].id);
   }
   function iniciarTarea(tarea) {
+    const seq = (tarea.secuencia || [tarea.pasoInicial]).filter((id) => pasosTodos.some((p) => p.id === id));
+    if (seq.length === 0) return;
     setMenuAbierto(false);
     setModoTarea(true);
+    setSecuencia(seq);
     setActivo(true);
-    setPasoId(tarea.pasoInicial);
+    setPasoId(seq[0]);
   }
   function siguiente() {
-    if (modoTarea) { cerrar(); return; }
+    if (modoTarea) {
+      const next = secuencia[secuencia.indexOf(pasoId) + 1];
+      if (next) setPasoId(next); else cerrar();
+      return;
+    }
     const next = pasos[idx + 1];
     if (!next) { cerrar(); return; }
     setPasoId(next.id);
   }
   function anterior() {
+    if (modoTarea) {
+      const prev = secuencia[secuencia.indexOf(pasoId) - 1];
+      if (prev) setPasoId(prev);
+      return;
+    }
     const prev = pasos[idx - 1];
     if (prev) setPasoId(prev.id);
   }
@@ -164,6 +182,8 @@ export default function TourGuiado({ tab, setTab, permisos }) {
           paso={pasoActual}
           idx={idx}
           total={total}
+          posTarea={posTarea}
+          largoTarea={secuencia.length}
           rect={rect}
           buscando={buscando}
           modoTarea={modoTarea}
@@ -176,8 +196,10 @@ export default function TourGuiado({ tab, setTab, permisos }) {
   );
 }
 
-function TourOverlay({ paso, idx, total, rect, buscando, modoTarea, onSiguiente, onAnterior, onSalir }) {
-  const esFinal = idx === total - 1;
+function TourOverlay({ paso, idx, total, posTarea, largoTarea, rect, buscando, modoTarea, onSiguiente, onAnterior, onSalir }) {
+  // En una tarea de varios pasos: "1 de 3" y "Listo" recién en el último. En una de un solo paso, sin contador.
+  const esFinal = modoTarea ? posTarea >= largoTarea - 1 : idx === total - 1;
+  const hayAtras = modoTarea ? posTarea > 0 : idx > 0;
 
   const tooltipStyle = useMemo(() => {
     if (typeof window === 'undefined' || !rect) return null;
@@ -212,7 +234,9 @@ function TourOverlay({ paso, idx, total, rect, buscando, modoTarea, onSiguiente,
         className="fixed bg-surface2 border border-border rounded-2xl p-4 shadow-2xl"
         style={tooltipStyle || { top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 'min(320px, calc(100vw - 28px))' }}
       >
-        {!esFinal && <p className="text-[12px] text-textMuted mb-1.5 font-semibold">{idx + 1} de {total}</p>}
+        {modoTarea
+          ? (largoTarea > 1 && <p className="text-[12px] text-textMuted mb-1.5 font-semibold">{posTarea + 1} de {largoTarea}</p>)
+          : (!esFinal && <p className="text-[12px] text-textMuted mb-1.5 font-semibold">{idx + 1} de {total}</p>)}
         <h3 className="text-sm font-semibold mb-1.5">{paso.titulo}</h3>
         {buscando ? (
           <p className="text-xs text-textSec mb-3">Cargando…</p>
@@ -225,11 +249,11 @@ function TourOverlay({ paso, idx, total, rect, buscando, modoTarea, onSiguiente,
         <div className="flex items-center justify-between gap-2 mt-1">
           <button className="text-xs text-textMuted" onClick={onSalir}>Salir</button>
           <div className="flex gap-1.5">
-            {idx > 0 && !modoTarea && (
+            {hayAtras && (
               <button className="bg-transparent text-textSec border border-border rounded-lg px-2.5 py-1.5 text-xs" onClick={onAnterior}> Atrás</button>
             )}
             <button className="bg-gradient-to-r from-accentPurple to-accentMagenta text-white rounded-lg px-3 py-1.5 text-xs font-semibold" onClick={onSiguiente}>
-              {esFinal || modoTarea ? 'Listo' : 'Siguiente →'}
+              {esFinal ? 'Listo' : 'Siguiente →'}
             </button>
           </div>
         </div>

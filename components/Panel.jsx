@@ -385,7 +385,7 @@ export default function Panel() {
           {/* "+ Crear" va primero, antes que Fichas — es el punto de entrada único para dar de
               alta una Inscripción, Actividad o Formulario (ver el selector más abajo). */}
           {(tienePermisoConstructor(usuario) || tienePermisoGestionActividades(usuario) || tienePermisoFormularios(usuario)) && (
-            <button className="btn btn-primary" style={{ flex: 'none', height: 36, padding: '0 16px', marginRight: 4 }} onClick={() => setCrearAbierto(true)}>+ Crear</button>
+            <button data-tour="crear" className="btn btn-primary" style={{ flex: 'none', height: 36, padding: '0 16px', marginRight: 4 }} onClick={() => setCrearAbierto(true)}>+ Crear</button>
           )}
           {/* Pestañas atenuadas cuando el rol de la persona no tiene acceso a esa sección
               (igual siguen siendo clickeables: si entran ven el cartel de Acceso denegado). */}
@@ -710,6 +710,11 @@ export default function Panel() {
       </div>
       <VersionBadge />
       <TourGuiado tab={tab} setTab={setTab} permisos={{
+        // Qué puede CREAR esta persona: la ayuda explica cómo se crea cada cosa solo a quien puede hacerlo.
+        crear: tienePermisoConstructor(usuario) || tienePermisoGestionActividades(usuario) || tienePermisoFormularios(usuario),
+        constructor: tienePermisoConstructor(usuario),
+        gestionActividades: tienePermisoGestionActividades(usuario),
+        formularios: tienePermisoFormularios(usuario),
         dashboard: tienePermisoDashboard(usuario),
         actividadesyformularios: tienePermisoActividades(usuario) || tienePermisoFormularios(usuario),
         // Pedido de Diego ("quiero que todos puedan ver las respuestas"): el paso del tour
