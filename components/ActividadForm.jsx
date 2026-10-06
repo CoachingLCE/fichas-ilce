@@ -44,11 +44,11 @@ function corregirLocal(preguntas, resp) {
 // tocar la Sheet ni el localStorage del navegador: no verifica "ya completada", no envía nada
 // al servidor (corrige localmente nomás, para mostrar una pantalla final de ejemplo) y no lee
 // ni escribe ningún borrador real.
-export default function ActividadForm({ act, modoPreview = false }) {
+export default function ActividadForm({ act, modoPreview = false, pasoInicial = 0 }) {
   const draftInicial = useRef(null);
   if (draftInicial.current === null) draftInicial.current = modoPreview ? {} : (leerDraft(act.slug) || {});
 
-  const [step, setStep] = useState(draftInicial.current.step || 0); // 0 = datos, 1..N = preguntas
+  const [step, setStep] = useState(modoPreview ? Math.min(pasoInicial, act.preguntas.length) : (draftInicial.current.step || 0)); // 0 = datos, 1..N = preguntas (en la vista previa del constructor arranca en la pregunta que se está editando)
   const [email, setEmail] = useState(draftInicial.current.email || '');
   const [nombre, setNombre] = useState(draftInicial.current.nombre || '');
   // Si quien armó la actividad ya le puso una edición, no hace falta preguntársela

@@ -465,6 +465,7 @@ export default function Panel() {
 
         {crearAbierto && (
           <CrearWizard
+            puede={{ inscripcion: tienePermisoConstructor(usuario), actividad: tienePermisoGestionActividades(usuario), formulario: tienePermisoFormularios(usuario) }}
             onCerrar={() => setCrearAbierto(false)}
             onCrearActividad={crearActividad}
             onCrearFormulario={crearFormulario}

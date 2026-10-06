@@ -1710,7 +1710,7 @@ button,input,select,textarea{font-family:inherit}
 .cf-sub{margin:0;color:rgb(var(--textSec));font-size:14.5px}
 .cf-bad{background:rgb(var(--bad) / .1);border:1px solid rgb(var(--bad));color:rgb(var(--bad));border-radius:10px;padding:9px 12px;margin-bottom:14px;font-size:13.5px}
 .cf-grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;align-items:start}
-@media(max-width:960px){.cf-grid{grid-template-columns:1fr}.cf-side{order:-1}}
+@media(max-width:960px){.cf-grid{grid-template-columns:1fr}}
 .cf-card{background:rgb(var(--surface2));border:1px solid rgb(var(--border));border-radius:16px;padding:22px}
 .cf-side{position:sticky;top:78px}
 @media(max-width:960px){.cf-side{position:static}}
@@ -1759,3 +1759,6 @@ button,input,select,textarea{font-family:inherit}
 .cf-seg button{background:transparent;border:0;padding:7px 14px;font:inherit;font-weight:600;font-size:13.5px;color:rgb(var(--textSec));cursor:pointer;white-space:nowrap}
 .cf-seg button.on{background:linear-gradient(90deg,rgb(var(--accentPurple)),rgb(var(--accentMagenta)));color:#fff}
 .cf-acts .btn{flex:none;padding:10px 22px}
+
+.cf-pv-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.cf-pv-tabs .fchip{height:26px;padding:0 10px;font-size:12px}

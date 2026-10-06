@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useMemo, useState, forwardRef, useImperativeHandle } from 'react';
+import { useEffect, useMemo, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { APP_URL, colorCurso, inicialesCurso, cantidadClasesFija, calcularFechaFinEdicion } from '../lib/constants';
 import Constructor from './Constructor';
 
@@ -19,9 +19,18 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
   // El botón "Crear nueva ficha de inscripción" vive al lado de las sub-pestañas, en Panel.jsx
   // (no acá adentro), así que Panel necesita poder abrir el Constructor desde afuera.
   useImperativeHandle(ref, () => ({
-    abrirConstructor: (curso) => { if (!defs || defs.length === 0) return; const d = curso ? (defs.find((x) => x.curso === curso) || defs[0]) : defs[0]; onEditar(d.slug); }
+    // Si se pide abrir el constructor cuando las fichas todavía están cargando (pasa SIEMPRE que se llega acá desde "+ Crear" estando
+    // en otra pestaña: el panel cambia de pestaña y pide abrirlo en el mismo instante en que esta sección recién arranca), antes
+    // la función se rendía en silencio y no se abría nada. Ahora el pedido se recuerda y se ejecuta apenas llegan los datos.
+    abrirConstructor: (curso) => { if (!defs || defs.length === 0) { pendienteRef.current = { curso }; return; } abrirYa(curso); }
   }));
+  const pendienteRef = useRef(null);
   const [defs, setDefs] = useState(null);
+  const abrirYa = (curso) => { const d = curso ? (defs.find((x) => x.curso === curso) || defs[0]) : defs[0]; onEditar(d.slug); };
+  useEffect(() => {
+    if (defs && defs.length > 0 && pendienteRef.current) { const { curso } = pendienteRef.current; pendienteRef.current = null; abrirYa(curso); }
+    /* eslint-disable-next-line */
+  }, [defs]);
   const [q, setQ] = useState('');
   const [chip, setChip] = useState('Todas');
   // Vista predeterminada: Lista (antes arrancaba en Tarjetas). Si la persona ya eligió una
