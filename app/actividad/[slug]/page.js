@@ -2,8 +2,18 @@ import { getActividad, estadoEfectivo } from '../../../lib/actividades';
 import { IsologoDefs, Isologo } from '../../../components/Isologo';
 import ActividadForm from '../../../components/ActividadForm';
 import { notFound } from 'next/navigation';
+import { cache } from 'react';
+import { metaActividad } from '../../../lib/ogMeta';
 
 export const dynamic = 'force-dynamic';
+
+// cache(): la lectura de Google Sheets se hace una sola vez por visita aunque la usen la vista previa y la página.
+const cargarAct = cache((slug) => getActividad(slug));
+
+// Vista previa del enlace (WhatsApp, Slack, Telegram): título y descripción por curso. Si algo falla, queda la genérica.
+export async function generateMetadata({ params }) {
+  try { return metaActividad(await cargarAct(params.slug)); } catch (e) { return { title: 'ILCE' }; }
+}
 
 const fechaLegible = (iso) => {
   if (!iso) return '';
@@ -13,7 +23,7 @@ const fechaLegible = (iso) => {
 };
 
 export default async function ActividadPublica({ params }) {
-  const act = await getActividad(params.slug);
+  const act = await cargarAct(params.slug);
   if (!act) return notFound();
   const efectivo = estadoEfectivo(act);
   const disponible = efectivo === 'Publicada' && act.preguntas.length > 0;

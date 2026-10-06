@@ -2,11 +2,21 @@ import { getFormulario } from '../../../lib/formularios';
 import { IsologoDefs, Isologo } from '../../../components/Isologo';
 import FormularioForm from '../../../components/FormularioForm';
 import { notFound } from 'next/navigation';
+import { cache } from 'react';
+import { metaFormulario } from '../../../lib/ogMeta';
 
 export const dynamic = 'force-dynamic';
 
+// cache(): la lectura de Google Sheets se hace una sola vez por visita aunque la usen la vista previa y la página.
+const cargarForm = cache((slug) => getFormulario(slug));
+
+// Vista previa del enlace (WhatsApp, Slack, Telegram): título y descripción por curso. Si algo falla, queda la genérica.
+export async function generateMetadata({ params }) {
+  try { return metaFormulario(await cargarForm(params.slug)); } catch (e) { return { title: 'ILCE' }; }
+}
+
 export default async function FormularioPublico({ params }) {
-  const form = await getFormulario(params.slug);
+  const form = await cargarForm(params.slug);
   if (!form) return notFound();
   if (form.estado !== 'Publicada' || !form.campos.length) {
     return (

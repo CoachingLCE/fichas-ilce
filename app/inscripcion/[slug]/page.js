@@ -2,11 +2,21 @@ import { getFichaDefLive } from '../../../lib/fichas';
 import { IsologoDefs, Isologo } from '../../../components/Isologo';
 import FichaWizard from '../../../components/FichaWizard';
 import { notFound } from 'next/navigation';
+import { cache } from 'react';
+import { metaFichaInscripcion } from '../../../lib/ogMeta';
 
 export const dynamic = 'force-dynamic';
 
+// cache(): la lectura de Google Sheets se hace una sola vez por visita aunque la usen la vista previa y la página.
+const cargarDef = cache((slug) => getFichaDefLive(slug));
+
+// Vista previa del enlace (WhatsApp, Slack, Telegram): título y descripción por curso. Si algo falla, queda la genérica.
+export async function generateMetadata({ params }) {
+  try { return metaFichaInscripcion(await cargarDef(params.slug)); } catch (e) { return { title: 'ILCE' }; }
+}
+
 export default async function FichaPublica({ params }) {
-  const def = await getFichaDefLive(params.slug);
+  const def = await cargarDef(params.slug);
   if (!def) return notFound();
 
   // Solo "Publicada" permite completar. Borrador/Cerrada muestran aviso.
