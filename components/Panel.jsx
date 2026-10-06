@@ -685,7 +685,10 @@ export default function Panel() {
         equipo: tienePermisoAsignarDocentes(usuario),
         accesos: tienePermisoAccesos(usuario),
         auditoria: tienePermisoAuditoria(usuario),
-        verComo: puedeVerComoOtro(usuarioReal)
+        // Pedido de Diego: en "Ver como", la ayuda tiene que ser la de ESA persona — no la del Admin que la está mirando. Antes
+        // esto usaba la persona real (usuarioReal) y la ayuda sumaba "Quiero ver la app como otra persona" y un paso más del
+        // recorrido que la persona vista nunca vería. Ahora usa la persona efectiva, como el resto de los permisos de arriba.
+        verComo: puedeVerComoOtro(usuario)
       }} />
       <div className={'toast' + (toast ? ' on' : '')}>{toast}</div>
     </div>
