@@ -64,7 +64,7 @@ export default function ConstructorFormulario({ usuario, slugInicial, onVolver, 
   const setPreg = (id, patch) => { setEst((s) => ({ ...s, preguntas: s.preguntas.map((q) => (q.id === id ? { ...q, ...patch } : q)) })); setErrores((e) => ({ ...e, ['q' + id]: undefined })); setErrorGlobal(''); };
   const slugActual = est.slugEditado ? est.slug : slugify(est.titulo);
   const nId = () => Math.max(0, ...est.preguntas.map((q) => q.id)) + 1;
-  const agregar = () => { if (est.preguntas.length >= LIMITES.preguntas) return; setEst((s) => ({ ...s, preguntas: [...s.preguntas, { id: nId(), key: '', label: '', tipoUi: 'texto', tipoCambiado: true, orig: null, req: false, ops: '' }] })); };
+  const agregar = () => { if (est.preguntas.length >= LIMITES.preguntas) return; setEst((s) => ({ ...s, preguntas: [...s.preguntas, { id: nId(), key: '', label: '', tipoUi: 'texto', tipoCambiado: true, orig: null, req: false, ops: '', filas: '', cols: '' }] })); };
   const quitar = (id) => setEst((s) => ({ ...s, preguntas: s.preguntas.filter((q) => q.id !== id) }));
   const mover = (id, d) => setEst((s) => { const L = [...s.preguntas]; const i = L.findIndex((q) => q.id === id); const j = i + d; if (j < 0 || j >= L.length) return s; [L[i], L[j]] = [L[j], L[i]]; return { ...s, preguntas: L }; });
 
@@ -156,6 +156,12 @@ export default function ConstructorFormulario({ usuario, slugInicial, onVolver, 
                 {q.tipoUi === 'lista' && (
                   <div className="cf-ops">
                     <textarea className={'ctrl' + (errores['q' + q.id] ? ' err' : '')} aria-label="Opciones" value={q.ops} placeholder={(q.orig && q.orig.tipo === 'select' && !q.tipoCambiado) ? 'Sin opciones propias: usa la lista de cursos' : 'Una opción por línea'} onChange={(e) => setPreg(q.id, { ops: e.target.value })} />
+                  </div>
+                )}
+                {q.tipoUi === 'grilla' && (
+                  <div className="cf-ops">
+                    <textarea className={'ctrl' + (errores['q' + q.id] ? ' err' : '')} aria-label="Filas" value={q.filas} placeholder={'Filas, una por línea (ej.: Lunes, Martes…)'} onChange={(e) => setPreg(q.id, { filas: e.target.value })} />
+                    <textarea className={'ctrl' + (errores['q' + q.id] ? ' err' : '')} aria-label="Columnas" style={{ marginTop: 6 }} value={q.cols} placeholder={'Columnas, una por línea (ej.: 10 a 11, 11 a 12…)'} onChange={(e) => setPreg(q.id, { cols: e.target.value })} />
                   </div>
                 )}
               </div>

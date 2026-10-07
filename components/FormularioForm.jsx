@@ -83,6 +83,33 @@ export default function FormularioForm({ form, vistaPrevia = false }) {
         </div>
       );
     }
+    if (c.tipo === 'grilla') {
+      // Casillas por fila y columna (ej.: disponibilidad por día y horario). Se guarda como un solo texto
+      // ("Lunes 10 a 11, Martes 19 a 20"), en el orden de la grilla, así se lee igual en Respuestas y en las exportaciones.
+      const filas = c.filas || []; const cols = c.columnas || [];
+      const marcadas = new Set(String(val[c.key] || '').split(', ').filter(Boolean));
+      const alternar = (item) => {
+        const s = new Set(marcadas); if (s.has(item)) s.delete(item); else s.add(item);
+        set(c.key, filas.flatMap((f) => cols.map((co) => `${f} ${co}`)).filter((x) => s.has(x)).join(', '));
+      };
+      return (
+        <div className="quiz-field" key={c.key}>
+          <label>{c.label}{c.required && <span className="req"> *</span>}</label>
+          {c.help && <div className="quiz-help">{c.help}</div>}
+          <div className="grilla-wrap">
+            <table className="grilla" data-sin-tarjetas>
+              <thead><tr><th scope="col"><span className="sr-only">Día</span></th>{cols.map((co) => <th scope="col" key={co}>{co}</th>)}</tr></thead>
+              <tbody>{filas.map((f) => (
+                <tr key={f}><th scope="row">{f}</th>{cols.map((co) => {
+                  const item = `${f} ${co}`;
+                  return <td key={co}><input type="checkbox" aria-label={`${f}, ${co}`} checked={marcadas.has(item)} onChange={() => alternar(item)} /></td>;
+                })}</tr>
+              ))}</tbody>
+            </table>
+          </div>
+        </div>
+      );
+    }
     if (c.tipo === 'select') {
       const ops = c.opciones && c.opciones.length ? c.opciones : CURSOS.map((x) => x.nombre);
       return (
