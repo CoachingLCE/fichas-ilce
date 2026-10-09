@@ -158,6 +158,11 @@ export default function ConstructorFormulario({ usuario, slugInicial, preseed, o
                     <textarea className={'ctrl' + (errores['q' + q.id] ? ' err' : '')} aria-label="Opciones" value={q.ops} placeholder={(q.orig && q.orig.tipo === 'select' && !q.tipoCambiado) ? 'Sin opciones propias: usa la lista de cursos' : 'Una opción por línea'} onChange={(e) => setPreg(q.id, { ops: e.target.value })} />
                   </div>
                 )}
+                {q.tipoUi === 'multiple' && (
+                  <div className="cf-ops">
+                    <textarea className={'ctrl' + (errores['q' + q.id] ? ' err' : '')} aria-label="Opciones" value={q.ops} placeholder="Una opción por línea (se pueden marcar varias)" onChange={(e) => setPreg(q.id, { ops: e.target.value })} />
+                  </div>
+                )}
                 {q.tipoUi === 'grilla' && (
                   <div className="cf-ops">
                     <textarea className={'ctrl' + (errores['q' + q.id] ? ' err' : '')} aria-label="Filas" value={q.filas} placeholder={'Filas, una por línea (ej.: Lunes, Martes…)'} onChange={(e) => setPreg(q.id, { filas: e.target.value })} />

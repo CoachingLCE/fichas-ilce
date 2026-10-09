@@ -15,8 +15,8 @@ export async function GET(req) {
   try {
     const filas = await readSheet(TABS.FORMULARIOS);
     const formularios = filas.filter((f) => f.Slug).map((f) => {
-      const { campos, cursoFijo, intro } = parseCampos(f['Campos JSON']);
-      return { slug: f.Slug, titulo: f['Título'], tipo: f.Tipo, estado: f.Estado || 'Publicada', campos, cursoFijo, intro, actualizado: f.Actualizado, creado: f['Creado'] || '' };
+      const { campos, cursoFijo, intro, especial } = parseCampos(f['Campos JSON']);
+      return { slug: f.Slug, titulo: f['Título'], tipo: f.Tipo, estado: f.Estado || 'Publicada', campos, cursoFijo, intro, especial, actualizado: f.Actualizado, creado: f['Creado'] || '' };
     });
     return NextResponse.json({ ok: true, formularios });
   } catch (e) {
@@ -37,7 +37,7 @@ export async function POST(req) {
   // público realmente lee, y el curso fijo tiene que existir. Un formulario puede no tener curso (cursoFijo vacío).
   const v = validarPayloadServidor(body, { cursosValidos: CURSOS.map((c) => c.nombre) });
   if (!v.ok) return NextResponse.json({ ok: false, error: v.error }, { status: 400 });
-  const { slug, titulo, tipo, estado, cursoFijo, intro, campos } = v.limpio;
+  const { slug, titulo, tipo, estado, cursoFijo, intro, especial, campos } = v.limpio;
   const crear = body.crear === true;
   const filas = await readSheet(TABS.FORMULARIOS, { noCache: true });
   const ex = filas.find((f) => f.Slug === slug);
@@ -46,7 +46,7 @@ export async function POST(req) {
   if (!crear && !ex) return NextResponse.json({ ok: false, error: 'No existe el formulario que se quiere editar' }, { status: 404 });
   // "Creado" se escribe una sola vez: se conserva si ya existía, se marca ahora si es nuevo.
   const creado = ex ? (ex['Creado'] || '') : new Date().toISOString();
-  const fila = [slug, titulo, tipo, estado, serializarCampos({ campos, cursoFijo, intro }), new Date().toISOString(), creado];
+  const fila = [slug, titulo, tipo, estado, serializarCampos({ campos, cursoFijo, intro, especial }), new Date().toISOString(), creado];
   try {
     if (ex) await updateRow(TABS.FORMULARIOS, ex._rowIndex, fila); else await appendRow(TABS.FORMULARIOS, fila);
   } catch (e) {

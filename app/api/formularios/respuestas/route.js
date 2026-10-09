@@ -3,6 +3,8 @@ import { readSheet, updateRow } from '../../../../lib/sheets';
 import { TABS } from '../../../../lib/constants';
 import { findUsuario, tienePermisoVerRespuestasFormularios, tienePermisoEliminarRespuestas } from '../../../../lib/auth';
 import { registrarAccion } from '../../../../lib/auditoria';
+import { parseCampos } from '../../../../lib/formularios';
+import { esActividadEspecial, normTitulo } from '../../../../lib/formularioConstructor';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,9 +13,20 @@ export async function GET(req) {
   const usuario = await findUsuario(searchParams.get('solicitanteEmail'));
   if (!usuario || !tienePermisoVerRespuestasFormularios(usuario)) return NextResponse.json({ ok: false, error: 'No autorizado' }, { status: 403 });
   try {
+    // Qué formularios son actividades especiales (laboratorio, masterclass…): se lee la definición para marcar cada respuesta.
+    // Si esa lectura falla, las respuestas igual se devuelven (solo quedan sin marcar).
+    const especiales = new Set(); const tipos = {};
+    try {
+      (await readSheet(TABS.FORMULARIOS)).filter((f) => f.Slug).forEach((f) => {
+        const { especial } = parseCampos(f['Campos JSON']);
+        const k = normTitulo(f['Título']); tipos[k] = f.Tipo || '';
+        if (esActividadEspecial({ especial, tipo: f.Tipo })) especiales.add(k);
+      });
+    } catch {}
     const respuestas = (await readSheet(TABS.RESPUESTAS_FORM)).filter((f) => f.ID).map((f) => {
       let r = {}; try { r = JSON.parse(f['Respuestas JSON'] || '{}'); } catch {}
-      return { id: f.ID, fecha: f.Fecha, formulario: f.Formulario, curso: f.Curso, email: f.Email, nombre: f.Nombre, edicion: f['Edición'], r };
+      const k = normTitulo(f.Formulario);
+      return { id: f.ID, fecha: f.Fecha, formulario: f.Formulario, curso: f.Curso, email: f.Email, nombre: f.Nombre, edicion: f['Edición'], especial: especiales.has(k), tipo: tipos[k] || '', r };
     }).reverse();
     return NextResponse.json({ ok: true, respuestas });
   } catch (e) {

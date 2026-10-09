@@ -2,8 +2,25 @@
 import { useState } from 'react';
 import { CURSOS } from '../lib/constants';
 import { cursoInicial } from '../lib/formularioCurso';
-import { validarEmail, inferirTipoCampo, validarValorCampo, filtrarTelefono } from '../lib/validacion';
+import { validarEmail, inferirTipoCampo, validarValorCampo, filtrarTelefono, partirMultiple } from '../lib/validacion';
 import { Isologo } from './Isologo';
+
+
+// Texto de ayuda de una pregunta: respeta los saltos de línea (una línea debajo de la otra) y convierte los links
+// (http/https) en enlaces que se pueden tocar. Se arma con elementos de React, no con HTML crudo.
+function Ayuda({ texto }) {
+  if (!texto) return null;
+  const partes = String(texto).split(/(https?:\/\/[^\s]+)/g);
+  return (
+    <div className="quiz-help" style={{ whiteSpace: 'pre-line' }}>
+      {partes.map((p, i) => {
+        if (!/^https?:\/\//.test(p)) return <span key={i}>{p}</span>;
+        const m = p.match(/^(.*?)([).,;:!?]*)$/);
+        return <span key={i}><a href={m[1]} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline', wordBreak: 'break-all' }}>{m[1]}</a>{m[2]}</span>;
+      })}
+    </div>
+  );
+}
 
 export default function FormularioForm({ form, vistaPrevia = false }) {
   const [val, setVal] = useState({ curso: cursoInicial(form) }); // '' = sin curso (ver cursoInicial)
@@ -75,9 +92,10 @@ export default function FormularioForm({ form, vistaPrevia = false }) {
       return (
         <div className="quiz-field" key={c.key}>
           <label>{c.label}{c.required && <span className="req"> *</span>}</label>
-          <div className="escala">
+          <Ayuda texto={c.help} />
+          <div className="escala" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 10, width: '100%' }}>
             {[1, 2, 3, 4, 5].map((n) => (
-              <button key={n} type="button" className={'escala-b' + (Number(val[c.key]) === n ? ` on on-${n}` : '')} onClick={() => set(c.key, n)}>{n}</button>
+              <button key={n} type="button" className={'escala-b' + (Number(val[c.key]) === n ? ` on on-${n}` : '')} style={{ width: '100%', height: 50 }} onClick={() => set(c.key, n)}>{n}</button>
             ))}
           </div>
         </div>
@@ -95,7 +113,7 @@ export default function FormularioForm({ form, vistaPrevia = false }) {
       return (
         <div className="quiz-field" key={c.key}>
           <label>{c.label}{c.required && <span className="req"> *</span>}</label>
-          {c.help && <div className="quiz-help">{c.help}</div>}
+          <Ayuda texto={c.help} />
           <div className="grilla-wrap">
             <table className="grilla" data-sin-tarjetas>
               <thead><tr><th scope="col"><span className="sr-only">Día</span></th>{cols.map((co) => <th scope="col" key={co}>{co}</th>)}</tr></thead>
@@ -106,6 +124,26 @@ export default function FormularioForm({ form, vistaPrevia = false }) {
                 })}</tr>
               ))}</tbody>
             </table>
+          </div>
+        </div>
+      );
+    }
+    if (c.tipo === 'multiple') {
+      // Opción múltiple: se pueden marcar varias. Se guarda como un solo texto, en el orden de la lista ("Sí, en mis redes, No").
+      const ops = c.opciones || [];
+      const marcadas = new Set(partirMultiple(val[c.key], ops) || []);
+      const alternar = (o) => {
+        const s = new Set(marcadas); if (s.has(o)) s.delete(o); else s.add(o);
+        set(c.key, ops.filter((x) => s.has(x)).join(', '));
+      };
+      return (
+        <div className="quiz-field" key={c.key}>
+          <label>{c.label}{c.required && <span className="req"> *</span>}</label>
+          <Ayuda texto={c.help} />
+          <div role="group" aria-label={c.label} style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
+            {ops.map((o) => (
+              <label key={o} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 14, lineHeight: 1.35, cursor: 'pointer', margin: 0, padding: '10px 12px', borderRadius: 10, border: '1px solid rgb(var(--border))', background: marcadas.has(o) ? 'rgb(var(--accentTeal) / .12)' : 'rgb(var(--surface2))' }}><input type="checkbox" checked={marcadas.has(o)} onChange={() => alternar(o)} style={{ marginTop: 3, flex: 'none' }} /> <span>{o}</span></label>
+            ))}
           </div>
         </div>
       );
@@ -126,7 +164,7 @@ export default function FormularioForm({ form, vistaPrevia = false }) {
       return (
         <div className="quiz-field" key={c.key}>
           <label>{c.label}{c.required && <span className="req"> *</span>}</label>
-          {c.help && <div className="quiz-help">{c.help}</div>}
+          <Ayuda texto={c.help} />
           <textarea className="ctrl" style={{ minHeight: 84, resize: 'vertical' }} value={val[c.key] || ''} onChange={(e) => set(c.key, e.target.value)} />
         </div>
       );
@@ -139,7 +177,7 @@ export default function FormularioForm({ form, vistaPrevia = false }) {
       return (
         <div className="quiz-field" key={c.key}>
           <label>{c.label}{c.required && <span className="req"> *</span>}</label>
-          {c.help && <div className="quiz-help">{c.help}</div>}
+          <Ayuda texto={c.help} />
           <input className="ctrl" type="text" inputMode="numeric" pattern="[0-9]*" value={val[c.key] || ''} onChange={(e) => set(c.key, e.target.value.replace(/\D/g, ''))} placeholder={c.placeholder || ''} />
         </div>
       );
@@ -148,7 +186,7 @@ export default function FormularioForm({ form, vistaPrevia = false }) {
       return (
         <div className="quiz-field" key={c.key}>
           <label>{c.label}{c.required && <span className="req"> *</span>}</label>
-          {c.help && <div className="quiz-help">{c.help}</div>}
+          <Ayuda texto={c.help} />
           <input className="ctrl" type="text" inputMode="tel" value={val[c.key] || ''} onChange={(e) => set(c.key, filtrarTelefono(e.target.value))} placeholder={c.placeholder || ''} />
         </div>
       );
@@ -157,7 +195,7 @@ export default function FormularioForm({ form, vistaPrevia = false }) {
       return (
         <div className="quiz-field" key={c.key}>
           <label>{c.label}{c.required && <span className="req"> *</span>}</label>
-          {c.help && <div className="quiz-help">{c.help}</div>}
+          <Ayuda texto={c.help} />
           <input className="ctrl" type="text" value={val[c.key] || ''} onChange={(e) => set(c.key, e.target.value.replace(/[0-9]/g, ''))} placeholder={c.placeholder || ''} />
         </div>
       );
@@ -166,14 +204,16 @@ export default function FormularioForm({ form, vistaPrevia = false }) {
     return (
       <div className="quiz-field" key={c.key}>
         <label>{c.label}{c.required && <span className="req"> *</span>}</label>
-        {c.help && <div className="quiz-help">{c.help}</div>}
+        <Ayuda texto={c.help} />
         <input className="ctrl" type={c.tipo === 'email' ? 'email' : 'text'} value={val[c.key] || ''} onChange={(e) => set(c.key, e.target.value)} placeholder={c.placeholder || ''} />
       </div>
     );
   }
 
-  const escalas = form.campos.filter((c) => c.tipo === 'escala');
-  const otros = form.campos.filter((c) => c.tipo !== 'escala');
+  // La sección "Tu experiencia hasta ahora" agrupa varias escalas (feedback). Si el formulario tiene una sola, va en su lugar, sin título de sección.
+  const agrupar = form.campos.filter((c) => c.tipo === 'escala').length >= 2;
+  const escalas = agrupar ? form.campos.filter((c) => c.tipo === 'escala') : [];
+  const otros = agrupar ? form.campos.filter((c) => c.tipo !== 'escala') : form.campos;
   return (
     <div className="quizstage"><div className="quizcard quizcard-form">
       <div className="quiz-band">

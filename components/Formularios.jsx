@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import { APP_URL, estadoFechaReciente, colorCurso } from '../lib/constants';
+import { fechaCreacion } from '../lib/fechaCreacion';
 import { SelectDropdown } from './SelectDropdown';
 import { tienePermisoEliminarRespuestas } from '../lib/permisos';
 import { useDialogos } from './Dialogos';
@@ -11,8 +12,8 @@ const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(
 // escribe una sola vez al crear el formulario, por eso sirve para esto y "Actualizado" no.
 function BadgeCreado({ iso }) {
   const { tipo } = estadoFechaReciente(iso, 10);
-  if (tipo === 'hoy') return <span className="badge-fecha-hoy" title={'Cargado el ' + iso}>\ud83d\udfe2 Cargado hoy</span>;
-  if (tipo === 'nueva') return <span className="badge-fecha-nueva" title={'Cargado el ' + iso}>\u2728 Nuevo</span>;
+  if (tipo === 'hoy') return <span className="badge-fecha-hoy" title={'Cargado el ' + iso}>{'\ud83d\udfe2'} Cargado hoy</span>;
+  if (tipo === 'nueva') return <span className="badge-fecha-nueva" title={'Cargado el ' + iso}>{'\u2728'} Nuevo</span>;
   return null;
 }
 
@@ -22,12 +23,12 @@ function BadgeCreado({ iso }) {
 // lugar (pedido de Diego: "SACA RESPUESTAS DE ACA", "evitemos botones innecesarios y
 // repetidos") — se saca; "Formularios" (listado) sigue siendo la vista de esta sección cuando
 // se entra desde "Actividades y formularios".
-export default function Formularios({ usuario, showToast, subInicial, onNuevo, onEditar }) {
+export default function Formularios({ usuario, showToast, subInicial, onNuevo, onEditar, soloEspeciales }) {
   const sub = subInicial || 'lista';
   return (
     <div>
       {sub === 'lista' && <Lista usuario={usuario} showToast={showToast} onNuevo={onNuevo} onEditar={onEditar} />}
-      {sub === 'respuestas' && <Respuestas usuario={usuario} showToast={showToast} />}
+      {sub === 'respuestas' && <Respuestas usuario={usuario} showToast={showToast} soloEspeciales={soloEspeciales} />}
     </div>
   );
 }
@@ -91,7 +92,7 @@ function Lista({ usuario, showToast, onNuevo, onEditar }) {
       </div>
       {vista === 'lista' ? (
         <div className="tablewrap"><table>
-          <thead><tr><th>Formulario</th><th>Tipo</th><th>Estado</th><th>Campos</th><th>Respuestas</th><th>Enlace</th><th></th></tr></thead>
+          <thead><tr><th>Formulario</th><th>Tipo</th><th>Estado</th><th>Campos</th><th>Respuestas</th><th>Creado</th><th>Enlace</th><th></th></tr></thead>
           <tbody>{formsVista.map((f) => (
             <tr key={f.slug}>
               <td className="ins-name">{f.titulo} <BadgeCreado iso={f.creado} /></td>
@@ -99,6 +100,7 @@ function Lista({ usuario, showToast, onNuevo, onEditar }) {
               <td><span className={'fstate ' + (f.estado === 'Publicada' ? 'pub' : 'bor')}><span className="d" />{f.estado}</span></td>
               <td className="sec">{f.campos.length}</td>
               <td>{nResp(f) === null ? <span className="sec">…</span> : (nResp(f) > 0 ? <span className="cnt" style={{ fontWeight: 500 }}>{nResp(f)}</span> : <span className="sec">0</span>)}</td>
+              <td className="sec" title="Fecha de creación">{fechaCreacion(f.creado) || '—'}</td>
               <td className="sec">/formulario/{f.slug}</td>
               <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                 <button className="btn-sm" onClick={() => { navigator.clipboard?.writeText(`${APP_URL}/formulario/${f.slug}`); showToast(' Enlace copiado'); }}>Copiar</button>{' '}
@@ -121,6 +123,7 @@ function Lista({ usuario, showToast, onNuevo, onEditar }) {
               <div className="pcard-datos">
                 <span>{f.campos.length} campos{nResp(f) !== null ? ` · ${nResp(f)} respuesta${nResp(f) === 1 ? '' : 's'}` : ''}</span>
                 <BadgeCreado iso={f.creado} />
+                {fechaCreacion(f.creado) && <span className="sec" title="Fecha de creación">Creado el {fechaCreacion(f.creado)}</span>}
               </div>
               <div className="pcard-url">
                 <span className="pcard-url-txt">/formulario/{f.slug}</span>
@@ -139,7 +142,7 @@ function Lista({ usuario, showToast, onNuevo, onEditar }) {
   );
 }
 
-function Respuestas({ usuario, showToast }) {
+function Respuestas({ usuario, showToast, soloEspeciales }) {
   const { confirmar, avisar } = useDialogos();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
@@ -172,7 +175,9 @@ function Respuestas({ usuario, showToast }) {
       const res = await fetch('/api/formularios/respuestas?solicitanteEmail=' + encodeURIComponent(usuario.email));
       const d = await res.json();
       if (!d.ok) throw new Error(d.error || 'No se pudieron cargar las respuestas');
-      setData(d.respuestas || []);
+      // v1.42.0: "Respuestas actividades especiales" muestra solo las de laboratorios, masterclasses, caja de ideas…
+      // y "Respuestas formularios" deja afuera esas mismas (así cada respuesta aparece en un solo lugar).
+      setData((d.respuestas || []).filter((x) => (soloEspeciales ? x.especial === true : x.especial !== true)));
     } catch (e) { setError(e.message || 'Error de conexión'); setData([]); }
   }
   useEffect(() => { cargar(); /* eslint-disable-next-line */ }, []);
@@ -221,7 +226,7 @@ function Respuestas({ usuario, showToast }) {
         <div className="fgroup-row">
           {forms.length > 1 && (
             <div className="fgroup-col">
-              <div className="fgroup-label">Formulario</div>
+              <div className="fgroup-label">{soloEspeciales ? 'Actividad' : 'Formulario'}</div>
               <div className="fchips fchips-sm" role="group" aria-label="Filtrar por formulario">
                 <button className={'fchip' + (fForm === '' ? ' on' : '')} onClick={() => setFForm('')}>Todos <span className="cnt">{paraChipsForm.length}</span></button>
                 {forms.map((f) => (
@@ -254,7 +259,7 @@ function Respuestas({ usuario, showToast }) {
         />
       )}
       <p className="count">{filtradas.length} respuesta(s)</p>
-      {filtradas.length === 0 ? <div className="empty empty-sm"><p>No encontramos respuestas con estos filtros.</p></div> : (
+      {filtradas.length === 0 ? <div className="empty empty-sm"><p>{(data || []).length === 0 && soloEspeciales ? 'Todavía no hay respuestas de actividades especiales. Cuando alguien se inscriba a un laboratorio, masterclass u otra actividad, aparece acá.' : 'No encontramos respuestas con estos filtros.'}</p></div> : (
         <div className="tablewrap"><table>
           <thead><tr>
             <th style={{ minWidth: 110, cursor: 'pointer' }} onClick={() => ordenarPor('fecha')}>Fecha{flecha('fecha')}</th>

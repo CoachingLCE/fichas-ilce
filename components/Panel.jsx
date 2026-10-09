@@ -497,6 +497,7 @@ export default function Panel() {
                 <button className="on" title="Estás viendo las inscripciones (Fichas completadas)"> Respuestas fichas</button>
                 {tienePermisoVerRespuestasActividades(usuario) && <button onClick={() => { setTab('respuestas'); setVistaResp('actividades'); }}> Respuestas actividades</button>}
                 {tienePermisoVerRespuestasFormularios(usuario) && <button onClick={() => { setTab('respuestas'); setVistaResp('formularios'); }}> Respuestas formularios</button>}
+                {tienePermisoVerRespuestasFormularios(usuario) && <button onClick={() => { setTab('respuestas'); setVistaResp('especiales'); }}> Respuestas actividades especiales</button>}
               </div>
             )}
             {/* Los números/KPIs (Total, últimos 7 días, pendientes, etc.) se movieron a la
@@ -651,10 +652,11 @@ export default function Panel() {
                 <button onClick={() => setTab('inscripciones')} title="Ver las inscripciones (Fichas completadas)"> Respuestas fichas</button>
                 {puedeAct && <button className={elegida === 'actividades' ? 'on' : ''} onClick={() => setVistaResp('actividades')}> Respuestas actividades</button>}
                 {puedeForm && <button className={elegida === 'formularios' ? 'on' : ''} onClick={() => setVistaResp('formularios')}> Respuestas formularios</button>}
+                {puedeForm && <button className={elegida === 'especiales' ? 'on' : ''} onClick={() => setVistaResp('especiales')}> Respuestas actividades especiales</button>}
               </div>
               {elegida === 'actividades'
                 ? <Actividades usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} irABuscador={() => setTab('buscador')} irAReportes={() => setTab('reportes')} subInicial="respuestas" />
-                : <Formularios usuario={usuario} showToast={showToast} subInicial="respuestas" />}
+                : <Formularios key={elegida} usuario={usuario} showToast={showToast} subInicial="respuestas" soloEspeciales={elegida === 'especiales'} />}
             </>
           );
         })()}
