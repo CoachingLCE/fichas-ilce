@@ -276,7 +276,7 @@ function Respuestas({ usuario, showToast, soloEspeciales }) {
               <tr key={x.id} onClick={() => setAbierto(abierto === x.id ? null : x.id)}>
                 <td className="sec">{(x.fecha || '').slice(0, 10)}</td>
                 <td><b>{x.nombre || '—'}</b></td>
-                <td className="sec">{x.email}</td>
+                <td className="sec">{x.email || 'Anónimo'}</td>
                 <td>{x.curso || '—'}</td>
                 <td>{x.edicion || '—'}</td>
                 {/* Pedido de Diego: diferenciar los formularios por color — mismo color del

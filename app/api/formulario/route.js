@@ -16,7 +16,9 @@ export async function POST(req) {
   if (form.estado !== 'Publicada') return NextResponse.json({ ok: false, error: 'El formulario no está disponible' }, { status: 403 });
 
   const r = respuestas || {};
-  if (!validarEmail(r.email)) return NextResponse.json({ ok: false, error: 'Email inválido' }, { status: 400 });
+  // v1.43.0: un formulario anónimo no pide ni guarda el correo (aunque alguien lo mande a mano, se descarta).
+  if (form.anonimo) delete r.email;
+  else if (!validarEmail(r.email)) return NextResponse.json({ ok: false, error: 'Email inválido' }, { status: 400 });
   // Validar obligatorios definidos
   for (const c of form.campos) {
     if (c.required && (r[c.key] == null || String(r[c.key]).trim() === '')) {

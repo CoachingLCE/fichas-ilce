@@ -89,7 +89,7 @@ export default function ConstructorFormulario({ usuario, slugInicial, preseed, o
   const colorCursoFijo = est.cursoFijo ? colorCurso(est.cursoFijo) : null;
 
   return (
-    <div className="cf-wrap" ref={arriba}>
+    <div className="cf-wrap" ref={arriba} style={{ maxWidth: 1280 }}>
       <div className="cf-top">
         <button className="btn-sm" onClick={() => onVolver(false)}>← Volver a la lista</button>
         <div>
@@ -129,6 +129,8 @@ export default function ConstructorFormulario({ usuario, slugInicial, preseed, o
                 </div>
               </Campo>
             )}
+            <label className="cf-sw" style={{ marginTop: 10, display: 'flex' }}><input type="checkbox" checked={est.anonimo === true} onChange={(e) => set({ anonimo: e.target.checked })} /> Formulario anónimo: no pedir el correo</label>
+            {est.editando && est.anonimo !== true && <div className="cf-help">Si lo hacés anónimo, desde ese momento no se pide ni se guarda el correo. Las respuestas que ya recibió no se modifican.</div>}
             {est.modo === 'elige' && (
               <label className="cf-sw"><input type="checkbox" checked={est.cursoReq} onChange={(e) => set({ cursoReq: e.target.checked })} /> La pregunta "Curso" es obligatoria</label>
             )}
@@ -136,7 +138,9 @@ export default function ConstructorFormulario({ usuario, slugInicial, preseed, o
 
           <div className="cf-sec">
             <p className="cf-sec-t">Preguntas</p>
-            <div className="cf-q cf-q-lock"><span className="cf-q-n">✉</span><div><b>Correo electrónico</b> <span className="cf-req">*</span><div className="cf-help" style={{ margin: 0 }}>Siempre se pide, para poder identificar la respuesta: no se puede quitar.</div></div></div>
+            {est.anonimo
+              ? <div className="cf-q cf-q-lock"><span className="cf-q-n">✉</span><div><b>Formulario anónimo</b><div className="cf-help" style={{ margin: 0 }}>No se pide ni se guarda el correo: las respuestas figuran como "Anónimo".</div></div></div>
+              : <div className="cf-q cf-q-lock"><span className="cf-q-n">✉</span><div><b>Correo electrónico</b> <span className="cf-req">*</span><div className="cf-help" style={{ margin: 0 }}>Se pide siempre, para poder identificar la respuesta. Si el formulario es anónimo, activalo en "Información general".</div></div></div>}
             {est.preguntas.map((q, i) => (
               <div key={q.id} className="cf-q">
                 <div className="cf-q-h">

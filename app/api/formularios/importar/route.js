@@ -33,10 +33,12 @@ export async function POST(req) {
   // Diego escribe a mano, sin necesidad de dar de alta un formulario nuevo en la Sheet solo
   // para poder importar sus respuestas históricas.
   let tituloFormulario = '';
+  let anonimo = false;
   if (slug) {
     const form = await getFormulario(slug);
     if (!form) return NextResponse.json({ ok: false, error: 'Formulario no encontrado' }, { status: 404 });
     tituloFormulario = form.titulo;
+    anonimo = form.anonimo === true; // v1.43.0: en un formulario anónimo las filas no necesitan correo
   } else {
     tituloFormulario = (tituloManual || '').trim();
   }
@@ -49,7 +51,7 @@ export async function POST(req) {
   let existentes = new Set();
   try {
     const previas = await readSheet(TABS.RESPUESTAS_FORM);
-    existentes = new Set(previas.filter((f) => f.Formulario === tituloFormulario).map((f) => `${(f.Email || '').toLowerCase().trim()}|${(f.Fecha || '').slice(0, 16)}`));
+    existentes = new Set(previas.filter((f) => f.Formulario === tituloFormulario).map((f) => `${(f.Email || '').toLowerCase().trim()}|${(f.Fecha || '').slice(0, anonimo ? 19 : 16)}`));
   } catch { /* si falla la lectura, seguimos igual: peor caso, puede haber algún duplicado */ }
 
   const nuevasFilas = [];
@@ -58,7 +60,7 @@ export async function POST(req) {
 
   filas.forEach((fila, i) => {
     const email = String(buscarCampo(fila, [/correo|email/i]) || '').trim().toLowerCase();
-    if (!email) { omitidasSinEmail++; return; }
+    if (!email && !anonimo) { omitidasSinEmail++; return; }
     const marca = buscarCampo(fila, [/marca temporal|timestamp/i]);
     const nombre = buscarCampo(fila, [/nombre/i]);
     const edicionFila = buscarCampo(fila, [/edici[oó]n/i]) || edicion || '';
@@ -66,7 +68,7 @@ export async function POST(req) {
     const dt = marca ? new Date(marca) : null;
     fechaISO = (dt && !isNaN(dt)) ? dt.toISOString() : new Date().toISOString();
 
-    const huella = `${email}|${fechaISO.slice(0, 16)}`;
+    const huella = `${email}|${fechaISO.slice(0, anonimo ? 19 : 16)}`; // anónimo: sin correo, se distingue por el segundo exacto
     if (existentes.has(huella)) { omitidasDuplicadas++; return; }
     existentes.add(huella);
 

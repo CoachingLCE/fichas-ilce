@@ -32,7 +32,7 @@ export default function FormularioForm({ form, vistaPrevia = false }) {
 
   async function enviar() {
     if (vistaPrevia) return; // en la vista previa del constructor no se envía nada
-    if (!validarEmail(val.email)) { setError('Ingresá un correo válido.'); return; }
+    if (!form.anonimo && !validarEmail(val.email)) { setError('Ingresá un correo válido.'); return; }
     for (const c of form.campos) {
       if (c.required && (val[c.key] == null || String(val[c.key]).trim() === '')) { setError('Completá: ' + c.label); return; }
       const msgCampo = validarValorCampo(c, val[c.key]);
@@ -223,11 +223,13 @@ export default function FormularioForm({ form, vistaPrevia = false }) {
       </div>
       <div className="quiz-body">
         {form.intro && <div className="quiz-intro-box">{form.intro}</div>}
-        {/* Correo siempre primero */}
-        <div className="quiz-field">
-          <label>Correo <span className="req">*</span></label>
-          <input className="ctrl" type="email" value={val.email || ''} onChange={(e) => set('email', e.target.value)} placeholder="tunombre@correo.com" />
-        </div>
+        {/* Correo siempre primero (salvo en los formularios anónimos) */}
+        {!form.anonimo && (
+          <div className="quiz-field">
+            <label>Correo <span className="req">*</span></label>
+            <input className="ctrl" type="email" value={val.email || ''} onChange={(e) => set('email', e.target.value)} placeholder="tunombre@correo.com" />
+          </div>
+        )}
         {otros.map((c) => campo(c))}
         {escalas.length > 0 && (
           <div className="quiz-section">
