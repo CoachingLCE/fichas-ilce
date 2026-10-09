@@ -152,6 +152,12 @@ const PREG_TIPOS = [
   { v: 'abierta', l: 'Respuesta abierta' }
 ];
 function nuevaPreg() { return { pregunta: '', tipo: 'multiple', opciones: ['', '', ''], correcta: 0 }; }
+const PASOS = [
+  { key: 'info', l: 'Información' },
+  { key: 'preguntas', l: 'Preguntas' },
+  { key: 'config', l: 'Configuración' },
+  { key: 'revisar', l: 'Revisar' }
+];
 function validarInfo(e) { return !!(e.titulo || '').trim(); }
 function validarPreguntas(e) {
   if (!e.preguntas.length) return 'Agregá al menos una pregunta.';
@@ -168,13 +174,12 @@ function validarPreguntas(e) {
 function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otrasActividades, onCerrarAhora, onDespublicar, onEliminar }) {
   const { confirmar, avisar } = useDialogos();
   const [e, setE] = useState(base);
-  const [pasoPreview, setPasoPreview] = useState(0); // 0 = pantalla de inicio · n = pregunta n (sigue a la que se está editando)
-  const refInfo = useRef(null), refPreg = useRef(null), refConfig = useRef(null);
-  const irASeccion = (ref) => { if (ref.current) ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  const [paso, setPaso] = useState(0);
   const [error, setError] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [guardadoEstado, setGuardadoEstado] = useState(null); // null | 'guardando' | 'ok' | 'error' — siempre visible, nunca hay que adivinar
   const [confirmarPublicar, setConfirmarPublicar] = useState(false);
+  const [vistaPrevia, setVistaPrevia] = useState(null); // null | 'desktop' | 'mobile'
   const [pickerPreguntas, setPickerPreguntas] = useState(false);
   const [menuAbierto, setMenuAbierto] = useState(false);
   const menuRef = useRef(null);
@@ -226,8 +231,13 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
   function moverPreg(i, dir) { const j = i + dir; if (j < 0 || j >= preguntas.length) return; const arr = preguntas.slice(); [arr[i], arr[j]] = [arr[j], arr[i]]; set({ preguntas: arr }); }
   function reordenarPreg(desde, hasta) { if (desde === hasta) return; const arr = preguntas.slice(); const [item] = arr.splice(desde, 1); arr.splice(hasta, 0, item); set({ preguntas: arr }); }
 
-  // Si se borran preguntas, la vista previa no puede quedar apuntando a una que ya no existe.
-  const pasoPreviewOk = Math.min(pasoPreview, preguntas.length);
+  function irA(i) { setError(''); setPaso(i); }
+  function siguiente() {
+    if (paso === 0 && !validarInfo(e)) { setError('Poné un título para la actividad.'); return; }
+    if (paso === 1) { const msg = validarPreguntas(e); if (msg) { setError(msg); return; } }
+    setError(''); setPaso((p) => Math.min(PASOS.length - 1, p + 1));
+  }
+  function atras() { setError(''); setPaso((p) => Math.max(0, p - 1)); }
 
   // "forzarEstado": lo usan los 3 botones principales (Guardar borrador | Publicar) para dejar
   // bien en claro qué estado va a quedar, sin depender de lo que haya elegido antes en el
@@ -237,7 +247,7 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
     const msgPreg = !msgInfo ? validarPreguntas(e) : '';
     const msgFechas = (!msgInfo && !msgPreg && e.fechaDisponible && e.fechaCierre && e.fechaCierre < e.fechaDisponible)
       ? 'La fecha de cierre no puede ser anterior a la de disponibilidad.' : '';
-    if (msgInfo || msgPreg || msgFechas) { setError(msgInfo || msgPreg || msgFechas); irASeccion(msgInfo ? refInfo : msgPreg ? refPreg : refConfig); return; }
+    if (msgInfo || msgPreg || msgFechas) { setError(msgInfo || msgPreg || msgFechas); setPaso(msgInfo ? 0 : msgPreg ? 1 : 2); return; }
     const estadoFinal = forzarEstado || e.estado;
     setGuardando(true); setGuardadoEstado('guardando'); setError(''); setConfirmarPublicar(false);
     const slug = e.slug || slugify(e.titulo);
@@ -267,13 +277,21 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
   }
 
   return (
-    <div className="cf-wrap">
-      <div className="cf-top">
-        <button className="btn-sm" onClick={onCancelar} disabled={guardando}>← Volver a la lista</button>
-        <div style={{ flex: 1, minWidth: 220 }}>
-          <h2 className="cf-h1">{e._nuevo ? 'Nueva actividad' : 'Editar actividad'}</h2>
-          <p className="cf-sub">Armá la actividad y mirá, a la derecha, cómo la va a ver el estudiante: la vista previa sigue la pregunta que estás editando.</p>
+    <div className="wiz-wrap" style={{ maxWidth: 1180 }}>
+      <div className="wiz-topbar">
+        <button className="btn-sm" onClick={onCancelar} disabled={guardando}> Volver</button>
+        <div className="wiz-stepper" style={{ flex: 1 }}>
+          {PASOS.map((p, i) => (
+            <div key={p.key} style={{ display: 'flex', alignItems: 'center' }}>
+              {i > 0 && <span className="wiz-step-arrow">›</span>}
+              <div className={'wiz-step' + (i === paso ? ' current' : i < paso ? ' done' : '')} onClick={() => irA(i)}>
+                <span className="wiz-step-ico">{i < paso ? '' : i + 1}</span>
+                <span className="wiz-step-lbl">{p.l}</span>
+              </div>
+            </div>
+          ))}
         </div>
+        <button className="btn-sm" onClick={() => setVistaPrevia('mobile')} title="Ver cómo lo va a ver el estudiante"> Vista previa</button>
         {!e._nuevo && (
           <div className="repx-more-wrap" ref={menuRef}>
             <button className="btn-sm" onClick={() => setMenuAbierto((v) => !v)} title="Más acciones">⋯</button>
@@ -288,17 +306,15 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
         )}
       </div>
       {!e._nuevo && <p className="muted" style={{ fontSize: 12, fontFamily: 'monospace', margin: '-10px 0 14px' }}>{APP_URL}/actividad/{e.slug}</p>}
+
       {tieneRespuestas && (
         <div className="note" style={{ margin: '0 0 16px' }}>
            Esta actividad ya tiene <b>{e.totalRespuestas} respuesta{e.totalRespuestas === 1 ? '' : 's'}</b>. Si eliminás o cambiás una pregunta existente (o su opción correcta), el puntaje de las respuestas ya enviadas no se recalcula — las respuestas en sí nunca se borran.
         </div>
       )}
-      {error && <div className="cf-bad" role="alert">{error}</div>}
 
-      <div className="cf-grid">
-        <div className="cf-card">
-          <div className="cf-sec" ref={refInfo}>
-            <p className="cf-sec-t">Información general</p>
+      {paso === 0 && (
+        <div className="wiz-panel">
           <label style={lbl}>Título de la actividad</label>
           <input className="ctrl" value={e.titulo} onChange={(ev) => set({ titulo: ev.target.value })} placeholder="Ej: Postwork clase número 2" autoFocus />
           <div style={{ display: 'flex', gap: 12, marginTop: 14, flexWrap: 'wrap' }}>
@@ -318,17 +334,18 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
               ? 'Al fijar la edición acá, el estudiante ya no la va a tener que escribir al responder.'
               : 'Si dejás la edición vacía, se le va a seguir pidiendo al estudiante que la escriba al responder.'}
           </p>
-          </div>
+        </div>
+      )}
 
-          <div className="cf-sec" ref={refPreg}>
-            <p className="cf-sec-t">Preguntas</p>
+      {paso === 1 && (
+        <div className="wiz-panel">
           {/* Pedido de Diego: que se vea de entrada cuántas preguntas hay y de qué tipo,
               mientras se van agregando (no solo al final, en "Revisar"). */}
           <p className="muted" style={{ fontSize: 12.5, marginTop: 0, marginBottom: 14 }}>
             {preguntas.length} pregunta{preguntas.length === 1 ? '' : 's'} · {preguntas.filter((p) => p.tipo !== 'abierta').length} cerrada{preguntas.filter((p) => p.tipo !== 'abierta').length === 1 ? '' : 's'} (se autocorrige) · {preguntas.filter((p) => p.tipo === 'abierta').length} abierta{preguntas.filter((p) => p.tipo === 'abierta').length === 1 ? '' : 's'} (se revisa a mano)
           </p>
           {preguntas.map((p, i) => (
-            <div className="preg-card" key={i} onFocusCapture={() => setPasoPreview(i + 1)}
+            <div className="preg-card" key={i}
               onDragOver={(ev) => ev.preventDefault()}
               onDrop={() => { if (dragIdx.current !== null) reordenarPreg(dragIdx.current, i); dragIdx.current = null; }}>
               <div className="preg-card-head">
@@ -374,10 +391,11 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
               <button className="btn-sm" onClick={() => setPickerPreguntas(true)}>⧉ Reutilizar pregunta existente</button>
             )}
           </div>
-          </div>
+        </div>
+      )}
 
-          <div className="cf-sec" ref={refConfig}>
-            <p className="cf-sec-t">Fechas y configuración</p>
+      {paso === 2 && (
+        <div className="wiz-panel">
           <label style={lbl}>Instrucciones para el estudiante (opcional)</label>
           <textarea className="ctrl" rows={3} style={{ resize: 'vertical', width: '100%' }} value={e.intro || ''} onChange={(ev) => set({ intro: ev.target.value })} placeholder="Ej: Mirá la clase grabada antes de responder. Tenés hasta el domingo." />
           <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>Se le muestra al estudiante en "Antes de empezar", antes de pedirle el correo. Vacío = usa el texto genérico ({'"'}Completá tus datos y respondé las N preguntas{'"'}).</p>
@@ -409,7 +427,47 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
             <summary> Próximamente</summary>
             <p className="muted" style={{ fontSize: 12.5 }}>Límite de intentos y tiempo límite por actividad quedan para una próxima etapa: necesitan su propia lógica de control (contar intentos previos, cronómetro con envío automático) para no arriesgar respuestas de estudiantes ya en curso.</p>
           </details>
+        </div>
+      )}
+
+      {paso === 3 && (
+        <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          <div className="wiz-panel" style={{ flex: 1, minWidth: 280 }}>
+            <div className="wiz-grupo-lbl">Resumen</div>
+            <div className="detalle-meta" style={{ marginBottom: 14 }}>
+              <div><div className="k">Curso</div><div className="v">{e.curso}</div></div>
+              <div><div className="k">Edición</div><div className="v">{e.edicion || '—'}</div></div>
+              <div><div className="k">Clase</div><div className="v">{e.clase || '—'}</div></div>
+              <div><div className="k">Estado</div><div className="v">{e.estado}</div></div>
+              <div><div className="k">Preguntas</div><div className="v">{preguntas.length} ({preguntas.filter((p) => p.tipo !== 'abierta').length} cerrada{preguntas.filter((p) => p.tipo !== 'abierta').length === 1 ? '' : 's'} · {preguntas.filter((p) => p.tipo === 'abierta').length} abierta{preguntas.filter((p) => p.tipo === 'abierta').length === 1 ? '' : 's'})</div></div>
+              <div><div className="k">Disponible desde</div><div className="v">{e.fechaDisponible ? e.fechaDisponible + (e.horaDisponible ? ` ${e.horaDisponible}hs` : '') : 'Inmediata'}</div></div>
+              <div><div className="k">Cierra el</div><div className="v">{e.fechaCierre || 'Sin límite'}</div></div>
+              <div><div className="k">Muestra resultado</div><div className="v">{e.mostrarResultado !== false ? 'Sí' : 'No'}</div></div>
+            </div>
+            <div className="wiz-grupo-lbl">Preguntas</div>
+            {preguntas.map((p, i) => (
+              <div className="detalle-preg" key={i}>
+                <b style={{ fontSize: 13.5 }}>{i + 1}. {p.pregunta || <span className="muted">(sin texto)</span>}</b>
+                {p.tipo === 'abierta'
+                  ? <div className="detalle-op muted"> Respuesta abierta — el estudiante escribe libremente</div>
+                  : p.opciones.map((op, j) => <div key={j} className={'detalle-op' + (p.correcta === j ? ' ok' : '')}>{p.correcta === j ? ' ' : ''}{op || <span className="muted">(vacía)</span>}</div>)}
+              </div>
+            ))}
           </div>
+          <div>
+            <div className="wiz-grupo-lbl" style={{ marginBottom: 8 }}>Vista previa</div>
+            <div className="wiz-preview-shell" style={{ padding: 20, textAlign: 'center' }}>
+              <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>Mostrá exactamente la pantalla que va a ver el estudiante, con estas preguntas tal cual están cargadas.</p>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                <button className="btn-sm solid" onClick={() => setVistaPrevia('mobile')}> Ver en Mobile</button>
+                <button className="btn-sm" onClick={() => setVistaPrevia('desktop')}> Ver en Desktop</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {error && <div className="err" style={{ display: 'block', margin: '10px 0' }}>{error}</div>}
 
       {confirmarPublicar && (
         <div className="note" style={{ margin: '0 0 14px', display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
@@ -425,43 +483,42 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
         </div>
       )}
 
-      <div className="cf-acts" style={{ alignItems: 'center' }}>
+      <div className="wiz-nav-btns" style={{ flexWrap: 'wrap', rowGap: 8 }}>
+        {paso > 0 && <button className="btn-sm" onClick={atras} disabled={guardando}> Atrás</button>}
+        <span className="grow" />
         {guardadoEstado && (
           <span style={{ fontSize: 12, fontWeight: 500, color: guardadoEstado === 'error' ? 'rgb(248 113 113)' : guardadoEstado === 'guardando' ? 'rgb(var(--textMuted))' : 'rgb(74 222 128)' }}>
             {guardadoEstado === 'guardando' ? 'Guardando…' : guardadoEstado === 'error' ? ' Error al guardar' : ' Guardado'}
           </span>
         )}
-        <button className="btn" onClick={() => guardar('Borrador')} disabled={guardando}>Guardar borrador</button>
-        <button className="btn btn-primary" onClick={clickPublicar} disabled={guardando}>Publicar</button>
+        {paso < PASOS.length - 1 && <button className="btn-sm" onClick={siguiente}>Siguiente →</button>}
+        <button className="btn-sm" onClick={() => guardar('Borrador')} disabled={guardando}>Guardar borrador</button>
+        <button className="btn-sm solid" onClick={clickPublicar} disabled={guardando}> Publicar</button>
       </div>
-        </div>
 
-        <div className="cf-side">
-          <div className="cf-card">
-            <p className="cf-pv-t">Vista previa</p>
-            <div className="cf-pv-tabs" role="group" aria-label="Pantalla que se muestra en la vista previa">
-              <button className={'fchip' + (pasoPreviewOk === 0 ? ' on' : '')} onClick={() => setPasoPreview(0)}>Inicio</button>
-              {preguntas.map((_, i) => (
-                <button key={i} className={'fchip' + (pasoPreviewOk === i + 1 ? ' on' : '')} onClick={() => setPasoPreview(i + 1)} title={`Ver la pregunta ${i + 1}`}>{i + 1}</button>
-              ))}
+      {vistaPrevia && (
+        <div className="preview-ov" onClick={() => setVistaPrevia(null)}>
+          <div className="preview-card" onClick={(ev) => ev.stopPropagation()} style={{ maxWidth: vistaPrevia === 'mobile' ? 460 : 760 }}>
+            <div className="preview-head">
+              <div style={{ minWidth: 0 }}>
+                <div className="preview-kd">Vista previa · cómo lo ve el estudiante</div>
+                <div className="preview-asunto">{e.titulo || 'Actividad sin título'}</div>
+              </div>
+              <div className="ctor-preview-toggle">
+                <button className={vistaPrevia === 'desktop' ? 'on' : ''} onClick={() => setVistaPrevia('desktop')}>Desktop</button>
+                <button className={vistaPrevia === 'mobile' ? 'on' : ''} onClick={() => setVistaPrevia('mobile')}>Mobile</button>
+              </div>
+              <button className="btn-sm" onClick={() => setVistaPrevia(null)}> Cerrar</button>
             </div>
-            <div className="cf-pv">
+            <div className="preview-body" style={{ padding: 20, display: 'flex', justifyContent: 'center' }}>
               <IsologoDefs />
-              <ActividadForm act={e} modoPreview pasoInicial={pasoPreviewOk} key={`${preguntas.length}-${pasoPreviewOk}`} />
-            </div>
-            <div className="cf-sum">
-              <div><span>Curso</span><b>{e.curso}</b></div>
-              <div><span>Edición</span><b>{e.edicion || '—'}</b></div>
-              <div><span>Clase</span><b>{e.clase || '—'}</b></div>
-              <div><span>Estado</span><b>{e.estado}</b></div>
-              <div><span>Preguntas</span><b>{preguntas.length} ({preguntas.filter((p) => p.tipo !== 'abierta').length} cerrada{preguntas.filter((p) => p.tipo !== 'abierta').length === 1 ? '' : 's'})</b></div>
-              <div><span>Disponible desde</span><b>{e.fechaDisponible ? e.fechaDisponible + (e.horaDisponible ? ` ${e.horaDisponible}hs` : '') : 'Inmediata'}</b></div>
-              <div><span>Cierra el</span><b>{e.fechaCierre || 'Sin límite'}</b></div>
-              <div><span>Muestra resultado</span><b>{e.mostrarResultado !== false ? 'Sí' : 'No'}</b></div>
+              <div className={vistaPrevia === 'mobile' ? 'ctor-phone-frame' : ''} style={vistaPrevia === 'desktop' ? { width: '100%', maxWidth: 420 } : undefined}>
+                <ActividadForm act={e} modoPreview key={JSON.stringify(e.preguntas) + vistaPrevia} />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {pickerPreguntas && (
         <div className="preview-ov" onClick={() => setPickerPreguntas(false)}>
@@ -1021,12 +1078,27 @@ function ModalRespuestaDetalle({ x, onCerrar }) {
   );
 }
 
+// Mes (hora local) de una fecha ISO, como "2026-09"; sin fecha válida → "sin-fecha".
+function mesClave(iso) {
+  const d = new Date(iso);
+  if (!iso || isNaN(d)) return 'sin-fecha';
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+const MESES_ES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+function nombreMes(clave) {
+  if (clave === 'sin-fecha') return 'sin fecha';
+  const [y, m] = clave.split('-');
+  const mes = MESES_ES[Number(m) - 1];
+  return `${mes.charAt(0).toUpperCase()}${mes.slice(1)} ${y}`;
+}
+
 function Respuestas({ usuario, irABuscador, showToast }) {
   const { confirmar, avisar } = useDialogos();
   const [data, setData] = useState(null);
   const [q, setQ] = useState('');
   const [fCurso, setFCurso] = useState(''); const [fEd, setFEd] = useState(''); const [fAct, setFAct] = useState('');
   const [detalleAbierto, setDetalleAbierto] = useState(null);
+  const [mesesVistos, setMesesVistos] = useState(1); // cuántos meses se muestran (arranca con el más reciente; "Ver más" suma el anterior)
   const puedeEliminar = tienePermisoEliminarRespuestas(usuario);
   useEffect(() => { (async () => {
     const res = await fetch('/api/actividades/respuestas?solicitanteEmail=' + encodeURIComponent(usuario.email));
@@ -1079,6 +1151,22 @@ function Respuestas({ usuario, irABuscador, showToast }) {
       return true;
     });
   }, [r, q, fEd, fAct]);
+  // Respuestas por mes: se muestra primero el mes más reciente y "Ver más" abre el mes anterior, y así sucesivamente.
+  // Con texto en el buscador se muestran todas (se busca a una persona en todo el historial).
+  useEffect(() => { setMesesVistos(1); }, [fCurso, fEd, fAct, q]);
+  const { visibles, mesesTotal, proximoMes } = useMemo(() => {
+    const claves = [];
+    const vistas = new Set();
+    for (const x of filtradas) { const k = mesClave(x.fecha); if (!vistas.has(k)) { vistas.add(k); claves.push(k); } }
+    if (norm(q)) return { visibles: filtradas, mesesTotal: claves.length, proximoMes: null };
+    const mostrar = new Set(claves.slice(0, mesesVistos));
+    const prox = claves[mesesVistos] || null;
+    return {
+      visibles: filtradas.filter((x) => mostrar.has(mesClave(x.fecha))),
+      mesesTotal: claves.length,
+      proximoMes: prox ? { clave: prox, cantidad: filtradas.filter((x) => mesClave(x.fecha) === prox).length } : null
+    };
+  }, [filtradas, mesesVistos, q]);
   if (!data) return <div className="spin" />;
 
   // Nota: antes acá había una barra de KPIs (respuestas/estudiantes/actividades/promedio) que
@@ -1115,7 +1203,7 @@ function Respuestas({ usuario, irABuscador, showToast }) {
             <th style={{ minWidth: 160 }}>Actividad</th><th style={{ minWidth: 180 }}>Email</th><th style={{ minWidth: 90 }}>Tiempo</th>
             <th style={{ minWidth: 80, textAlign: 'right' }}>Puntaje</th><th style={{ minWidth: 70 }}></th>{puedeEliminar && <th style={{ minWidth: 40 }}></th>}
           </tr></thead>
-          <tbody>{filtradas.map((x) => {
+          <tbody>{visibles.map((x) => {
             const abiertas = (x.detalle || []).filter((d) => d.tipo === 'abierta');
             return (
             <tr key={x.id}>
@@ -1141,6 +1229,12 @@ function Respuestas({ usuario, irABuscador, showToast }) {
             );
           })}</tbody>
         </table></div>
+      )}
+      {filtradas.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, flexWrap: 'wrap', margin: '16px 0 4px' }}>
+          <span className="muted" style={{ fontSize: 13 }}>Mostrando <b>{visibles.length}</b> de <b>{filtradas.length}</b> respuestas</span>
+          {proximoMes && <button className="btn-sm solid" onClick={() => setMesesVistos((n) => n + 1)}>Ver más · {nombreMes(proximoMes.clave)} ({proximoMes.cantidad})</button>}
+        </div>
       )}
       {detalleAbierto && <ModalRespuestaDetalle x={detalleAbierto} onCerrar={() => setDetalleAbierto(null)} />}
     </>

@@ -6,7 +6,8 @@ import {
   plantillaCredenciales,
   asuntoResultadoActividad, plantillaResultadoActividad,
   asuntoAvisoActividadDocente, plantillaAvisoActividadDocente,
-  asuntoResumenActividades, plantillaResumenActividades
+  asuntoResumenActividades, plantillaResumenActividades,
+  asuntoResumenInscripciones, plantillaResumenInscripciones
 } from '../../../../lib/mailer';
 
 export const dynamic = 'force-dynamic';
@@ -56,6 +57,15 @@ export async function GET(req) {
   } else if (tipo === 'Resumen viernes') {
     asunto = asuntoResumenActividades(e);
     html = plantillaResumenActividades({ desde: e.filas[0].fecha, hasta: e.fecha, filas: e.filas });
+  } else if (tipo === 'Resumen inscripciones') {
+    const hoy = e.fecha;
+    const filasIns = [
+      { fecha: hoy, nombre: 'María González', curso: 'Coaching de Equipos', edicion: e.edicion, pais: 'Argentina' },
+      { fecha: hoy, nombre: 'Juan Pérez', curso: 'Coaching Deportivo', edicion: e.edicion, pais: 'Chile' },
+      { fecha: hoy, nombre: 'Lucía Romero', curso: 'Coaching de Equipos', edicion: e.edicion, pais: 'Uruguay' }
+    ];
+    asunto = asuntoResumenInscripciones({ filas: filasIns });
+    html = plantillaResumenInscripciones({ desde: hoy, hasta: hoy, filas: filasIns });
   } else {
     return NextResponse.json({ ok: false, error: 'Ese correo todavía no tiene vista previa' }, { status: 400 });
   }

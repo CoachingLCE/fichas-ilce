@@ -18,14 +18,14 @@ const PERIODOS = [
 // Correos que ya tienen vista previa (usan la misma plantilla que se envía).
 const PREVIEWABLES = new Set([
   'Confirmación inscripción', 'Aviso equipo', 'Credenciales acceso',
-  'Resultado actividad', 'Aviso actividad docente', 'Resumen viernes'
+  'Resultado actividad', 'Aviso actividad docente', 'Resumen viernes', 'Resumen inscripciones'
 ]);
 
 // Correos que se pueden reintentar automáticamente si fallaron (coincide con REINTENTOS en
 // lib/mailer.js). "Credenciales acceso" queda afuera a propósito: no guarda payload reintentable
 // porque incluiría la contraseña en texto plano una segunda vez en la planilla.
 const REINTENTABLES = new Set([
-  'Confirmación inscripción', 'Aviso equipo', 'Resultado actividad', 'Aviso actividad docente', 'Resumen viernes'
+  'Confirmación inscripción', 'Aviso equipo', 'Resultado actividad', 'Aviso actividad docente', 'Resumen viernes', 'Resumen inscripciones'
 ]);
 
 // Pedido de Diego (referencia: disponibilidad-zoom/emails): que la columna "Tipo" se distinga
@@ -38,7 +38,8 @@ const TIPO_COLOR = {
   'Credenciales acceso': { bg: 'rgba(251,191,36,.15)', fg: 'rgb(251 191 36)' },
   'Resultado actividad': { bg: 'rgba(74,222,128,.14)', fg: 'rgb(74 222 128)' },
   'Aviso actividad docente': { bg: 'rgba(192,38,211,.15)', fg: 'rgb(224 110 236)' },
-  'Resumen viernes': { bg: 'rgba(59,130,246,.15)', fg: 'rgb(96 165 250)' }
+  'Resumen viernes': { bg: 'rgba(59,130,246,.15)', fg: 'rgb(96 165 250)' },
+  'Resumen inscripciones': { bg: 'rgba(249,115,22,.15)', fg: 'rgb(251 146 60)' }
 };
 
 const AUTOMATIZACIONES = [
@@ -47,7 +48,8 @@ const AUTOMATIZACIONES = [
   { evento: 'Se crea un usuario / se da acceso a un docente', para: 'Al usuario (con su contraseña)', remitente: 'Plataforma ILCE', cc: '—', asunto: 'Tu acceso al panel de ILCE', tipo: 'Credenciales acceso' },
   { evento: 'El estudiante responde una actividad (Postwork)', para: 'Al estudiante (con su puntaje)', remitente: 'Instituto ILCE', cc: '—', asunto: 'Resultado de tu actividad · [actividad]', tipo: 'Resultado actividad' },
   { evento: 'El estudiante responde una actividad (Postwork)', para: 'Al/los docente(s) del curso/edición', remitente: 'Instituto ILCE', cc: '—', asunto: ' [estudiante] completó “[actividad]” · [puntaje]/[total]', tipo: 'Aviso actividad docente' },
-  { evento: 'Todos los viernes (automático) — actividades y formularios de la semana', para: 'Sofía, Paula, Lourdes, Victoria y Diego', remitente: 'Plataforma ILCE', cc: '—', asunto: ' Resumen semanal · N actividades y M formularios', tipo: 'Resumen viernes' }
+  { evento: 'Todos los viernes (automático) — actividades y formularios de la semana', para: 'Sofía, Paula, Lourdes, Victoria y Diego', remitente: 'Plataforma ILCE', cc: '—', asunto: ' Resumen semanal · N actividades y M formularios', tipo: 'Resumen viernes' },
+  { evento: 'Todos los viernes a las 10 h (automático) — fichas de inscripción recibidas en la semana', para: 'Macarena, Alexander y Jesabel', remitente: 'Plataforma ILCE', cc: '—', asunto: ' Fichas de inscripción de la semana · N fichas', tipo: 'Resumen inscripciones' }
 ];
 
 export default function EmailsPanel({ usuario }) {
