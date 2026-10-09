@@ -10,8 +10,12 @@ import { ACTIVIDADES_ESPECIALES } from '../lib/formularioConstructor';
 const TIPOS = [
   { key: 'inscripcion', icono: '', label: 'Ficha de inscripción', desc: 'La página pública donde se anotan los estudiantes de un curso.' },
   { key: 'actividad', icono: '', label: 'Actividad', desc: 'Un postwork con preguntas (se autocorrige y da puntaje).' },
-  { key: 'formulario', icono: '', label: 'Formulario', desc: 'Una encuesta o formulario abierto (sin puntaje). Puede no tener curso.' }
+  { key: 'formulario', icono: '', label: 'Formulario', desc: 'Una encuesta o formulario abierto (sin puntaje). Puede no tener curso.' },
+  // v1.41.0: laboratorios, masterclasses, caja de ideas… independientes de las cursadas (son formularios con su tipo y una plantilla).
+  { key: 'especial', icono: '', label: 'Actividades especiales', desc: 'Laboratorio, masterclass, caja de ideas, etc. Independientes de las cursadas.', nuevo: true }
 ];
+const CURSO_ELIGE = '__elige__';
+const CURSO_NINGUNO = '__ninguno__';
 
 export default function CrearWizard({ onCerrar, onCrearActividad, onCrearFormulario, onCrearInscripcion, onCrearEspecial }) {
   const [paso, setPaso] = useState(0);
@@ -56,7 +60,7 @@ export default function CrearWizard({ onCerrar, onCrearActividad, onCrearFormula
       <div className="cw-card" onClick={(e) => e.stopPropagation()}>
         {/* Encabezado con pasos */}
         <div className="cw-head">
-          <div className="cw-title">{paso === 0 ? '¿Qué querés crear?' : tipoInfo?.label}</div>
+          <div className="cw-title">{paso === 0 ? '¿Qué querés crear?' : (tipo === 'especial' && paso === 2 ? tipoEspFinal : tipoInfo?.label)}</div>
           <div className="cw-steps">
             <span className={'cw-dot' + (paso >= 0 ? ' on' : '')} />
             <span className={'cw-dot' + (paso >= 1 ? ' on' : '')} />
