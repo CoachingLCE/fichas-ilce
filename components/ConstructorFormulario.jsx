@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CURSOS, colorCurso } from '../lib/constants';
 import FormularioForm from './FormularioForm';
-import { estadoNuevo, aEstado, validar, aPayload, paraVistaPrevia, slugify, TIPOS_UI, LIMITES } from '../lib/formularioConstructor';
+import { estadoNuevo, estadoActividadEspecial, aEstado, validar, aPayload, paraVistaPrevia, slugify, TIPOS_UI, LIMITES } from '../lib/formularioConstructor';
 
 // Constructor de formularios (pedido de Diego: estilo "Nueva edición" de Presentismo — el formulario a la izquierda, por
 // secciones, y una VISTA PREVIA que se va armando en vivo a la derecha). La vista previa es el formulario público REAL
@@ -26,7 +26,7 @@ function Campo({ label, req, err, help, children }) {
   );
 }
 
-export default function ConstructorFormulario({ usuario, slugInicial, onVolver, showToast }) {
+export default function ConstructorFormulario({ usuario, slugInicial, preseed, onVolver, showToast }) {
   const [forms, setForms] = useState(null);
   const [est, setEst] = useState(null);
   const [tituloOriginal, setTituloOriginal] = useState('');
@@ -47,8 +47,8 @@ export default function ConstructorFormulario({ usuario, slugInicial, onVolver, 
           const def = (d.formularios || []).find((f) => f.slug === slugInicial);
           if (!def) { setNoEncontrado(true); return; }
           setEst(aEstado(def)); setTituloOriginal(def.titulo || '');
-        } else setEst(estadoNuevo());
-      } catch (e) { setErrorGlobal(e.message || 'Error de conexión'); setForms([]); setEst(slugInicial ? null : estadoNuevo()); }
+        } else setEst(preseed && preseed.actividad ? estadoActividadEspecial(preseed.actividad) : estadoNuevo());
+      } catch (e) { setErrorGlobal(e.message || 'Error de conexión'); setForms([]); setEst(slugInicial ? null : (preseed && preseed.actividad ? estadoActividadEspecial(preseed.actividad) : estadoNuevo())); }
     })();
     /* eslint-disable-next-line */
   }, []);
@@ -93,7 +93,7 @@ export default function ConstructorFormulario({ usuario, slugInicial, onVolver, 
       <div className="cf-top">
         <button className="btn-sm" onClick={() => onVolver(false)}>← Volver a la lista</button>
         <div>
-          <h2 className="cf-h1">{est.editando ? 'Editar formulario' : 'Nuevo formulario'}</h2>
+          <h2 className="cf-h1">{est.editando ? 'Editar formulario' : (preseed && preseed.actividad ? `Nueva actividad especial · ${est.tipo || 'Actividad'}` : 'Nuevo formulario')}</h2>
           <p className="cf-sub">Armá la encuesta o el formulario y mirá, a la derecha, cómo lo va a ver quien responde.</p>
         </div>
       </div>
@@ -106,7 +106,7 @@ export default function ConstructorFormulario({ usuario, slugInicial, onVolver, 
             <Campo label="Título" req err={errores.titulo} help={tituloCambio ? 'Ojo: las respuestas que ya recibió se guardaron con el título anterior y en "Respuestas" van a figurar como otro formulario.' : null}>
               <input className={'ctrl' + (errores.titulo ? ' err' : '')} value={est.titulo} maxLength={LIMITES.titulo + 20} placeholder="Ej: Encuesta de satisfacción 2026" onChange={(e) => set({ titulo: e.target.value })} />
             </Campo>
-            <Campo label="Introducción">
+            <Campo label="Introducción" err={errores.intro}>
               <textarea className="ctrl" style={{ minHeight: 70, resize: 'vertical' }} value={est.intro} placeholder="Texto que se muestra arriba del formulario (opcional)" onChange={(e) => set({ intro: e.target.value })} />
             </Campo>
             <Campo label="Curso o programa" err={errores.curso} help={est.editando ? 'Cambiarlo no modifica las respuestas que ya recibió el formulario.' : null}>
@@ -180,7 +180,7 @@ export default function ConstructorFormulario({ usuario, slugInicial, onVolver, 
                 </div>
               </Campo>
               <Campo label="Etiqueta (opcional)">
-                <input className="ctrl" value={est.tipo} maxLength={LIMITES.etiqueta + 10} placeholder="Ej: Encuesta, Trámite" onChange={(e) => set({ tipo: e.target.value })} />
+                <input className="ctrl" value={est.tipo} maxLength={LIMITES.etiqueta + 10} placeholder="Ej: Encuesta, Trámite, Masterclass" onChange={(e) => set({ tipo: e.target.value })} />
               </Campo>
             </div>
             <Campo label="Enlace" err={errores.slug} help={est.editando ? 'No se puede cambiar: es el enlace que ya compartiste.' : <>fichas-ilce.vercel.app/formulario/<b>{slugActual || '…'}</b></>}>

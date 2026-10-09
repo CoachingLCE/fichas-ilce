@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { CURSOS } from '../lib/constants';
 import { colorCurso } from '../lib/constants';
+import { ACTIVIDADES_ESPECIALES } from '../lib/formularioConstructor';
 
 // Wizard de "+ Crear" (estilo listadopresentismo): primero elegís QUÉ crear, después el curso,
 // después los parámetros según el tipo (clase + cantidad de preguntas para actividades,
@@ -12,14 +13,18 @@ const TIPOS = [
   { key: 'formulario', icono: '', label: 'Formulario', desc: 'Una encuesta o formulario abierto (sin puntaje). Puede no tener curso.' }
 ];
 
-export default function CrearWizard({ onCerrar, onCrearActividad, onCrearFormulario, onCrearInscripcion, puede = {} }) {
-  // Cada persona ve solo lo que su rol puede crear (antes se ofrecían los tres tipos a cualquiera, aunque no pudiera terminarlos).
-  const tiposVisibles = TIPOS.filter((t) => puede[t.key] !== false);
+export default function CrearWizard({ onCerrar, onCrearActividad, onCrearFormulario, onCrearInscripcion, onCrearEspecial }) {
   const [paso, setPaso] = useState(0);
   const [tipo, setTipo] = useState(null);
   const [curso, setCurso] = useState(CURSOS[0].nombre);
   const [clase, setClase] = useState('');
   const [cantPreg, setCantPreg] = useState(5);
+  const [subtipo, setSubtipo] = useState(ACTIVIDADES_ESPECIALES[0].key);
+  const [otroTipo, setOtroTipo] = useState('');
+  const [nombreEsp, setNombreEsp] = useState('');
+  const [cursoEsp, setCursoEsp] = useState(CURSO_ELIGE);
+  const subInfo = ACTIVIDADES_ESPECIALES.find((a) => a.key === subtipo);
+  const tipoEspFinal = subtipo === 'Otra actividad' ? (otroTipo.trim() || 'Actividad') : subtipo;
 
   const tipoInfo = TIPOS.find((t) => t.key === tipo);
 
@@ -27,11 +32,19 @@ export default function CrearWizard({ onCerrar, onCrearActividad, onCrearFormula
     // Un formulario puede no estar relacionado con ningún curso (pedido de Diego): no se pide curso acá, se elige adentro del
     // constructor (con "Sin curso ni programa" como opción). Ficha y actividad siguen pidiendo su curso.
     if (k === 'formulario') { onCrearFormulario({}); return; }
+    if (k === 'especial') { setCursoEsp(CURSO_ELIGE); }
     setTipo(k);
     setPaso(1);
   }
 
+  function finalizarEspecial() {
+    const inscripcion = subInfo ? subInfo.inscripcion : true;
+    const modo = cursoEsp === CURSO_NINGUNO ? 'ninguno' : (cursoEsp === CURSO_ELIGE ? (inscripcion ? 'elige' : 'ninguno') : 'fijo');
+    onCrearEspecial({ tipo: tipoEspFinal, nombre: nombreEsp.trim(), modo, cursoFijo: modo === 'fijo' ? cursoEsp : '' });
+  }
+
   function finalizar() {
+    if (tipo === 'especial') { finalizarEspecial(); return; }
     const n = Math.max(1, Math.min(50, parseInt(cantPreg, 10) || 1));
     if (tipo === 'actividad') onCrearActividad({ curso, clase: clase.trim(), cantidadPreguntas: n });
     else if (tipo === 'formulario') onCrearFormulario({ curso, cantidadPreguntas: n });
@@ -54,11 +67,11 @@ export default function CrearWizard({ onCerrar, onCrearActividad, onCrearFormula
         {/* Paso 0 — tipo */}
         {paso === 0 && (
           <div className="cw-tipos">
-            {tiposVisibles.map((t) => (
+            {TIPOS.map((t) => (
               <button key={t.key} className="cw-tipo" onClick={() => elegirTipo(t.key)}>
                 <span className="cw-tipo-ico">{t.icono}</span>
                 <span className="cw-tipo-txt">
-                  <b>{t.label}</b>
+                  <b>{t.label}{t.nuevo && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: 'rgb(var(--accentPurple) / .2)', color: 'rgb(var(--accentPurpleTxt))' }}>NUEVO</span>}</b>
                   <small>{t.desc}</small>
                 </span>
                 <span className="cw-tipo-arrow">→</span>
@@ -67,8 +80,29 @@ export default function CrearWizard({ onCerrar, onCrearActividad, onCrearFormula
           </div>
         )}
 
+        {/* Paso 1 (actividades especiales) — qué tipo */}
+        {paso === 1 && tipo === 'especial' && (
+          <div className="cw-body">
+            <label className="cw-label">¿Qué tipo de actividad?</label>
+            <div className="cw-tipos">
+              {ACTIVIDADES_ESPECIALES.map((a) => (
+                <button key={a.key} type="button" className="cw-tipo" style={subtipo === a.key ? { borderColor: 'rgb(var(--accentTeal))' } : undefined} onClick={() => setSubtipo(a.key)}>
+                  <span className="cw-tipo-txt"><b>{a.key}</b><small>{a.desc}</small></span>
+                  <span className="cw-tipo-arrow">{subtipo === a.key ? '✓' : ''}</span>
+                </button>
+              ))}
+            </div>
+            {subtipo === 'Otra actividad' && (
+              <>
+                <label className="cw-label" style={{ marginTop: 14 }}>Nombre del tipo</label>
+                <input className="ctrl" style={{ width: '100%' }} maxLength={40} value={otroTipo} onChange={(e) => setOtroTipo(e.target.value)} placeholder="Ej: Taller, Charla abierta" />
+              </>
+            )}
+          </div>
+        )}
+
         {/* Paso 1 — curso */}
-        {paso === 1 && (
+        {paso === 1 && tipo !== 'especial' && (
           <div className="cw-body">
             <label className="cw-label">Curso / programa</label>
             <select className="fsel" style={{ width: '100%' }} value={curso} onChange={(e) => setCurso(e.target.value)}>
@@ -82,7 +116,20 @@ export default function CrearWizard({ onCerrar, onCrearActividad, onCrearFormula
         )}
 
         {/* Paso 2 — parámetros según el tipo */}
-        {paso === 2 && (
+        {paso === 2 && tipo === 'especial' && (
+          <div className="cw-body">
+            <label className="cw-label">Nombre de la actividad</label>
+            <input className="ctrl" style={{ width: '100%' }} maxLength={100} value={nombreEsp} onChange={(e) => setNombreEsp(e.target.value)} placeholder={`Ej: ${tipoEspFinal} de noviembre`} />
+            <label className="cw-label" style={{ marginTop: 14 }}>Curso / programa</label>
+            <select className="fsel" style={{ width: '100%' }} value={cursoEsp} onChange={(e) => setCursoEsp(e.target.value)}>
+              <option value={CURSO_ELIGE}>{subInfo && !subInfo.inscripcion ? 'Sin curso ni programa' : 'Que lo elija quien se inscribe'}</option>
+              {subInfo && subInfo.inscripcion && <option value={CURSO_NINGUNO}>Sin curso ni programa</option>}
+              {CURSOS.map((c) => <option key={c.slug} value={c.nombre}>{c.nombre}</option>)}
+            </select>
+            <p className="cw-hint">Se crea en Borrador con una plantilla de preguntas ({subInfo && !subInfo.inscripcion ? 'idea y tema' : 'nombre, teléfono, modalidad y comentarios'}) que podés editar. Queda como “{tipoEspFinal}” en Formularios, aparte de las cursadas.</p>
+          </div>
+        )}
+        {paso === 2 && tipo !== 'especial' && (
           <div className="cw-body">
             {tipo === 'actividad' && (
               <>

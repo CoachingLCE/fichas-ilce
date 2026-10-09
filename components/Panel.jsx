@@ -218,6 +218,10 @@ export default function Panel() {
     // Pedido de Diego: un formulario puede no tener curso, así que acá ya no se pide: se elige adentro del constructor.
     setCrearAbierto(false); setVistaAyF('formularios'); setTab('actividadesyformularios'); setCtorForm({ slug: null });
   }
+  // v1.41.0: actividades especiales (laboratorio, masterclass, caja de ideas…): se abre el constructor de formularios con la plantilla.
+  function crearEspecial(actividad) {
+    setCrearAbierto(false); setVistaAyF('formularios'); setTab('actividadesyformularios'); setCtorForm({ slug: null, preseed: { actividad } });
+  }
   function editarFicha(slug) { setConstructorSlug(slug); setTab('constructor'); }
   function verInscripcionesDe(curso) { setFCurso(curso); setTab('inscripciones'); }
   // Un solo punto de entrada para "apretar un número/chip del Dashboard y ver de qué fichas
@@ -465,11 +469,11 @@ export default function Panel() {
 
         {crearAbierto && (
           <CrearWizard
-            puede={{ inscripcion: tienePermisoConstructor(usuario), actividad: tienePermisoGestionActividades(usuario), formulario: tienePermisoFormularios(usuario) }}
             onCerrar={() => setCrearAbierto(false)}
             onCrearActividad={crearActividad}
             onCrearFormulario={crearFormulario}
             onCrearInscripcion={crearInscripcion}
+            onCrearEspecial={crearEspecial}
           />
         )}
 
@@ -620,7 +624,7 @@ export default function Panel() {
           // Toggle fijo arriba: Actividades | Formularios (cada uno con sus propias sub-pestañas adentro).
           const elegida = vistaAyF || (puedeForm && !puedeAct ? 'formularios' : 'actividades');
           if (ctorForm && puedeForm) {
-            return <ConstructorFormulario key={ctorForm.slug || 'nuevo'} usuario={usuario} slugInicial={ctorForm.slug} showToast={showToast} onVolver={() => setCtorForm(null)} />;
+            return <ConstructorFormulario key={ctorForm.slug || (ctorForm.preseed ? 'nuevo-esp-' + ctorForm.preseed.actividad.tipo : 'nuevo')} usuario={usuario} slugInicial={ctorForm.slug} preseed={ctorForm.preseed} showToast={showToast} onVolver={() => setCtorForm(null)} />;
           }
           return (
             <>

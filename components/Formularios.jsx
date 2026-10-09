@@ -38,6 +38,7 @@ function Lista({ usuario, showToast, onNuevo, onEditar }) {
   // Mismo patrón de "dos vistas" (tarjetas/lista) que ya existe en Actividades, con su propia
   // clave de localStorage para no pisar la preferencia de esa otra sección.
   const [vista, setVista] = useState('cards');
+  const [filtroTipo, setFiltroTipo] = useState('Todos');
   useEffect(() => {
     try {
       const v = localStorage.getItem('ilce-formularios-vista');
@@ -68,10 +69,19 @@ function Lista({ usuario, showToast, onNuevo, onEditar }) {
   if (error) return <div className="empty"><div className="ico"></div><h3>No se pudo cargar</h3><p>{error}. Revisá que exista la pestaña “Formularios” en la Sheet.</p></div>;
   if (!forms) return <div className="spin" />;
   if (forms.length === 0) return <div className="empty"><div className="ico"></div><h3>No hay formularios todavía</h3><p>Creá el primero con el constructor.</p>{onNuevo && <button className="btn btn-primary" style={{ flex: 'none', padding: '10px 18px' }} onClick={onNuevo}>+ Nuevo formulario</button>}</div>;
+  // v1.41.0: chips para filtrar por tipo (Laboratorio, Masterclass, Encuesta…). Solo aparecen si hay 2 o más tipos distintos.
+  const tiposForm = Array.from(new Set(forms.map((f) => (f.tipo || '').trim()).filter(Boolean)));
+  const filtroVigente = filtroTipo === 'Todos' || tiposForm.includes(filtroTipo) ? filtroTipo : 'Todos';
+  const formsVista = filtroVigente === 'Todos' ? forms : forms.filter((f) => (f.tipo || '').trim() === filtroVigente);
   return (
     <div>
+      {tiposForm.length >= 2 && (
+        <div className="subtabs-pill" role="group" aria-label="Filtrar por tipo" style={{ marginBottom: 10, flexWrap: 'wrap' }}>
+          {['Todos', ...tiposForm].map((t) => <button key={t} className={filtroVigente === t ? 'on' : ''} onClick={() => setFiltroTipo(t)}>{t}</button>)}
+        </div>
+      )}
       <div className="sechead">
-        <span className="hcount">{forms.length} formulario{forms.length === 1 ? '' : 's'}</span>
+        <span className="hcount">{formsVista.length} formulario{formsVista.length === 1 ? '' : 's'}{filtroVigente !== 'Todos' ? ` · ${filtroVigente}` : ''}</span>
         <span className="grow" />
         {onNuevo && <button className="btn btn-primary" style={{ flex: 'none', padding: '10px 18px' }} onClick={onNuevo}>+ Nuevo formulario</button>}
         <div className="vista-toggle">
@@ -82,7 +92,7 @@ function Lista({ usuario, showToast, onNuevo, onEditar }) {
       {vista === 'lista' ? (
         <div className="tablewrap"><table>
           <thead><tr><th>Formulario</th><th>Tipo</th><th>Estado</th><th>Campos</th><th>Respuestas</th><th>Enlace</th><th></th></tr></thead>
-          <tbody>{forms.map((f) => (
+          <tbody>{formsVista.map((f) => (
             <tr key={f.slug}>
               <td className="ins-name">{f.titulo} <BadgeCreado iso={f.creado} /></td>
               <td>{f.tipo ? <span className="cchip">{f.tipo}</span> : '—'}</td>
@@ -101,7 +111,7 @@ function Lista({ usuario, showToast, onNuevo, onEditar }) {
       ) : (
         <div className="pcard-wrap">
         <div className="pcard-grid">
-          {forms.map((f) => (
+          {formsVista.map((f) => (
             <div className="pcard" key={f.slug}>
               <div className="pcard-top">
                 <span className={'pcard-dot ' + (f.estado === 'Publicada' ? 'pub' : 'bor')}><span className="d" />{f.estado}</span>
