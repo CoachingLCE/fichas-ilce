@@ -5,6 +5,9 @@ import { cursoInicial } from '../lib/formularioCurso';
 import { validarEmail, inferirTipoCampo, validarValorCampo, filtrarTelefono, partirMultiple } from '../lib/validacion';
 import { Isologo } from './Isologo';
 
+// Cada pregunta va en su propia tarjeta, así se distinguen las secciones (pedido de Diego).
+const TARJETA = { background: 'rgb(var(--bg) / .45)', border: '1px solid rgb(var(--border))', borderLeft: '3px solid rgb(var(--accentTeal))', borderRadius: 14, padding: '16px 18px', marginBottom: 16 };
+
 
 // Texto de ayuda de una pregunta: respeta los saltos de línea (una línea debajo de la otra) y convierte los links
 // (http/https) en enlaces que se pueden tocar. Se arma con elementos de React, no con HTML crudo.
@@ -90,7 +93,7 @@ export default function FormularioForm({ form, vistaPrevia = false }) {
   function campo(c) {
     if (c.tipo === 'escala') {
       return (
-        <div className="quiz-field" key={c.key}>
+        <div className="quiz-field" style={TARJETA} key={c.key}>
           <label>{c.label}{c.required && <span className="req"> *</span>}</label>
           <Ayuda texto={c.help} />
           <div className="escala" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 10, width: '100%' }}>
@@ -111,7 +114,7 @@ export default function FormularioForm({ form, vistaPrevia = false }) {
         set(c.key, filas.flatMap((f) => cols.map((co) => `${f} ${co}`)).filter((x) => s.has(x)).join(', '));
       };
       return (
-        <div className="quiz-field" key={c.key}>
+        <div className="quiz-field" style={TARJETA} key={c.key}>
           <label>{c.label}{c.required && <span className="req"> *</span>}</label>
           <Ayuda texto={c.help} />
           <div className="grilla-wrap">
@@ -137,7 +140,7 @@ export default function FormularioForm({ form, vistaPrevia = false }) {
         set(c.key, ops.filter((x) => s.has(x)).join(', '));
       };
       return (
-        <div className="quiz-field" key={c.key}>
+        <div className="quiz-field" style={TARJETA} key={c.key}>
           <label>{c.label}{c.required && <span className="req"> *</span>}</label>
           <Ayuda texto={c.help} />
           <div role="group" aria-label={c.label} style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
@@ -151,7 +154,7 @@ export default function FormularioForm({ form, vistaPrevia = false }) {
     if (c.tipo === 'select') {
       const ops = c.opciones && c.opciones.length ? c.opciones : CURSOS.map((x) => x.nombre);
       return (
-        <div className="quiz-field" key={c.key}>
+        <div className="quiz-field" style={TARJETA} key={c.key}>
           <label>{c.label}{c.required && <span className="req"> *</span>}</label>
           <select className="ctrl" value={val[c.key] || ''} onChange={(e) => set(c.key, e.target.value)}>
             {!c.opciones && <option value="">Elegí…</option>}
@@ -162,7 +165,7 @@ export default function FormularioForm({ form, vistaPrevia = false }) {
     }
     if (c.tipo === 'textarea') {
       return (
-        <div className="quiz-field" key={c.key}>
+        <div className="quiz-field" style={TARJETA} key={c.key}>
           <label>{c.label}{c.required && <span className="req"> *</span>}</label>
           <Ayuda texto={c.help} />
           <textarea className="ctrl" style={{ minHeight: 84, resize: 'vertical' }} value={val[c.key] || ''} onChange={(e) => set(c.key, e.target.value)} />
@@ -175,7 +178,7 @@ export default function FormularioForm({ form, vistaPrevia = false }) {
     const inferido = inferirTipoCampo(c);
     if (inferido === 'numero') {
       return (
-        <div className="quiz-field" key={c.key}>
+        <div className="quiz-field" style={TARJETA} key={c.key}>
           <label>{c.label}{c.required && <span className="req"> *</span>}</label>
           <Ayuda texto={c.help} />
           <input className="ctrl" type="text" inputMode="numeric" pattern="[0-9]*" value={val[c.key] || ''} onChange={(e) => set(c.key, e.target.value.replace(/\D/g, ''))} placeholder={c.placeholder || ''} />
@@ -184,7 +187,7 @@ export default function FormularioForm({ form, vistaPrevia = false }) {
     }
     if (inferido === 'telefono') {
       return (
-        <div className="quiz-field" key={c.key}>
+        <div className="quiz-field" style={TARJETA} key={c.key}>
           <label>{c.label}{c.required && <span className="req"> *</span>}</label>
           <Ayuda texto={c.help} />
           <input className="ctrl" type="text" inputMode="tel" value={val[c.key] || ''} onChange={(e) => set(c.key, filtrarTelefono(e.target.value))} placeholder={c.placeholder || ''} />
@@ -193,7 +196,7 @@ export default function FormularioForm({ form, vistaPrevia = false }) {
     }
     if (inferido === 'nombre') {
       return (
-        <div className="quiz-field" key={c.key}>
+        <div className="quiz-field" style={TARJETA} key={c.key}>
           <label>{c.label}{c.required && <span className="req"> *</span>}</label>
           <Ayuda texto={c.help} />
           <input className="ctrl" type="text" value={val[c.key] || ''} onChange={(e) => set(c.key, e.target.value.replace(/[0-9]/g, ''))} placeholder={c.placeholder || ''} />
@@ -202,7 +205,7 @@ export default function FormularioForm({ form, vistaPrevia = false }) {
     }
     // texto / email
     return (
-      <div className="quiz-field" key={c.key}>
+      <div className="quiz-field" style={TARJETA} key={c.key}>
         <label>{c.label}{c.required && <span className="req"> *</span>}</label>
         <Ayuda texto={c.help} />
         <input className="ctrl" type={c.tipo === 'email' ? 'email' : 'text'} value={val[c.key] || ''} onChange={(e) => set(c.key, e.target.value)} placeholder={c.placeholder || ''} />
