@@ -1,7 +1,14 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { validarEmail } from '../lib/validacion';
+
 import { Isologo } from './Isologo';
+
+// Las actividades se distinguen de los formularios por el color de acento: violeta/magenta (aprender) en vez de turquesa (completar).
+const ESTILO_ACTIVIDAD = `.quizcard-act .quiz-band{background:linear-gradient(120deg,#1d0b3a 0%,#4a1a85 52%,#96198f 100%)}
+.quizcard-act .quiz-count{color:rgb(var(--accentMagenta))}
+.quizcard-act .quiz-opt:hover{border-color:rgb(var(--accentPurple))}
+.quizcard-act .btn-teal{background:linear-gradient(90deg,rgb(var(--accentPurple)),rgb(var(--accentMagenta)));border-color:transparent;color:#fff}`;
 
 // Íconos de redes en línea (trazo simple, sin reproducir el isotipo de marca de cada red)
 // para el pie "AL FINALIZAR SIEMPRE" que pidió Diego.
@@ -44,11 +51,11 @@ function corregirLocal(preguntas, resp) {
 // tocar la Sheet ni el localStorage del navegador: no verifica "ya completada", no envía nada
 // al servidor (corrige localmente nomás, para mostrar una pantalla final de ejemplo) y no lee
 // ni escribe ningún borrador real.
-export default function ActividadForm({ act, modoPreview = false, pasoInicial = 0 }) {
+export default function ActividadForm({ act, modoPreview = false }) {
   const draftInicial = useRef(null);
   if (draftInicial.current === null) draftInicial.current = modoPreview ? {} : (leerDraft(act.slug) || {});
 
-  const [step, setStep] = useState(modoPreview ? Math.min(pasoInicial, act.preguntas.length) : (draftInicial.current.step || 0)); // 0 = datos, 1..N = preguntas (en la vista previa del constructor arranca en la pregunta que se está editando)
+  const [step, setStep] = useState(draftInicial.current.step || 0); // 0 = datos, 1..N = preguntas
   const [email, setEmail] = useState(draftInicial.current.email || '');
   const [nombre, setNombre] = useState(draftInicial.current.nombre || '');
   // Si quien armó la actividad ya le puso una edición, no hace falta preguntársela
@@ -167,7 +174,7 @@ export default function ActividadForm({ act, modoPreview = false, pasoInicial = 
   // (no existe ese dato en el sistema), así que el mensaje es honesto: no es editable.
   if (yaCompletada) {
     return (
-      <div className="quizstage"><div className="quizcard">
+      <div className="quizstage"><style>{ESTILO_ACTIVIDAD}</style><div className="quizcard quizcard-act">
         <div className="quiz-band">
           <div className="quiz-band-top"><div className="kd">ACTIVIDAD · {act.curso.toUpperCase()}</div><Isologo size={20} /></div>
           <div className="ti">{act.titulo}</div>
@@ -193,7 +200,7 @@ export default function ActividadForm({ act, modoPreview = false, pasoInicial = 
   if (resultado) {
     const pct = resultado.total ? Math.round((resultado.puntaje / resultado.total) * 100) : 0;
     return (
-      <div className="quizstage"><div className="quizcard">
+      <div className="quizstage"><style>{ESTILO_ACTIVIDAD}</style><div className="quizcard quizcard-act">
         <div className="quiz-band">
           <div className="quiz-band-top"><div className="kd">ACTIVIDAD</div><Isologo size={20} /></div>
           <div className="ti">{act.curso}</div>
@@ -229,7 +236,7 @@ export default function ActividadForm({ act, modoPreview = false, pasoInicial = 
   const progreso = esDatos ? 0 : Math.round((step / (total + 1)) * 100);
 
   return (
-    <div className="quizstage"><div className="quizcard">
+    <div className="quizstage"><style>{ESTILO_ACTIVIDAD}</style><div className="quizcard quizcard-act">
       <div className="quiz-band">
         <div className="quiz-band-top"><div className="kd">ACTIVIDAD · {act.curso.toUpperCase()}{act.edicion ? ` · ED. ${act.edicion}` : ''}</div><Isologo size={20} /></div>
         <div className="ti">{act.titulo}</div>
