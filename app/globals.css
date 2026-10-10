@@ -1771,3 +1771,6 @@ button,input,select,textarea{font-family:inherit}
 .grilla input[type=checkbox]{width:20px;height:20px;cursor:pointer;accent-color:rgb(var(--accentTeal))}
 .cf-pv-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 .cf-pv-tabs .fchip{height:26px;padding:0 10px;font-size:12px}
+
+/* Contador de la solapa Alertas de Reportes: blanco con letra naranja, se lee igual con la solapa activa o apagada. */
+.repx-nav-badge{margin-left:6px;min-width:18px;padding:0 6px;border-radius:999px;background:#fff;color:#ea580c;font-size:11px;font-weight:700;line-height:18px;text-align:center}

@@ -14,6 +14,10 @@ export const dynamic = 'force-dynamic';
 
 // Datos de ejemplo SOLO para la vista previa. No se envía ningún correo.
 const EJEMPLO = {
+  alertasForm: [
+    { titulo: 'Encuesta de satisfacción 2026', slug: 'encuesta-2026', curso: '', ultimaRespuesta: '2026-08-20', diasSin: 47, nunca: false, sinFecha: false },
+    { titulo: 'Inscripción a taller de oratoria', slug: 'taller-oratoria', curso: 'Oratoria', ultimaRespuesta: '', diasSin: 63, nunca: true, sinFecha: false }
+  ],
   nombre: 'María', apellido: 'González', curso: 'Coaching de Equipos',
   edicion: 'Edición 20 — Jueves 29 de octubre de 2026',
   email: 'maria.gonzalez@correo.com', whatsapp: '+54 9 11 5555 1234',
@@ -56,7 +60,7 @@ export async function GET(req) {
     html = plantillaAvisoActividadDocente({ ...e, estudiante: e.nombre, estudianteEmail: e.email });
   } else if (tipo === 'Resumen viernes') {
     asunto = asuntoResumenActividades(e);
-    html = plantillaResumenActividades({ desde: e.filas[0].fecha, hasta: e.fecha, filas: e.filas });
+    html = plantillaResumenActividades({ desde: e.filas[0].fecha, hasta: e.fecha, filas: e.filas, alertasForm: e.alertasForm });
   } else if (tipo === 'Resumen inscripciones') {
     const hoy = e.fecha;
     const filasIns = [

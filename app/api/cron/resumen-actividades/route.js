@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { readSheet } from '../../../../lib/sheets';
 import { TABS, EQUIPO_ACADEMICO } from '../../../../lib/constants';
 import { enviarResumenActividades } from '../../../../lib/mailer';
+import { leerAlertasFormularios } from '../../../../lib/alertasFormulariosServer';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +25,11 @@ export async function GET(req) {
 
   const desde = corte.toISOString().slice(0, 10);
   const hasta = new Date().toISOString().slice(0, 10);
+  // Formularios publicados sin respuestas hace más de 30 días (los mismos de la solapa Reportes → Alertas). Si el cálculo falla,
+  // el resumen semanal sale igual, sin ese bloque: las alertas nunca pueden impedir el correo de los viernes.
+  let alertasForm = [];
+  try { alertasForm = (await leerAlertasFormularios()).alertas; } catch { alertasForm = []; }
   let enviado = true;
-  try { await enviarResumenActividades({ destinatarios: EQUIPO_ACADEMICO, desde, hasta, filas, filasForm }); } catch { enviado = false; }
-  return NextResponse.json({ ok: true, enviado, actividades: filas.length, formularios: filasForm.length, desde, hasta });
+  try { await enviarResumenActividades({ destinatarios: EQUIPO_ACADEMICO, desde, hasta, filas, filasForm, alertasForm }); } catch { enviado = false; }
+  return NextResponse.json({ ok: true, enviado, actividades: filas.length, formularios: filasForm.length, alertas: alertasForm.length, desde, hasta });
 }

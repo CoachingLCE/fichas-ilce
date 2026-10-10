@@ -319,6 +319,8 @@ const NAV = [
   { v: 'estudiantes', l: 'Estudiantes', ic: 'user', c: '#6366f1' },
   { v: 'campos', l: 'Campos', ic: 'list', c: '#96198f' },
   { v: 'formularios', l: 'Formularios', req: 'form', ic: 'folder', c: '#0891b2' },
+  // Alertas (pedido de Diego): formularios publicados que llevan más de 30 días sin recibir respuestas. Naranja: los colores verde, amarillo y rojo están reservados para Estado.
+  { v: 'alertas', l: 'Alertas', req: 'form', ic: 'alert', c: '#ea580c' },
 ];
 const PERIODOS = [
   { v: 'todo', l: 'Todo' }, { v: 'hoy', l: 'Hoy' }, { v: '7d', l: '7 días' },
@@ -344,6 +346,8 @@ export default function Reportes({ usuario, rows, puedeActividades, puedeFormula
   const [actError, setActError] = useState('');
   const [formData, setFormData] = useState(null);
   const [formError, setFormError] = useState('');
+  const [alertasData, setAlertasData] = useState(null); // { alertas, publicados, dias }
+  const [alertasError, setAlertasError] = useState('');
   // Detalle de respuestas pregunta por pregunta (mismo endpoint que ya usa la pestaña
   // "Respuestas" de Actividades) — lo necesitan los nuevos Reporte de Preguntas y Reporte de
   // Respuestas para poder mostrar distribución de opciones elegidas y listar respuestas abiertas.
@@ -357,6 +361,7 @@ export default function Reportes({ usuario, rows, puedeActividades, puedeFormula
   useEffect(() => { if (puedeActividades) cargarActividades(); /* eslint-disable-next-line */ }, [puedeActividades]);
   useEffect(() => { if (puedeActividades) cargarRespuestasDetalle(); /* eslint-disable-next-line */ }, [puedeActividades]);
   useEffect(() => { if (puedeFormularios) cargarFormularios(); /* eslint-disable-next-line */ }, [puedeFormularios]);
+  useEffect(() => { if (puedeFormularios) cargarAlertas(); /* eslint-disable-next-line */ }, [puedeFormularios]);
   useEffect(() => { cargarDocentes(); /* eslint-disable-next-line */ }, []);
   useEffect(() => {
     if (!moreOpen) return;
@@ -389,6 +394,14 @@ export default function Reportes({ usuario, rows, puedeActividades, puedeFormula
       setFormData(d.respuestas || []);
     } catch (e) { setFormError(e.message || 'Error de conexión'); setFormData([]); }
   }
+  async function cargarAlertas() {
+    try {
+      const res = await fetch('/api/formularios/alertas?solicitanteEmail=' + encodeURIComponent(usuario.email));
+      const d = await res.json();
+      if (!d.ok) throw new Error(d.error || 'No se pudieron calcular las alertas');
+      setAlertasError(''); setAlertasData({ alertas: d.alertas || [], publicados: d.publicados || 0, dias: d.dias || 30 });
+    } catch (e) { setAlertasError(e.message || 'Error de conexión'); setAlertasData(null); }
+  }
   async function cargarDocentes() {
     try {
       const res = await fetch('/api/docentes?solicitanteEmail=' + encodeURIComponent(usuario.email));
@@ -404,6 +417,7 @@ export default function Reportes({ usuario, rows, puedeActividades, puedeFormula
       if (puedeActividades) tareas.push(cargarActividades());
       if (puedeActividades) tareas.push(cargarRespuestasDetalle());
       if (puedeFormularios) tareas.push(cargarFormularios());
+      if (puedeFormularios) tareas.push(cargarAlertas());
       tareas.push(cargarDocentes());
       await Promise.all(tareas);
     } finally { setRefrescando(false); }
@@ -768,6 +782,7 @@ export default function Reportes({ usuario, rows, puedeActividades, puedeFormula
               style={activo ? { background: n.c, color: '#fff' } : { background: n.c + '1c', color: n.c }}
               onClick={() => setSub(n.v)}>
               <Icono /> {n.l}
+              {n.v === 'alertas' && alertasData && alertasData.alertas.length > 0 && <span className="repx-nav-badge" aria-label={`${alertasData.alertas.length} alertas`}>{alertasData.alertas.length}</span>}
             </button>
           );
         })}
@@ -838,6 +853,11 @@ export default function Reportes({ usuario, rows, puedeActividades, puedeFormula
         formError ? <div className="empty"><Ico.alert className="lg" /><h3>No se pudo cargar</h3><p>{formError}</p></div> :
         !formF ? <div className="spin" /> :
         <ReportesFormularios data={formF} irAConFiltro={irAConFiltro} />
+      )}
+      {sub === 'alertas' && puedeFormularios && (
+        alertasError ? <div className="empty"><Ico.alert className="lg" /><h3>No se pudo cargar</h3><p>{alertasError}</p></div> :
+        !alertasData ? <div className="spin" /> :
+        <ReportesAlertas data={alertasData} />
       )}
     </div>
   );
@@ -1797,6 +1817,50 @@ function ReportesEstudiantes({ tabla, puedeActividades, irAConFiltro }) {
 }
 
 /* ============================ FORMULARIOS ============================ */
+/* ============================ ALERTAS ============================ */
+// Formularios PUBLICADOS que llevan más de 30 días sin recibir ninguna respuesta (la misma lista que va en el correo de los viernes).
+function ReportesAlertas({ data }) {
+  const { alertas, publicados, dias } = data;
+  const [copiado, setCopiado] = useState('');
+  const fmt = (iso) => String(iso || '').slice(0, 10).split('-').reverse().join('/');
+  function copiar(slug) {
+    // Si el navegador no da permiso al portapapeles, no pasa nada (sin error en pantalla).
+    Promise.resolve().then(() => navigator.clipboard?.writeText(`${window.location.origin}/formulario/${slug}`)).catch(() => {});
+    setCopiado(slug); setTimeout(() => setCopiado(''), 1800);
+  }
+  return (
+    <div>
+      <p className="fhead-sub" style={{ marginBottom: 14 }}>
+        Formularios publicados que no recibieron ninguna respuesta hace más de {dias} días ({publicados} publicado{publicados === 1 ? '' : 's'} en total). Conviene revisar si siguen vigentes, si el enlace se compartió, o archivarlos.
+      </p>
+      {alertas.length === 0 ? (
+        <p className="vacio">Todo en orden: todos los formularios publicados recibieron respuestas en los últimos {dias} días.</p>
+      ) : (
+        <div className="tablewrap">
+          <table>
+            <thead><tr><th>Formulario</th><th>Curso</th><th>Última respuesta</th><th>Sin respuestas hace</th><th></th></tr></thead>
+            <tbody>
+              {alertas.map((a) => (
+                <tr key={a.slug}>
+                  <td><b>{a.titulo}</b></td>
+                  <td>{a.curso || <span className="muted">Sin curso</span>}</td>
+                  <td>{a.nunca ? 'Nunca recibió respuestas' : fmt(a.ultimaRespuesta)}</td>
+                  <td>{a.sinFecha ? <span className="muted">No se sabe desde cuándo</span> : <b>{a.diasSin} días</b>}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    <a className="btn-sm" href={`/formulario/${a.slug}`} target="_blank" rel="noopener noreferrer">Abrir</a>{' '}
+                    <button className="btn-sm" onClick={() => copiar(a.slug)}>{copiado === a.slug ? 'Enlace copiado' : 'Copiar enlace'}</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <p className="muted" style={{ fontSize: 12, marginTop: 12 }}>Las respuestas se asocian al formulario por su título: si le cambiaste el título a uno, sus respuestas anteriores quedan con el título viejo y puede figurar acá aunque sí reciba respuestas.</p>
+    </div>
+  );
+}
+
 function ReportesFormularios({ data, irAConFiltro }) {
   const hoy = hace(0);
   const sem = data.filter((r) => (r.fecha || '') >= hace(7)).length;
