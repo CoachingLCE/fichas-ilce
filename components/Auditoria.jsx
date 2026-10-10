@@ -1,5 +1,6 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { etiquetaMes, siguienteMes } from '../lib/historialMeses';
 
 const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
@@ -27,10 +28,34 @@ export default function Auditoria({ usuario }) {
   const [eventos, setEventos] = useState(null);
   const [q, setQ] = useState('');
   const [cat, setCat] = useState('');
+  // Historial mes a mes: se carga el mes actual y "Ver más" abre el anterior. Con una búsqueda o un filtro se mira TODO (de cualquier mes).
+  const [meses, setMeses] = useState([]);                 // [{ mes: '2026-10', n: 120 }] meses con movimientos
+  const [mesesCargados, setMesesCargados] = useState([]);
+  const [cargandoMas, setCargandoMas] = useState(false);
+  const [errorCarga, setErrorCarga] = useState('');
+  const modoTodo = !!(q.trim() || cat);
+  const cargaRef = useRef(0); // si se piden dos cargas seguidas (escribir y borrar rápido), solo vale la última
   useEffect(() => { (async () => {
-    const res = await fetch('/api/auditoria?solicitanteEmail=' + encodeURIComponent(usuario.email));
-    const d = await res.json(); setEventos(d.ok ? d.eventos : []);
-  })(); /* eslint-disable-next-line */ }, []);
+    const mia = ++cargaRef.current;
+    try {
+      const res = await fetch('/api/auditoria?solicitanteEmail=' + encodeURIComponent(usuario.email) + (modoTodo ? '&todo=1' : ''));
+      const d = await res.json();
+      if (mia !== cargaRef.current) return;
+      setEventos(d.ok ? d.eventos : []); setMeses(d.ok ? (d.meses || []) : []); setMesesCargados(d.ok && d.mes ? [d.mes] : []); setErrorCarga(d.ok ? '' : (d.error || ''));
+    } catch { if (mia === cargaRef.current) { setEventos((prev) => prev || []); setErrorCarga('No se pudo conectar con el servidor.'); } }
+  })(); /* eslint-disable-next-line */ }, [modoTodo]);
+  async function verMas() {
+    const sig = siguienteMes(meses, mesesCargados);
+    if (!sig || cargandoMas) return;
+    setCargandoMas(true);
+    try {
+      const res = await fetch('/api/auditoria?solicitanteEmail=' + encodeURIComponent(usuario.email) + '&mes=' + encodeURIComponent(sig.mes));
+      const d = await res.json();
+      if (d.ok) { setEventos((prev) => [...(prev || []), ...(d.eventos || [])]); setMesesCargados((prev) => [...prev, sig.mes]); }
+      else setErrorCarga(d.error || 'No se pudo cargar el mes anterior.');
+    } catch { setErrorCarga('No se pudo conectar con el servidor.'); }
+    setCargandoMas(false);
+  }
   const filtrados = useMemo(() => {
     if (!eventos) return [];
     const qq = norm(q);
@@ -127,6 +152,24 @@ export default function Auditoria({ usuario }) {
           </table>
         </div>
       )}
+      {(() => {
+        const sig = modoTodo ? null : siguienteMes(meses, mesesCargados);
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginTop: 16 }} aria-live="polite">
+            {errorCarga && <p className="muted" style={{ fontSize: 12, color: 'var(--bad, #f87171)' }}>{errorCarga}</p>}
+            {modoTodo ? (
+              <p className="muted" style={{ fontSize: 12 }}>Mostrando todos los meses, porque hay una búsqueda o un filtro activo.</p>
+            ) : (
+              <>
+                <p className="muted" style={{ fontSize: 12 }}>Mostrando {mesesCargados.length ? [...mesesCargados].sort().reverse().map(etiquetaMes).join(', ') : 'el historial'}.</p>
+                {sig ? (
+                  <button className="btn" onClick={verMas} disabled={cargandoMas}>{cargandoMas ? 'Cargando…' : `Ver más · ${etiquetaMes(sig.mes)} (${sig.n})`}</button>
+                ) : meses.length > 0 && <p className="muted" style={{ fontSize: 12 }}>No hay movimientos más antiguos.</p>}
+              </>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
