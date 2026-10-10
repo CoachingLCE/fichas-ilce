@@ -4,6 +4,7 @@ import ActividadForm from '../../../components/ActividadForm';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
 import { metaActividad } from '../../../lib/ogMeta';
+import { actividadParaEstudiante } from '../../../lib/actividadPublica';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,5 +58,5 @@ export default async function ActividadPublica({ params }) {
       </>
     );
   }
-  return (<><IsologoDefs /><ActividadForm act={act} /></>);
+  return (<><IsologoDefs /><ActividadForm act={actividadParaEstudiante(act)} /></>);
 }
