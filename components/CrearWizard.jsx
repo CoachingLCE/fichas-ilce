@@ -17,7 +17,9 @@ const TIPOS = [
 const CURSO_ELIGE = '__elige__';
 const CURSO_NINGUNO = '__ninguno__';
 
-export default function CrearWizard({ onCerrar, onCrearActividad, onCrearFormulario, onCrearInscripcion, onCrearEspecial }) {
+export default function CrearWizard({ onCerrar, onCrearActividad, onCrearFormulario, onCrearInscripcion, onCrearEspecial, puede = {} }) {
+  // Cada persona ve solo lo que su rol puede crear (antes se ofrecían todos los tipos a cualquiera, aunque no pudiera terminarlos).
+  const tiposVisibles = TIPOS.filter((t) => puede[t.key] !== false);
   const [paso, setPaso] = useState(0);
   const [tipo, setTipo] = useState(null);
   const [curso, setCurso] = useState(CURSOS[0].nombre);
@@ -71,7 +73,7 @@ export default function CrearWizard({ onCerrar, onCrearActividad, onCrearFormula
         {/* Paso 0 — tipo */}
         {paso === 0 && (
           <div className="cw-tipos">
-            {TIPOS.map((t) => (
+            {tiposVisibles.map((t) => (
               <button key={t.key} className="cw-tipo" onClick={() => elegirTipo(t.key)}>
                 <span className="cw-tipo-ico">{t.icono}</span>
                 <span className="cw-tipo-txt">
