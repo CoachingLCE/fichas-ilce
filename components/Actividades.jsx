@@ -1118,8 +1118,11 @@ function Respuestas({ usuario, irABuscador, showToast }) {
   return (
     <>
       <div className="filters">
-        {/* Mismo motivo que en la lista de Actividades: el buscador de texto libre ya está en
-            el ícono  de arriba del todo, este botón local lo duplicaba. */}
+        {/* Buscar a una persona por nombre o correo. Antes se había sacado este cuadro porque se creía que la lupa de arriba del todo lo cubría,
+            pero esa lupa busca inscripciones, fichas, actividades y formularios (sus definiciones), NO las respuestas de actividades: sin esto
+            no había forma de encontrar a alguien en las respuestas, y con el "mes por mes" obligaba a apretar "Ver más" una y otra vez. Con
+            texto escrito se miran TODOS los meses (ver más abajo, `visibles`). */}
+        <div className="fsearch" style={{ maxWidth: 280, flex: 'none' }}> <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar persona (nombre o correo)…" aria-label="Buscar persona en las respuestas" /></div>
         <SelectDropdown placeholder="Edición: todas" searchable value={fEd} onChange={setFEd} options={ediciones.map((x) => ({ value: x, label: 'Ed. ' + x }))} />
         <SelectDropdown placeholder="Actividad: todas" searchable value={fAct} onChange={setFAct} options={actividades.map((x) => ({ value: x, label: x }))} />
         {(q || fCurso || fEd || fAct) && <button className="btn-sm" onClick={() => { setQ(''); setFCurso(''); setFEd(''); setFAct(''); }}>Limpiar</button>}
