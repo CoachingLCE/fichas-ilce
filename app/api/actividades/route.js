@@ -24,9 +24,9 @@ export async function GET(req) {
     resp.forEach((r) => { if (r.Actividad) { const k = normNom(r.Actividad); conteoResp[k] = (conteoResp[k] || 0) + 1; } });
   } catch { /* si falla, el editor simplemente no muestra el aviso — no bloquea la gestión */ }
   const actividades = filas.filter((f) => f.Slug).map((f) => {
-    const { clase, intro, edicion, fechaDisponible, horaDisponible, fechaCierre, mostrarResultado, orden, preguntas } = parseActDef(f['Preguntas JSON']);
+    const { clase, intro, edicion, fechaDisponible, horaDisponible, fechaCierre, mostrarResultado, feedbackInmediato, orden, preguntas } = parseActDef(f['Preguntas JSON']);
     return {
-      slug: f.Slug, curso: f.Curso, titulo: f['Título'], clase, intro, edicion, fechaDisponible, horaDisponible, fechaCierre, mostrarResultado, orden,
+      slug: f.Slug, curso: f.Curso, titulo: f['Título'], clase, intro, edicion, fechaDisponible, horaDisponible, fechaCierre, mostrarResultado, feedbackInmediato, orden,
       estado: f.Estado || 'Publicada', preguntas, actualizado: f.Actualizado, creado: f['Creado'] || '',
       totalRespuestas: conteoResp[normNom(f['Título'])] || 0
     };
@@ -55,7 +55,7 @@ export async function POST(req) {
     return NextResponse.json({ ok: true });
   }
 
-  const { slug, curso, titulo, estado, preguntas, clase, intro, edicion, fechaDisponible, horaDisponible, fechaCierre, mostrarResultado, orden } = body || {};
+  const { slug, curso, titulo, estado, preguntas, clase, intro, edicion, fechaDisponible, horaDisponible, fechaCierre, mostrarResultado, feedbackInmediato, orden } = body || {};
   if (!slug || !titulo) return NextResponse.json({ ok: false, error: 'Faltan datos' }, { status: 400 });
   if (!Array.isArray(preguntas) || preguntas.length === 0) return NextResponse.json({ ok: false, error: 'Agregá al menos una pregunta' }, { status: 400 });
   for (const p of preguntas) {
@@ -68,7 +68,7 @@ export async function POST(req) {
   }
   const def = JSON.stringify({
     clase: clase || '', intro: intro || '', edicion: edicion || '', fechaDisponible: fechaDisponible || '', horaDisponible: horaDisponible || '', fechaCierre: fechaCierre || '',
-    mostrarResultado: mostrarResultado !== false, orden: Number(orden) || 0, preguntas
+    mostrarResultado: mostrarResultado !== false, feedbackInmediato: feedbackInmediato === true, orden: Number(orden) || 0, preguntas
   });
   const filas = await readSheet(TABS.ACTIVIDADES, { noCache: true });
   const ex = filas.find((f) => f.Slug === slug);

@@ -247,7 +247,7 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
         body: JSON.stringify({
           solicitanteEmail: usuario.email, slug, curso: e.curso, titulo: e.titulo, clase: e.clase,
           estado: estadoFinal, edicion: e.edicion, intro: e.intro, fechaDisponible: e.fechaDisponible, horaDisponible: e.horaDisponible,
-          fechaCierre: e.fechaCierre, mostrarResultado: e.mostrarResultado !== false, orden: e.orden || 0, preguntas: e.preguntas
+          fechaCierre: e.fechaCierre, mostrarResultado: e.mostrarResultado !== false, feedbackInmediato: e.feedbackInmediato === true, orden: e.orden || 0, preguntas: e.preguntas
         })
       });
       const data = await res.json();
@@ -405,6 +405,11 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
             Mostrarle el puntaje al estudiante al terminar
           </label>
           <p className="muted" style={{ fontSize: 12, marginTop: 6, marginLeft: 26 }}>Si lo desmarcás, igual se corrige y se guarda todo — solo no se le muestra el número en pantalla.</p>
+          <label className="wiz-check-inline" style={{ marginTop: 14 }}>
+            <input type="checkbox" checked={e.feedbackInmediato === true} onChange={(ev) => set({ feedbackInmediato: ev.target.checked })} />
+            Mostrar si acertó en cada pregunta (práctica de repaso)
+          </label>
+          <p className="muted" style={{ fontSize: 12, marginTop: 6, marginLeft: 26 }}>El estudiante responde una pregunta por pantalla y, apenas la contesta, ve si acertó y cuál era la correcta. Usalo para prácticas, no para evaluaciones con nota: en este modo la página le entrega las respuestas correctas al navegador.</p>
           <details className="wiz-avanzado">
             <summary> Próximamente</summary>
             <p className="muted" style={{ fontSize: 12.5 }}>Límite de intentos y tiempo límite por actividad quedan para una próxima etapa: necesitan su propia lógica de control (contar intentos previos, cronómetro con envío automático) para no arriesgar respuestas de estudiantes ya en curso.</p>
@@ -458,6 +463,7 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
               <div><span>Disponible desde</span><b>{e.fechaDisponible ? e.fechaDisponible + (e.horaDisponible ? ` ${e.horaDisponible}hs` : '') : 'Inmediata'}</b></div>
               <div><span>Cierra el</span><b>{e.fechaCierre || 'Sin límite'}</b></div>
               <div><span>Muestra resultado</span><b>{e.mostrarResultado !== false ? 'Sí' : 'No'}</b></div>
+              <div><span>Práctica de repaso</span><b>{e.feedbackInmediato === true ? 'Sí' : 'No'}</b></div>
             </div>
           </div>
         </div>
@@ -766,7 +772,7 @@ const Lista = forwardRef(function Lista({ usuario, showToast, puedeGestionar, ir
   }
 
   function nueva(preseed) {
-    const base = { slug: '', curso: CURSOS[0].nombre, titulo: '', clase: '', edicion: '', intro: '', fechaDisponible: '', fechaCierre: '', mostrarResultado: true, estado: 'Publicada', preguntas: [nuevaPreg()], _nuevo: true };
+    const base = { slug: '', curso: CURSOS[0].nombre, titulo: '', clase: '', edicion: '', intro: '', fechaDisponible: '', fechaCierre: '', mostrarResultado: true, feedbackInmediato: false, estado: 'Publicada', preguntas: [nuevaPreg()], _nuevo: true };
     if (preseed) {
       if (preseed.curso) base.curso = preseed.curso;
       if (preseed.clase != null && preseed.clase !== '') base.clase = String(preseed.clase);
@@ -783,7 +789,7 @@ const Lista = forwardRef(function Lista({ usuario, showToast, puedeGestionar, ir
     setModo({
       tipo: 'editor', base: {
         slug: '', curso: a.curso, edicion: a.edicion || '', clase: claseNueva, titulo: (a.titulo || '') + ' (copia)', intro: a.intro || '',
-        estado: 'Borrador', fechaDisponible: '', fechaCierre: '', mostrarResultado: a.mostrarResultado !== false,
+        estado: 'Borrador', fechaDisponible: '', fechaCierre: '', mostrarResultado: a.mostrarResultado !== false, feedbackInmediato: a.feedbackInmediato === true,
         preguntas: (a.preguntas || []).map((p) => ({ ...p, opciones: [...(p.opciones || [])] })), _nuevo: true
       }
     });
@@ -832,7 +838,7 @@ const Lista = forwardRef(function Lista({ usuario, showToast, puedeGestionar, ir
         body: JSON.stringify({
           solicitanteEmail: usuario.email, slug: a.slug, curso: a.curso, titulo: a.titulo,
           clase: a.clase, estado: a.estado, edicion: a.edicion, intro: a.intro, fechaDisponible: a.fechaDisponible, horaDisponible: a.horaDisponible, fechaCierre: a.fechaCierre,
-          mostrarResultado: a.mostrarResultado !== false, orden: a.orden || 0, preguntas: a.preguntas, ...patch
+          mostrarResultado: a.mostrarResultado !== false, feedbackInmediato: a.feedbackInmediato === true, orden: a.orden || 0, preguntas: a.preguntas, ...patch
         })
       });
       const data = await res.json();

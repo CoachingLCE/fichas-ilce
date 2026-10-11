@@ -70,13 +70,13 @@ export default function FormularioForm({ form, vistaPrevia = false }) {
               <div className="cta-emoji"></div>
               <div className="cta-h">Seguir aprendiendo</div>
               <div className="cta-d">Leé una nota recomendada de nuestro blog.</div>
-              <a className="cta-btn" href="https://www.coachingeducativolider.com/blog" target="_blank" rel="noopener noreferrer">Ir al Blog</a>
+              <a className="cta-btn" href="https://coachingeducativolider.com/blog" target="_blank" rel="noopener noreferrer">Ir al Blog</a>
             </div>
             <div className="cta-card">
               <div className="cta-emoji"></div>
               <div className="cta-h">Volver al Campus</div>
               <div className="cta-d">Continuá con tus clases, actividades y materiales.</div>
-              <a className="cta-btn cta-btn-primary" href="http://campus.institutoilce.com/" target="_blank" rel="noopener noreferrer">Volver al Campus</a>
+              <a className="cta-btn cta-btn-primary" href="https://campus.institutoilce.com/" target="_blank" rel="noopener noreferrer">Volver al Campus</a>
             </div>
             <div className="cta-card">
               <div className="cta-emoji"></div>
