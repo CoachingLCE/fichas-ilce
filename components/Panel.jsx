@@ -723,7 +723,7 @@ export default function Panel() {
         </div>
       </div>
       <VersionBadge />
-      <TourGuiado tab={tab} setTab={setTab} permisos={{
+      <TourGuiado tab={tab} setTab={setTab} usuarioEmail={usuario.email} permisos={{
         // Qué puede CREAR esta persona: la ayuda explica cómo se crea cada cosa solo a quien puede hacerlo.
         crear: tienePermisoConstructor(usuario) || tienePermisoGestionActividades(usuario) || tienePermisoFormularios(usuario),
         constructor: tienePermisoConstructor(usuario),

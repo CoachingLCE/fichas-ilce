@@ -5,9 +5,10 @@
 // llamando a setTab.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { TOUR_PASOS, TAREAS_AYUDA } from '../lib/tourSteps';
+import { buscarAyuda } from '../lib/ayudaBusqueda';
 import { APP_VERSION } from '../lib/version';
 
-export default function TourGuiado({ tab, setTab, permisos }) {
+export default function TourGuiado({ tab, setTab, permisos, usuarioEmail }) {
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [activo, setActivo] = useState(false);
   const [pasoId, setPasoId] = useState(null);
@@ -21,6 +22,29 @@ export default function TourGuiado({ tab, setTab, permisos }) {
   const pasosTodos = useMemo(() => TOUR_PASOS.filter(permitido), [permitido]);
   const pasos = useMemo(() => pasosTodos.filter((p) => !p.soloTarea), [pasosTodos]);
   const tareas = useMemo(() => TAREAS_AYUDA.filter(permitido), [permitido]);
+
+  // Búsqueda dentro de la ayuda (pedido de Diego): la persona escribe lo que quiere hacer y aparecen las tareas y secciones que coinciden.
+  // Solo se busca entre lo que esta persona puede ver (las tareas y secciones que no le corresponden por permiso no aparecen).
+  const [consulta, setConsulta] = useState('');
+  const [aviso, setAviso] = useState({ estado: '', texto: '' });
+  const resultados = useMemo(() => {
+    if (!consulta.trim()) return null;
+    const items = [
+      ...tareas.map((t) => ({ id: t.id, tipo: 'tarea', titulo: t.label, palabras: t.palabras, tarea: t })),
+      ...pasos.map((p) => ({ id: p.id, tipo: 'paso', titulo: p.titulo, texto: p.texto }))
+    ];
+    return buscarAyuda(consulta, items);
+  }, [consulta, tareas, pasos]);
+  // Al cerrar el menú se limpia lo que se había escrito.
+  useEffect(() => { if (!menuAbierto) { setConsulta(''); setAviso({ estado: '', texto: '' }); } }, [menuAbierto]);
+  async function avisarFalta() {
+    setAviso({ estado: 'enviando', texto: '' });
+    try {
+      const res = await fetch('/api/ayuda', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ texto: consulta, solicitanteEmail: usuarioEmail }) });
+      const d = await res.json();
+      setAviso(res.ok && d.ok ? { estado: 'ok', texto: '' } : { estado: 'error', texto: d.error || 'No se pudo avisar. Probá de nuevo.' });
+    } catch { setAviso({ estado: 'error', texto: 'No se pudo conectar. Probá de nuevo.' }); }
+  }
 
   const lista = modoTarea ? pasosTodos : pasos;
   const idx = pasoId ? lista.findIndex((p) => p.id === pasoId) : -1;
@@ -145,6 +169,37 @@ export default function TourGuiado({ tab, setTab, permisos }) {
           <div className="bg-surface2 border border-border rounded-2xl p-4 w-80 max-w-[calc(100vw-40px)] shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-sm font-semibold mb-1">Te mostramos cómo funciona Fichas ILCE</h3>
             <p className="text-xs text-textSec mb-3">Vamos a recorrer juntos las principales secciones del panel.</p>
+            <input type="search" value={consulta} onChange={(e) => { setConsulta(e.target.value); setAviso({ estado: '', texto: '' }); }}
+              placeholder="¿Qué querés hacer? Ej: crear un formulario" aria-label="Buscar en la ayuda" autoComplete="off"
+              className="w-full mb-3 bg-bg border border-border rounded-lg px-3 py-2 text-sm placeholder:text-textMuted focus:outline-none focus:border-accentTeal" />
+            {resultados && (
+              <div className="mb-1" aria-live="polite">
+                {resultados.length > 0 ? (
+                  <>
+                    <p className="text-[12px] text-textMuted mb-1.5 font-semibold">Encontramos esto:</p>
+                    <div className="flex flex-col gap-1">
+                      {resultados.map((r) => (
+                        <button key={r.tipo + r.id} className="text-left text-xs text-textSec hover:text-text bg-bg border border-border rounded-lg px-2.5 py-1.5"
+                          onClick={() => iniciarTarea(r.tipo === 'tarea' ? r.tarea : { pasoInicial: r.id })}>
+                          {r.titulo}{r.tipo === 'paso' && <span className="text-textMuted"> · sección</span>}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-xs text-textSec mb-2">No encontramos nada sobre “{consulta.trim()}”. Probá con otras palabras.</p>
+                )}
+                <div className="mt-2">
+                  {aviso.estado === 'ok'
+                    ? <p className="text-xs text-successText">Listo, lo anotamos para sumarlo a la ayuda. Gracias.</p>
+                    : <button className="text-xs text-accentTeal underline disabled:opacity-60" onClick={avisarFalta} disabled={aviso.estado === 'enviando'}>
+                        {aviso.estado === 'enviando' ? 'Avisando…' : (resultados.length > 0 ? '¿No es lo que buscabas? Avisar que falta' : 'Avisar que falta esto')}
+                      </button>}
+                  {aviso.estado === 'error' && <p className="text-xs text-dangerText mt-1">{aviso.texto}</p>}
+                </div>
+              </div>
+            )}
+            {!resultados && <>
             <button
               className="w-full bg-gradient-to-r from-accentPurple to-accentMagenta text-white rounded-lg px-3 py-2 text-sm font-semibold mb-3"
               onClick={iniciarCompleto}
@@ -163,6 +218,7 @@ export default function TourGuiado({ tab, setTab, permisos }) {
                 </button>
               ))}
             </div>
+            </>}
             <button
               className="mt-3 w-full flex items-center justify-between text-left text-[13px] text-textSec hover:text-text border-t border-border pt-3"
               onClick={() => {
