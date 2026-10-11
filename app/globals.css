@@ -1746,6 +1746,13 @@ button,input,select,textarea{font-family:inherit}
 .cf-ops{margin:0 0 8px 30px}.cf-ops textarea{min-height:76px;resize:vertical}
 .cf-x{color:rgb(var(--bad))}
 .cf-acts{display:flex;gap:10px;flex-wrap:wrap;padding-top:6px}
+/* Los botones de guardar quedan PEGADOS abajo mientras se edita (antes había que bajar hasta el final de una página larga). Se estira hasta los
+   bordes de la tarjeta para que no se vea cortada, y en celular deja lugar al botón flotante "Necesito ayuda". */
+.cf-acts{position:sticky;bottom:0;z-index:6;margin:14px -22px -22px;padding:12px 22px;background:rgb(var(--surface2));border-top:1px solid rgb(var(--border));border-radius:0 0 16px 16px}
+@media(max-width:640px){.cf-acts{padding-right:84px}}
+/* Para que la barra de guardar se pegue abajo, el contenedor principal NO puede ser un "scroller" propio (tenía overflow:auto aunque el que
+   scrollea es la página entera, y eso anulaba el pegado). Solo cuando hay un editor abierto; el recorte horizontal se mantiene con "clip". */
+.main:has(.cf-wrap){overflow-x:clip;overflow-y:visible}
 .cf-pv-t{font-size:12px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:rgb(var(--textMuted));margin:0 0 10px}
 .cf-pv{max-height:70vh;overflow:auto;border-radius:14px}
 .cf-pv .quizstage{min-height:0;padding:0;background:none}
