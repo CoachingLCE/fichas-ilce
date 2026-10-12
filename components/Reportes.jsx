@@ -118,6 +118,7 @@ function GraficoLineaDoble({ etiquetas, actual, anterior, color = '#22d3ee', col
   );
 }
 import { exportarCSV, exportarXLSX, exportarPDF } from '../lib/exportUtils';
+import { calcularVariacion, textoVariacion, fmtNum } from '../lib/variacion';
 
 // Misma normalización que ya usa el backend (/api/actividades/reporte) para cruzar una
 // respuesta con su actividad por título — se repite acá (liviana, sin import) para poder
@@ -889,16 +890,21 @@ function serieMensual(rows, ym) {
 }
 
 function ReportesResumen({ rows, irAConFiltro }) {
-  const sem = rows.filter((r) => (r.fecha || '') >= hace(7)).length;
   const completadas = rows.filter((r) => r.estado === 'Completada').length;
   const pendientes = rows.filter((r) => r.estado === 'Pendiente').length;
   const enRevision = rows.filter((r) => r.estado === 'En revisión').length;
   const enProceso = pendientes + enRevision;
   const pctCompletadas = rows.length ? Math.round(completadas / rows.length * 100) : 0;
 
-  const nuevos30 = rows.filter((r) => (r.fecha || '') >= hace(30)).length;
-  const nuevos30prev = rows.filter((r) => (r.fecha || '') >= hace(60) && (r.fecha || '') < hace(30)).length;
-  const variacion = nuevos30prev > 0 ? Math.round((nuevos30 - nuevos30prev) / nuevos30prev * 100) : (nuevos30 > 0 ? 100 : 0);
+  // Períodos de N días CONTANDO HOY (antes hace(7)/hace(30) incluían un día de más: lo rotulado "7 días" eran 8, y los "30" eran 31 contra 30 del
+  // período anterior). Cada comparación usa un período anterior del MISMO largo.
+  const enRango = (desde, hasta) => rows.filter((r) => (r.fecha || '') >= desde && (hasta == null || (r.fecha || '') < hasta)).length;
+  const sem = enRango(hace(6), null);                       // últimos 7 días (hoy y los 6 anteriores)
+  const semPrev = enRango(hace(13), hace(6));               // los 7 días anteriores a esos
+  const nuevos30 = enRango(hace(29), null);                 // últimos 30 días
+  const nuevos30prev = enRango(hace(59), hace(29));         // los 30 días anteriores a esos
+  const varSem = calcularVariacion(sem, semPrev), tSem = textoVariacion(varSem, { etiqueta: '7 días previos' });
+  const var30 = calcularVariacion(nuevos30, nuevos30prev);
 
   // Meses con datos + el mes en curso (aunque todavía no tenga fichas, para poder elegirlo).
   const ymHoy = useMemo(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }, []);
@@ -954,8 +960,12 @@ function ReportesResumen({ rows, irAConFiltro }) {
   insights.push({ tone: pctCompletadas >= 80 ? 'good' : pctCompletadas >= 50 ? 'warn' : 'bad', ico: 'check', txt: <>La tasa de finalización general es del <b>{pctCompletadas}%</b> ({completadas} de {rows.length} fichas).</> });
   if (nuevos30 > 0 || nuevos30prev > 0) {
     insights.push({
-      tone: variacion > 0 ? 'good' : variacion < 0 ? 'bad' : '', ico: 'trend',
-      txt: <>Las fichas nuevas {variacion > 0 ? 'subieron' : variacion < 0 ? 'bajaron' : 'se mantuvieron'} un <b>{Math.abs(variacion)}%</b> en los últimos 30 días respecto de los 30 anteriores.</>
+      tone: var30.tono === 'bueno' ? 'good' : var30.tono === 'malo' ? 'bad' : '', ico: 'trend',
+      txt: var30.tipo === 'igual'
+        ? <>Las fichas nuevas se mantuvieron en los últimos 30 días ({nuevos30}) respecto de los 30 anteriores ({nuevos30prev}).</>
+        : (var30.desdeCero || var30.absoluto)
+          ? <>Las fichas nuevas {var30.tipo === 'sube' ? 'subieron' : 'bajaron'} de <b>{nuevos30prev}</b> a <b>{nuevos30}</b> en los últimos 30 días respecto de los 30 anteriores.</>
+          : <>Las fichas nuevas {var30.tipo === 'sube' ? 'subieron' : 'bajaron'} un <b>{fmtNum(Math.abs(var30.delta))}%</b> en los últimos 30 días respecto de los 30 anteriores (antes: {nuevos30prev}).</>
     });
   }
   if (enProceso > 0) insights.push({ tone: 'warn', ico: 'clock', txt: <>Hay <b>{enProceso}</b> ficha{enProceso === 1 ? '' : 's'} en proceso ({pendientes} pendiente{pendientes === 1 ? '' : 's'}, {enRevision} en revisión).</> });
@@ -966,7 +976,7 @@ function ReportesResumen({ rows, irAConFiltro }) {
         <RepKpi icon={<Ico.list />} n={rows.length} label="Total de fichas" onClick={() => irAConFiltro && irAConFiltro('estado', '')} />
         <RepKpi icon={<Ico.check />} n={completadas} label="Completadas" sub={rows.length ? `${pctCompletadas}% del total` : null} onClick={() => irAConFiltro && irAConFiltro('estado', 'Completada')} />
         <RepKpi icon={<Ico.clock />} n={enProceso} label="En proceso" sub={`${pendientes} pendientes · ${enRevision} en revisión`} />
-        <RepKpi icon={<Ico.trend />} n={sem} label="Nuevas · 7 días" sub={(variacion > 0 ? '↑ +' : variacion < 0 ? '↓ ' : '→ ') + variacion + '% vs. 30 días previos'} subTone={variacion > 0 ? 'good' : variacion < 0 ? 'bad' : ''} />
+        <RepKpi icon={<Ico.trend />} n={sem} label="Nuevas · 7 días" sub={tSem.completo} subTone={varSem.tono === 'bueno' ? 'good' : varSem.tono === 'malo' ? 'bad' : ''} />
       </div>
 
       {insights.length > 0 && (
@@ -1000,7 +1010,7 @@ function ReportesResumen({ rows, irAConFiltro }) {
           const sum = (a) => (a || []).reduce((x, v) => x + (v || 0), 0);
           const nuevas = sum(serie.total), comp = sum(serie.completadas), pend = sum(serie.pendientes);
           const nuevasPrev = sum(seriePrev.total);
-          const variacionMes = nuevasPrev > 0 ? Math.round((nuevas - nuevasPrev) / nuevasPrev * 100) : (nuevas > 0 ? 100 : 0);
+          const varMes = calcularVariacion(nuevas, nuevasPrev), tMes = textoVariacion(varMes, { etiqueta: 'mes anterior' });
           const tasa = nuevas ? Math.round(comp / nuevas * 100) : 0;
           const hayPend = pend > 0;
           return (<>
@@ -1019,9 +1029,9 @@ function ReportesResumen({ rows, irAConFiltro }) {
                 <span>Nuevas por día — {nombreMesLargo(mes)}</span>
                 <span style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                   <b>{nuevas.toLocaleString('es-AR')}</b>
-                  {nuevasPrev > 0 && (
-                    <span className={'evol-var' + (variacionMes > 0 ? ' good' : variacionMes < 0 ? ' bad' : '')} title={`${nuevasPrev} fichas nuevas en ${nombreMesLargo(mesPrev)}`}>
-                      {variacionMes > 0 ? '▲' : variacionMes < 0 ? '▼' : '→'} {Math.abs(variacionMes)}% vs. mes anterior
+                  {(nuevas > 0 || nuevasPrev > 0) && (
+                    <span className={'evol-var' + (varMes.tono === 'bueno' ? ' good' : varMes.tono === 'malo' ? ' bad' : '')} title={`${nuevasPrev} fichas nuevas en ${nombreMesLargo(mesPrev)}`}>
+                      {tMes.completo}
                     </span>
                   )}
                 </span>
