@@ -24,8 +24,8 @@ function IconYoutube() {
 
 // Enlaces del pie de las pantallas finales (pedido de Diego: dirección nueva del campus y del blog, en todas las pantallas finales).
 const URL_CAMPUS = 'https://campus.institutoilce.com/';
-const URL_BLOG = 'https://coachingeducativolider.com/blog';
-const I_CAMPUS = '', I_CAFE = '', I_CHECK = '', I_X = '', I_RETRY = ''; // glifos de la fuente de íconos de la app
+const URL_BLOG = 'https://www.coachingeducativolider.com/blog';
+const I_CAMPUS = '', I_BLOG = '', I_CHECK = '', I_X = '', I_RETRY = ''; // glifos de la fuente de íconos de la app
 
 // Pie que se muestra en CUALQUIER pantalla final (actividad con feedback inmediato, actividad normal y "ya completada"): volver al campus, una
 // invitación a leer una nota del blog y las redes de la comunidad.
@@ -33,7 +33,7 @@ function PieFinal() {
   return (
     <div className="quiz-postfoot">
       <a className="quiz-postlink" href={URL_CAMPUS} target="_blank" rel="noopener noreferrer">{I_CAMPUS} Volver al campus</a>
-      <a className="quiz-postlink quiz-postlink-sec" href={URL_BLOG} target="_blank" rel="noopener noreferrer">{I_CAFE} Tomate un descanso y leé una nota</a>
+      <a className="quiz-postlink quiz-postlink-sec" href={URL_BLOG} target="_blank" rel="noopener noreferrer">{I_BLOG} Leer una nota en el blog</a>
       <div className="quiz-social">
         <a href="https://www.instagram.com/institutoilce/" target="_blank" rel="noopener noreferrer" title="Instagram" className="quiz-social-btn"><IconInstagram /></a>
         <a href="https://www.whatsapp.com/channel/0029VaBfdccGOj9tAv5s1A0G" target="_blank" rel="noopener noreferrer" title="WhatsApp" className="quiz-social-btn"><IconWhatsapp /></a>
