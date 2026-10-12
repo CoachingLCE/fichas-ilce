@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { validarEmail } from '../lib/validacion';
 
 import { Isologo } from './Isologo';
+import { PieFinal, URL_CAMPUS } from './PieFinal';
 
 // Las actividades se distinguen de los formularios por el color de acento: violeta/magenta (aprender) en vez de turquesa (completar).
 const ESTILO_ACTIVIDAD = `.quizcard-act .quiz-band{background:linear-gradient(120deg,#1d0b3a 0%,#4a1a85 52%,#96198f 100%)}
@@ -10,38 +11,8 @@ const ESTILO_ACTIVIDAD = `.quizcard-act .quiz-band{background:linear-gradient(12
 .quizcard-act .quiz-opt:hover{border-color:rgb(var(--accentPurple))}
 .quizcard-act .btn-teal{background:linear-gradient(90deg,rgb(var(--accentPurple)),rgb(var(--accentMagenta)));border-color:transparent;color:#fff}`;
 
-// Íconos de redes en línea (trazo simple, sin reproducir el isotipo de marca de cada red)
-// para el pie "AL FINALIZAR SIEMPRE" que pidió Diego.
-function IconInstagram() {
-  return (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none" /></svg>);
-}
-function IconWhatsapp() {
-  return (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 20l1.3-3.9A8 8 0 1 1 8.3 19L4 20Z" /><path d="M8.5 9.3c.2-.5.5-.5.8-.5h.5c.2 0 .4 0 .6.5s.7 1.6.7 1.8-.1.3-.2.4l-.4.4c-.1.2-.3.3-.1.6.2.4.8 1.2 1.6 1.9.9.8 1.6 1.1 1.9 1.2.3.1.4.1.6-.1l.5-.6c.2-.2.4-.2.6-.1l1.5.7c.2.1.4.2.4.4 0 .6-.2 1.3-.6 1.6-.4.3-.9.6-1.6.6-1 0-2.5-.4-4.2-1.9-1.9-1.7-2.9-3.3-3.1-3.7-.2-.4-.9-1.4-.9-2.5 0-.6.2-1.1.4-1.4Z" fill="currentColor" stroke="none" /></svg>);
-}
-function IconYoutube() {
-  return (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2.5" y="5.5" width="19" height="13" rx="4" /><path d="M10.5 9.3v5.4l4.6-2.7-4.6-2.7Z" fill="currentColor" stroke="none" /></svg>);
-}
-
-// Enlaces del pie de las pantallas finales (pedido de Diego: dirección nueva del campus y del blog, en todas las pantallas finales).
-const URL_CAMPUS = 'https://campus.institutoilce.com/';
-const URL_BLOG = 'https://www.coachingeducativolider.com/blog';
-const I_CAMPUS = '', I_BLOG = '', I_CHECK = '', I_X = '', I_RETRY = ''; // glifos de la fuente de íconos de la app
-
-// Pie que se muestra en CUALQUIER pantalla final (actividad con feedback inmediato, actividad normal y "ya completada"): volver al campus, una
-// invitación a leer una nota del blog y las redes de la comunidad.
-function PieFinal() {
-  return (
-    <div className="quiz-postfoot">
-      <a className="quiz-postlink" href={URL_CAMPUS} target="_blank" rel="noopener noreferrer">{I_CAMPUS} Volver al campus</a>
-      <a className="quiz-postlink quiz-postlink-sec" href={URL_BLOG} target="_blank" rel="noopener noreferrer">{I_BLOG} Leer una nota en el blog</a>
-      <div className="quiz-social">
-        <a href="https://www.instagram.com/institutoilce/" target="_blank" rel="noopener noreferrer" title="Instagram" className="quiz-social-btn"><IconInstagram /></a>
-        <a href="https://www.whatsapp.com/channel/0029VaBfdccGOj9tAv5s1A0G" target="_blank" rel="noopener noreferrer" title="WhatsApp" className="quiz-social-btn"><IconWhatsapp /></a>
-        <a href="https://www.youtube.com/channel/UCORUTxo5fMucj3gKqyyqoAQ" target="_blank" rel="noopener noreferrer" title="YouTube" className="quiz-social-btn"><IconYoutube /></a>
-      </div>
-    </div>
-  );
-}
+// Glifos de la fuente de íconos de la app que usa la práctica de repaso (tilde, cruz y reintentar).
+const I_CHECK = '', I_X = '', I_RETRY = '';
 
 // Ilustración propia (pulgar arriba) para la pantalla final de la práctica de repaso.
 function PulgarArriba() {

@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 // concepto que se agregó en Presentismo ILCE, ahora acá para todo el equipo. Un mensaje
 // distinto por día de la semana, fijo durante todo ese día (nada de rotación aleatoria),
 // calculado con la fecha LOCAL del dispositivo de quien está mirando.
-const LINK_BLOG = 'https://coachingeducativolider.com/blog';
+const LINK_BLOG = 'https://www.coachingeducativolider.com/blog';
 
 // Index 0-6 = Date.getDay() (0 = domingo).
 const MENSAJES = [
