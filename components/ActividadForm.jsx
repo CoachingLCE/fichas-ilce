@@ -319,7 +319,7 @@ export default function ActividadForm({ act, modoPreview = false, pasoInicial = 
           </>)}
           {intento > 1 && <p className="muted" style={{ fontSize: 12.5, margin: '4px 0' }}>Este intento fue solo de práctica y no se guarda: cuenta tu primer intento.</p>}
           <div><button type="button" className="pr-link" onClick={reintentar}>{I_RETRY} Intentar de nuevo</button></div>
-          <div style={{ margin: '10px 0 4px' }}><a className="btn btn-teal pr-btn" href={URL_CAMPUS}>Finalizar</a></div>
+          <div style={{ margin: '10px 0 4px' }}><a className="btn btn-teal pr-btn" href={URL_CAMPUS} target="_blank" rel="noopener noreferrer">Finalizar</a></div>
           <details className="pr-det">
             <summary>Ver las respuestas</summary>
             {act.preguntas.map((q, i) => {
