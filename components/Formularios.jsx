@@ -6,6 +6,8 @@ import { SelectDropdown } from './SelectDropdown';
 import { tienePermisoEliminarRespuestas } from '../lib/permisos';
 import { useDialogos } from './Dialogos';
 import DrawerRespuesta from './DrawerRespuesta';
+import { paginarPorMes } from '../lib/respuestasPorMes';
+import VerMasMeses from './VerMasMeses';
 
 const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
@@ -153,6 +155,7 @@ function Respuestas({ usuario, showToast, soloEspeciales }) {
   const [abierto, setAbierto] = useState(null); // la respuesta abierta en el panel lateral (objeto), o null
   const [importarAbierto, setImportarAbierto] = useState(false);
   const [orden, setOrden] = useState({ col: 'fecha', dir: 'desc' });
+  const [mesesVistos, setMesesVistos] = useState(1); // cuántos meses se muestran (arranca con el más reciente; "Ver más" suma el anterior)
   const puedeEliminar = tienePermisoEliminarRespuestas(usuario);
 
   // Pedido de Diego ("agregar eliminar acá"): mismo criterio y UX que ya usa el borrado de
@@ -202,12 +205,15 @@ function Respuestas({ usuario, showToast, soloEspeciales }) {
   // Contadores de los chips: cada grupo aplica el filtro del OTRO grupo y no el suyo, para que al elegir algo no se vacíen.
   const paraChipsForm = useMemo(() => (data || []).filter((x) => (!fCurso || cursoDe(x) === fCurso) && (!q || norm(`${x.nombre} ${x.email} ${x.curso} ${x.edicion}`).includes(norm(q)))), [data, q, fCurso]);
   const paraChipsCurso = useMemo(() => (data || []).filter((x) => (!fForm || x.formulario === fForm) && (!q || norm(`${x.nombre} ${x.email} ${x.curso} ${x.edicion}`).includes(norm(q)))), [data, q, fForm]);
+  // Respuestas por mes: se abre con el mes más reciente y "Ver más" suma el anterior (así no se satura al cargar). Con texto en el buscador se muestran todas.
+  useEffect(() => { setMesesVistos(1); }, [fForm, fCurso, q]);
+  const pag = useMemo(() => paginarPorMes(filtradas, (x) => x.fecha, mesesVistos, !!norm(q)), [filtradas, mesesVistos, q]);
   const ordenadas = useMemo(() => {
     const { col, dir } = orden;
     const val = (x) => (col === 'fecha' ? (x.fecha || '') : (x[col] || '')).toString().toLowerCase();
-    const arr = [...filtradas].sort((a, b) => { const va = val(a), vb = val(b); const c = va < vb ? -1 : va > vb ? 1 : 0; return dir === 'asc' ? c : -c; });
+    const arr = [...pag.visibles].sort((a, b) => { const va = val(a), vb = val(b); const c = va < vb ? -1 : va > vb ? 1 : 0; return dir === 'asc' ? c : -c; });
     return arr;
-  }, [filtradas, orden]);
+  }, [pag.visibles, orden]);
   const ordenarPor = (col) => setOrden((o) => (o.col === col ? { col, dir: o.dir === 'asc' ? 'desc' : 'asc' } : { col, dir: 'asc' }));
   const flecha = (col) => (orden.col === col ? (orden.dir === 'asc' ? ' ▲' : ' ▼') : '');
   const fmt = (iso) => { const d = new Date(iso); return isNaN(d) ? iso : d.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }); };
@@ -259,7 +265,7 @@ function Respuestas({ usuario, showToast, soloEspeciales }) {
           onImportado={() => { setImportarAbierto(false); setData(null); cargar(); showToast && showToast(' Respuestas importadas'); }}
         />
       )}
-      <p className="count">{filtradas.length} respuesta(s)</p>
+      <p className="count">{pag.visibles.length} de {filtradas.length} respuesta(s)</p>
       {filtradas.length === 0 ? <div className="empty empty-sm"><p>{(data || []).length === 0 && soloEspeciales ? 'Todavía no hay respuestas de actividades especiales. Cuando alguien se inscriba a un laboratorio, masterclass u otra actividad, aparece acá.' : 'No encontramos respuestas con estos filtros.'}</p></div> : (
         <div className="tablewrap"><table>
           <thead><tr>
@@ -287,6 +293,7 @@ function Respuestas({ usuario, showToast, soloEspeciales }) {
           ))}</tbody>
         </table></div>
       )}
+      <VerMasMeses visibles={pag.visibles.length} total={filtradas.length} proximoMes={pag.proximoMes} onVerMas={() => setMesesVistos((n) => n + 1)} />
       {/* Mismo panel lateral que "Respuestas fichas" (pedido del equipo: una sola forma de ver las respuestas). Antes la respuesta se desplegaba hacia abajo, dentro de la tabla. */}
       <DrawerRespuesta abierto={!!abierto} onCerrar={() => setAbierto(null)} etiqueta="Detalle de la respuesta del formulario"
         nombre={abierto ? (abierto.nombre || abierto.email || 'Respuesta anónima') : ''}

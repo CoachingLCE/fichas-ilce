@@ -7,6 +7,8 @@ import ActividadForm from './ActividadForm';
 import { IsologoDefs } from './Isologo';
 import { useDialogos } from './Dialogos';
 import DrawerRespuesta from './DrawerRespuesta';
+import { paginarPorMes } from '../lib/respuestasPorMes';
+import VerMasMeses from './VerMasMeses';
 
 const slugify = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -1030,20 +1032,6 @@ function ModalRespuestaDetalle({ x, onCerrar }) {
   );
 }
 
-// Mes (hora local) de una fecha ISO, como "2026-09"; sin fecha válida → "sin-fecha".
-function mesClave(iso) {
-  const d = new Date(iso);
-  if (!iso || isNaN(d)) return 'sin-fecha';
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-}
-const MESES_ES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-function nombreMes(clave) {
-  if (clave === 'sin-fecha') return 'sin fecha';
-  const [y, m] = clave.split('-');
-  const mes = MESES_ES[Number(m) - 1];
-  return `${mes.charAt(0).toUpperCase()}${mes.slice(1)} ${y}`;
-}
-
 function Respuestas({ usuario, irABuscador, showToast }) {
   const { confirmar, avisar } = useDialogos();
   const [data, setData] = useState(null);
@@ -1106,19 +1094,7 @@ function Respuestas({ usuario, irABuscador, showToast }) {
   // Respuestas por mes: se muestra primero el mes más reciente y "Ver más" abre el mes anterior, y así sucesivamente.
   // Con texto en el buscador se muestran todas (se busca a una persona en todo el historial).
   useEffect(() => { setMesesVistos(1); }, [fCurso, fEd, fAct, q]);
-  const { visibles, mesesTotal, proximoMes } = useMemo(() => {
-    const claves = [];
-    const vistas = new Set();
-    for (const x of filtradas) { const k = mesClave(x.fecha); if (!vistas.has(k)) { vistas.add(k); claves.push(k); } }
-    if (norm(q)) return { visibles: filtradas, mesesTotal: claves.length, proximoMes: null };
-    const mostrar = new Set(claves.slice(0, mesesVistos));
-    const prox = claves[mesesVistos] || null;
-    return {
-      visibles: filtradas.filter((x) => mostrar.has(mesClave(x.fecha))),
-      mesesTotal: claves.length,
-      proximoMes: prox ? { clave: prox, cantidad: filtradas.filter((x) => mesClave(x.fecha) === prox).length } : null
-    };
-  }, [filtradas, mesesVistos, q]);
+  const { visibles, mesesTotal, proximoMes } = useMemo(() => paginarPorMes(filtradas, (x) => x.fecha, mesesVistos, !!norm(q)), [filtradas, mesesVistos, q]);
   if (!data) return <div className="spin" />;
 
   // Nota: antes acá había una barra de KPIs (respuestas/estudiantes/actividades/promedio) que
@@ -1182,12 +1158,7 @@ function Respuestas({ usuario, irABuscador, showToast }) {
           })}</tbody>
         </table></div>
       )}
-      {filtradas.length > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, flexWrap: 'wrap', margin: '16px 0 4px' }}>
-          <span className="muted" style={{ fontSize: 13 }}>Mostrando <b>{visibles.length}</b> de <b>{filtradas.length}</b> respuestas</span>
-          {proximoMes && <button className="btn-sm solid" onClick={() => setMesesVistos((n) => n + 1)}>Ver más · {nombreMes(proximoMes.clave)} ({proximoMes.cantidad})</button>}
-        </div>
-      )}
+      <VerMasMeses visibles={visibles.length} total={filtradas.length} proximoMes={proximoMes} onVerMas={() => setMesesVistos((n) => n + 1)} />
       {detalleAbierto && <ModalRespuestaDetalle x={detalleAbierto} onCerrar={() => setDetalleAbierto(null)} />}
     </>
   );

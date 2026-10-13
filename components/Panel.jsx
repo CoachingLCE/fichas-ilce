@@ -23,6 +23,8 @@ import TourGuiado from './TourGuiado';
 import { SelectDropdown, FiltroChip } from './SelectDropdown';
 import { claveLugarFila } from '../lib/localidades';
 import ConstructorFormulario from './ConstructorFormulario';
+import { paginarPorMes } from '../lib/respuestasPorMes';
+import VerMasMeses from './VerMasMeses';
 
 // Pedido de Diego: misma estructura de orden en las tres tablas de "Respuestas" (Fichas,
 // Actividades, Formularios) — a la izquierda de todo, Fecha y después Nombre; el resto de las
@@ -170,6 +172,7 @@ export default function Panel() {
   const [fDesde, setFDesde] = useState(''); const [fHasta, setFHasta] = useState('');
   const [visCols, setVisCols] = useState(new Set(COLS_POR_DEFECTO));
   const [colModal, setColModal] = useState(false);
+  const [mesesVistos, setMesesVistos] = useState(1); // cuántos meses de fichas se muestran (arranca con el más reciente; "Ver más" suma el anterior)
   // Pedido del equipo: las columnas elegidas se mantienen (antes, al volver a entrar, había que elegirlas de nuevo). Se guardan en este navegador.
   useEffect(() => {
     try {
@@ -309,6 +312,13 @@ export default function Panel() {
       // la Sheet, que no es necesariamente cronológico.
     }).sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
   }, [rows, q, fEstado, fCurso, fEd, fPais, fLoc, fProv, fExterior, fDesde, fHasta]);
+
+  // Pedido de Diego: que se abran las respuestas del MES más reciente y "Ver más" abra el anterior, así no se satura al cargar (igual que en Actividades y Formularios).
+  // Con una búsqueda, un rango de fechas o un lugar elegido desde un reporte se muestran todas (se busca algo puntual o se espera ver todas las fichas que el reporte contó).
+  // Las exportaciones (CSV y Excel) siguen llevando TODAS las filas filtradas, no solo las del mes.
+  useEffect(() => { setMesesVistos(1); }, [q, fEstado, fCurso, fEd, fPais, fLoc, fProv, fExterior, fDesde, fHasta]);
+  const pagFichas = useMemo(() => paginarPorMes(filtradas, (r) => r.fecha, mesesVistos, !!norm(q) || !!fDesde || !!fHasta || !!fLoc || !!fProv), [filtradas, mesesVistos, q, fDesde, fHasta, fLoc, fProv]);
+  const filasMes = pagFichas.visibles;
 
   // Base para los smart chips: aplica todos los filtros MENOS el estado, así los contadores
   // reflejan el resto de los filtros activos.
@@ -602,12 +612,12 @@ export default function Panel() {
                 <button className="btn-sm" onClick={limpiar}>Limpiar filtros</button>
               </div>
             )}
-            <p className="count">Mostrando <b>{Math.min(300, filtradas.length)}</b> de <b>{filtradas.length}</b> inscripciones{filtradas.length > 300 ? ' (afiná la búsqueda para ver el resto)' : ''}</p>
+            <p className="count">Mostrando <b>{Math.min(300, filasMes.length)}</b> de <b>{filtradas.length}</b> inscripciones{filasMes.length > 300 ? ' (afiná la búsqueda para ver el resto)' : ''}</p>
             <div className="tablewrap tablewrap-inscripciones">
               <table>
                 <thead><tr>{ALL_COLS.filter((c) => visCols.has(c[0])).map((c) => <th key={c[0]} className={'col-' + c[0] + claseFija(c[0], visCols)} style={estiloFija(c[0], visCols)}>{c[1]}</th>)}</tr></thead>
                 <tbody>
-                  {filtradas.slice(0, 300).map((r) => (
+                  {filasMes.slice(0, 300).map((r) => (
                     <tr key={r.id} onClick={() => abrir(r)}>
                       {ALL_COLS.filter((c) => visCols.has(c[0])).map(([k]) => <td key={k} className={'col-' + k + claseFija(k, visCols)} style={estiloFija(k, visCols)} title={k === 'nom' ? [r.nom, r.ape].filter(Boolean).join(' ') : undefined}>{celda(r, k)}</td>)}
                     </tr>
@@ -618,7 +628,7 @@ export default function Panel() {
             {/* Celular: lista de tarjetas con lo importante (la tabla de arriba se oculta). Tocar una
                 tarjeta abre el mismo detalle de siempre, que tiene todos los datos. */}
             <div className="mcards" aria-label="Inscripciones">
-              {filtradas.slice(0, 300).map((r) => (
+              {filasMes.slice(0, 300).map((r) => (
                 <div
                   key={r.id}
                   className="mcard"
@@ -636,6 +646,7 @@ export default function Panel() {
                 </div>
               ))}
             </div>
+            <VerMasMeses visibles={filasMes.length} total={filtradas.length} proximoMes={pagFichas.proximoMes} onVerMas={() => setMesesVistos((n) => n + 1)} etiqueta="inscripciones" conConteo={false} />
           </>
         )}
 
