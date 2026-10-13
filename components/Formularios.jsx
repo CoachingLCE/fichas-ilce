@@ -5,6 +5,7 @@ import { fechaCreacion } from '../lib/fechaCreacion';
 import { SelectDropdown } from './SelectDropdown';
 import { tienePermisoEliminarRespuestas } from '../lib/permisos';
 import { useDialogos } from './Dialogos';
+import DrawerRespuesta from './DrawerRespuesta';
 
 const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
@@ -149,7 +150,7 @@ function Respuestas({ usuario, showToast, soloEspeciales }) {
   const [q, setQ] = useState('');
   const [fForm, setFForm] = useState('');
   const [fCurso, setFCurso] = useState(''); // '' = todos · SIN_CURSO = las que no están relacionadas con ningún curso
-  const [abierto, setAbierto] = useState(null);
+  const [abierto, setAbierto] = useState(null); // la respuesta abierta en el panel lateral (objeto), o null
   const [importarAbierto, setImportarAbierto] = useState(false);
   const [orden, setOrden] = useState({ col: 'fecha', dir: 'desc' });
   const puedeEliminar = tienePermisoEliminarRespuestas(usuario);
@@ -268,46 +269,48 @@ function Respuestas({ usuario, showToast, soloEspeciales }) {
             <th style={{ minWidth: 130, cursor: 'pointer' }} onClick={() => ordenarPor('curso')}>Curso{flecha('curso')}</th>
             <th style={{ minWidth: 70, cursor: 'pointer' }} onClick={() => ordenarPor('edicion')}>Edic.{flecha('edicion')}</th>
             <th style={{ minWidth: 160, cursor: 'pointer' }} onClick={() => ordenarPor('formulario')}>Formulario{flecha('formulario')}</th>
-            <th style={{ minWidth: 70 }}></th>
             {puedeEliminar && <th style={{ minWidth: 40 }}></th>}
           </tr></thead>
           <tbody>{ordenadas.map((x) => (
-            <>
-              <tr key={x.id} onClick={() => setAbierto(abierto === x.id ? null : x.id)}>
-                <td className="sec">{(x.fecha || '').slice(0, 10)}</td>
-                <td><b>{x.nombre || '—'}</b></td>
-                <td className="sec">{x.email || 'Anónimo'}</td>
-                <td>{x.curso || '—'}</td>
-                <td>{x.edicion || '—'}</td>
-                {/* Pedido de Diego: diferenciar los formularios por color — mismo color del
-                    curso (colorCurso) que ya usa Actividades, para que las dos tablas de
-                    Respuestas sigan el mismo criterio. */}
-                <td style={{ color: colorCurso(x.curso) }}>{x.formulario}</td>
-                <td className="teal" style={{ color: 'rgb(var(--accentTeal))', fontWeight: 500 }}>{abierto === x.id ? 'Ocultar' : 'Ver'}</td>
-                {/* Pedido de Diego: "agregar eliminar acá" — mismo permiso y UX que el borrado
-                    de respuestas de actividades. stopPropagation para no disparar el toggle
-                    de Ver/Ocultar de la fila al hacer clic en el tacho. */}
-                {puedeEliminar && <td><button className="btn-sm" style={{ color: 'rgb(248 113 113)' }} onClick={(e) => { e.stopPropagation(); eliminarRespuesta(x); }} title="Eliminar esta respuesta"></button></td>}
-              </tr>
-              {abierto === x.id && (
-                <tr><td colSpan={puedeEliminar ? 8 : 7} style={{ background: 'rgb(var(--surface2))' }}>
-                  {/* Pedido de Diego: "cuando se abre que se ponga todo en una línea" — cada
-                      campo (etiqueta: valor) en un renglón, en vez de etiqueta arriba y valor
-                      abajo como antes. */}
-                  <div style={{ padding: '10px 6px', display: 'grid', gap: 6 }}>
-                    {Object.entries(x.r || {}).filter(([k]) => !['email', 'nombre', 'curso', 'edicion', 'importadoDe'].includes(k)).map(([k, v]) => (
-                      <div key={k} style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 12, color: 'rgb(var(--textMuted))', textTransform: 'capitalize', flex: '0 0 160px' }}>{k}</span>
-                        <span style={{ fontSize: 13.5 }}>{String(v)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </td></tr>
-              )}
-            </>
+            <tr key={x.id} className="fila-click" tabIndex={0} role="button" aria-label={`Ver la respuesta de ${x.nombre || x.email || 'una persona anónima'}`}
+              onClick={() => setAbierto(x)} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setAbierto(x); } }}>
+              <td className="sec">{(x.fecha || '').slice(0, 10)}</td>
+              <td><b>{x.nombre || '—'}</b></td>
+              <td className="sec">{x.email || 'Anónimo'}</td>
+              <td>{x.curso || '—'}</td>
+              <td>{x.edicion || '—'}</td>
+              {/* Pedido de Diego: diferenciar los formularios por color — mismo color del curso (colorCurso) que ya usa Actividades. */}
+              <td style={{ color: colorCurso(x.curso) }}>{x.formulario}</td>
+              {/* Pedido de Diego: "agregar eliminar acá" — mismo permiso y UX que el borrado de respuestas de actividades. stopPropagation para que el clic en el tacho no abra el detalle. */}
+              {puedeEliminar && <td><button className="btn-sm" style={{ color: 'rgb(248 113 113)' }} onClick={(e) => { e.stopPropagation(); eliminarRespuesta(x); }} title="Eliminar esta respuesta"></button></td>}
+            </tr>
           ))}</tbody>
         </table></div>
       )}
+      {/* Mismo panel lateral que "Respuestas fichas" (pedido del equipo: una sola forma de ver las respuestas). Antes la respuesta se desplegaba hacia abajo, dentro de la tabla. */}
+      <DrawerRespuesta abierto={!!abierto} onCerrar={() => setAbierto(null)} etiqueta="Detalle de la respuesta del formulario"
+        nombre={abierto ? (abierto.nombre || abierto.email || 'Respuesta anónima') : ''}
+        sub={abierto ? [abierto.formulario, abierto.curso, abierto.edicion ? `Ed. ${abierto.edicion}` : ''].filter(Boolean).join(' · ') : ''}>
+        {abierto && (
+          <div style={{ display: 'grid', gap: 8 }}>
+            {[['Fecha', (abierto.fecha || '').slice(0, 10)], ['Email', abierto.email || 'Anónimo'], ['Curso', abierto.curso], ['Edición', abierto.edicion], ['Formulario', abierto.formulario]].filter(([, v]) => v).map(([k, v]) => (
+              <div key={k} style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 12, color: 'rgb(var(--textMuted))', flex: '0 0 110px' }}>{k}</span>
+                <span style={{ fontSize: 13.5 }}>{String(v)}</span>
+              </div>
+            ))}
+            <h3 style={{ fontSize: 14, margin: '14px 0 4px' }}>Respuestas</h3>
+            {/* Pedido de Diego: cada campo (etiqueta: valor) en un renglón. */}
+            {Object.entries(abierto.r || {}).filter(([k]) => !['email', 'nombre', 'curso', 'edicion', 'importadoDe'].includes(k)).map(([k, v]) => (
+              <div key={k} style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 12, color: 'rgb(var(--textMuted))', textTransform: 'capitalize', flex: '0 0 110px' }}>{k}</span>
+                <span style={{ fontSize: 13.5, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', flex: 1, minWidth: 0 }}>{String(v)}</span>
+              </div>
+            ))}
+            {Object.keys(abierto.r || {}).filter((k) => !['email', 'nombre', 'curso', 'edicion', 'importadoDe'].includes(k)).length === 0 && <p className="muted" style={{ fontSize: 13 }}>Esta respuesta no tiene campos para mostrar.</p>}
+          </div>
+        )}
+      </DrawerRespuesta>
     </div>
   );
 }

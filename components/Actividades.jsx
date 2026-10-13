@@ -6,6 +6,7 @@ import { SelectDropdown } from './SelectDropdown';
 import ActividadForm from './ActividadForm';
 import { IsologoDefs } from './Isologo';
 import { useDialogos } from './Dialogos';
+import DrawerRespuesta from './DrawerRespuesta';
 
 const slugify = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -978,10 +979,13 @@ function ModalRespuestaDetalle({ x, onCerrar }) {
   const incorrectas = cerradas.filter((d) => d.ok === false);
   const verCerradas = soloIncorrectas ? incorrectas : cerradas;
   return (
-    <div className="mwrap on" onClick={onCerrar}>
-      <div className="modal" style={{ maxWidth: 600, maxHeight: '88vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ marginTop: 0 }}>{x.actividad}</h3>
-        <p className="muted" style={{ fontSize: 12.5, marginTop: -6 }}>{x.nombre || x.email} · {x.curso}{x.edicion ? ` · Ed. ${x.edicion}` : ''}{cerradas.length ? ` · ${x.puntaje}/${x.total} correctas en las cerradas` : ''}</p>
+    // Mismo panel lateral que "Respuestas fichas" (pedido del equipo: una sola forma de ver las respuestas). Antes era una ventana centrada y se abría desde un botón "Ver"
+    // en la última columna, a la derecha de todo: había que desplazarse para encontrarlo.
+    <DrawerRespuesta abierto onCerrar={onCerrar} etiqueta="Detalle de la respuesta de la actividad" nombre={x.nombre || x.email}
+      sub={`${x.actividad} · ${x.curso}${x.edicion ? ` · Ed. ${x.edicion}` : ''}`}
+      chips={[{ texto: `Puntaje ${x.puntaje}/${x.total}`, color: colorPorPuntaje(x.puntaje, x.total) }, ...(x.duracion ? [{ texto: `Tiempo ${fmtTiempo(x.duracion)}` }] : [])]}>
+      <div>
+        <p className="muted" style={{ fontSize: 12.5, marginTop: 0 }}>{[x.email, cerradas.length ? `${x.puntaje}/${x.total} correctas en las cerradas` : ''].filter(Boolean).join(' · ')}</p>
         {todas.length === 0 && <p className="muted">No encontramos las preguntas de esta actividad (puede haberse modificado o eliminado después de que se respondió).</p>}
         {cerradas.length > 0 && (
           <>
@@ -1021,9 +1025,8 @@ function ModalRespuestaDetalle({ x, onCerrar }) {
             ))}
           </>
         )}
-        <button className="btn-sm" style={{ marginTop: 14 }} onClick={onCerrar}>Cerrar</button>
       </div>
-    </div>
+    </DrawerRespuesta>
   );
 }
 
@@ -1153,12 +1156,13 @@ function Respuestas({ usuario, irABuscador, showToast }) {
           <thead><tr>
             <th style={{ minWidth: 120 }}>Fecha</th><th style={{ minWidth: 150 }}>Nombre</th><th style={{ minWidth: 130 }}>Curso</th><th style={{ minWidth: 78 }}>Edición</th>
             <th style={{ minWidth: 160 }}>Actividad</th><th style={{ minWidth: 180 }}>Email</th><th style={{ minWidth: 90 }}>Tiempo</th>
-            <th style={{ minWidth: 80, textAlign: 'right' }}>Puntaje</th><th style={{ minWidth: 70 }}></th>{puedeEliminar && <th style={{ minWidth: 40 }}></th>}
+            <th style={{ minWidth: 80, textAlign: 'right' }}>Puntaje</th>{puedeEliminar && <th style={{ minWidth: 40 }}></th>}
           </tr></thead>
           <tbody>{visibles.map((x) => {
             const abiertas = (x.detalle || []).filter((d) => d.tipo === 'abierta');
             return (
-            <tr key={x.id}>
+            <tr key={x.id} className="fila-click" tabIndex={0} role="button" aria-label={`Ver la respuesta de ${x.nombre || x.email || 'esta persona'}`}
+              onClick={() => setDetalleAbierto(x)} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setDetalleAbierto(x); } }}>
               <td><CeldaFechaRecienteAct iso={x.fecha} /></td>
               <td>{x.nombre || '—'}</td>
               <td><span style={{ color: colorCurso(x.curso) }}>{x.curso}</span></td>
@@ -1169,14 +1173,10 @@ function Respuestas({ usuario, irABuscador, showToast }) {
               <td style={{ color: colorCurso(x.curso) }}>{x.actividad}</td>
               <td className="sec">{x.email}</td>
               <td className="sec">{fmtTiempo(x.duracion)}</td>
-              <td style={{ textAlign: 'right' }}><b style={{ color: colorPorPuntaje(x.puntaje, x.total) }}>{x.puntaje}/{x.total}</b></td>
-              {/* Pedido de Diego: "acá falta que se pueda ver" — antes el botón "Ver" solo
-                  aparecía si la actividad tenía preguntas abiertas; ahora siempre está para
-                  poder revisar el detalle (el modal ya avisa cuando no hay abiertas). */}
-              <td><button className="btn-sm" onClick={() => setDetalleAbierto(x)} title="Ver detalle de la respuesta"> Ver{abiertas.length > 0 ? ` (${abiertas.length})` : ''}</button></td>
+              <td style={{ textAlign: 'right' }}><b style={{ color: colorPorPuntaje(x.puntaje, x.total) }}>{x.puntaje}/{x.total}</b>{abiertas.length > 0 && <div className="sec" style={{ fontSize: 11.5 }}>{abiertas.length} abierta{abiertas.length === 1 ? '' : 's'}</div>}</td>
               {/* Pedido de Diego: "Super Admin puede eliminar rtas" — solo visible con permiso
                   (tienePermisoEliminarRespuestas, hoy equivale a rol Admin). */}
-              {puedeEliminar && <td><button className="btn-sm" style={{ color: 'rgb(248 113 113)' }} onClick={() => eliminarRespuesta(x)} title="Eliminar esta respuesta"></button></td>}
+              {puedeEliminar && <td><button className="btn-sm" style={{ color: 'rgb(248 113 113)' }} onClick={(e) => { e.stopPropagation(); eliminarRespuesta(x); }} title="Eliminar esta respuesta"></button></td>}
             </tr>
             );
           })}</tbody>

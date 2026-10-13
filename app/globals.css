@@ -1811,3 +1811,7 @@ button,input,select,textarea{font-family:inherit}
 .pay-ico{flex:0 0 22px;display:flex}.pay-ico svg{width:22px;height:22px}
 .pay-txt{display:flex;flex-direction:column;align-items:flex-start;line-height:1.15;flex:1;text-align:left}
 .pay-txt small{font-weight:500;font-size:13px;opacity:.85}
+
+/* ── Respuestas (Fichas, Actividades y Formularios): tocar la fila abre el panel lateral ──────────────────────────────────────────────────────── */
+.fila-click{cursor:pointer}
+.fila-click:focus-visible{outline:2px solid rgb(var(--accentTeal));outline-offset:-2px}

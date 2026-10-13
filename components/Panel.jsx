@@ -179,6 +179,13 @@ export default function Panel() {
   }, []);
   function guardarCols(set) { try { localStorage.setItem('ilce-fichas-cols', JSON.stringify([...set])); } catch { /* */ } }
   const [sel, setSel] = useState(null); // registro abierto en drawer
+  // Con la tecla Esc se cierra el panel lateral (igual que en Respuestas de actividades y de formularios).
+  useEffect(() => {
+    if (!sel) return undefined;
+    const alTeclear = (e) => { if (e.key === 'Escape') setSel(null); };
+    document.addEventListener('keydown', alTeclear);
+    return () => document.removeEventListener('keydown', alTeclear);
+  }, [sel]);
   const [historial, setHistorial] = useState([]);
 
   useEffect(() => {
