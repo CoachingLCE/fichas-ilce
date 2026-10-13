@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { APP_URL, colorCurso, inicialesCurso, cantidadClasesFija, calcularFechaFinEdicion } from '../lib/constants';
 import Constructor from './Constructor';
+import { generarHorarios } from '../lib/husos';
 
 const ESTADO_META = {
   Publicada: { cls: 'pub', label: 'Publicada', dot: '🟢' },
@@ -411,7 +412,8 @@ function NuevaEdicionPanel({ def, usuario, onVolver, onCreada }) {
         const nuevaEd = {
           id,
           label: sincronica ? `Edición ${numero.trim()} — ${diaFechaLabel(fecha)}` : `Edición ${numero.trim()} — Cursada Asincrónica`,
-          horarios: '',
+          // Antes quedaba vacío y la ficha pública mostraba la edición solo con el título. Se generan los horarios de cada país a partir de la fecha y la hora.
+          horarios: sincronica ? generarHorarios(fecha, horaIni, horaFin) : '',
           ...(docente.trim() ? { docente: docente.trim() } : {}),
           ...(sincronica ? { fecha, ...(horaIni ? { horaIni } : {}), ...(horaFin ? { horaFin } : {}) } : {}),
           ...(fija ? { cantidadClases: String(fija) } : (cantidadClases ? { cantidadClases: String(cantidadClases) } : {}))

@@ -1793,3 +1793,10 @@ button,input,select,textarea{font-family:inherit}
 @font-face{font-family:'Dosis';src:url('/fonts/puntos.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap;unicode-range:U+26AA-26AB,U+1F534-1F535,U+1F7E0-1F7E4}
 @font-face{font-family:'TeX Gyre Adventor';src:url('/fonts/puntos.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap;unicode-range:U+26AA-26AB,U+1F534-1F535,U+1F7E0-1F7E4}
 @font-face{font-family:'TeX Gyre Adventor';src:url('/fonts/puntos.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap;unicode-range:U+26AA-26AB,U+1F534-1F535,U+1F7E0-1F7E4}
+
+/* ── Fichas completadas (pedido del equipo): columnas más juntas y nombre fijo al desplazarse a la derecha ─────────────────────────────────────────── */
+.tablewrap-inscripciones thead th,.tablewrap-inscripciones tbody td{padding-left:8px;padding-right:8px}
+.tablewrap-inscripciones .col-fija{position:sticky;z-index:1;background:rgb(var(--surface));overflow:hidden;text-overflow:ellipsis}
+.tablewrap-inscripciones thead th.col-fija{z-index:3;background:rgb(var(--surface2))}
+.tablewrap-inscripciones tbody tr:hover td.col-fija{background:rgb(var(--surface2))}
+.tablewrap-inscripciones .col-fija-ultima{box-shadow:2px 0 0 rgb(var(--border))}

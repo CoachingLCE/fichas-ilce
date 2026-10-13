@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { PAISES, PROVINCIAS_AR } from '../lib/constants';
 import { validarEmail, validarWhatsapp, validarDoc, validarNombre, filtrarTelefono, esArgentina } from '../lib/validacion';
 import { useDialogos } from './Dialogos';
+import { horariosDeEdicion } from '../lib/husos';
 
 const STEP_NAMES = ['Bienvenida', 'Edición y horario', 'Datos personales', 'Sobre vos', 'Revisión', '¡Listo!'];
 
@@ -199,7 +200,7 @@ export default function FichaWizard({ def }) {
             <p className="f-lead">Elegí el día de cursada que mejor te queda.</p>
             <div className={'field' + (errs.edicion ? ' bad' : '')}>
               {def.ediciones.length
-                ? def.ediciones.map((ed) => <Radio key={ed.id} k="edicion" val={ed.label} label={ed.label} sub={ed.horarios} />)
+                ? def.ediciones.map((ed) => <Radio key={ed.id} k="edicion" val={ed.label} label={ed.label} sub={horariosDeEdicion(ed)} />)
                 : <p className="f-lead">Todavía no hay ediciones abiertas para elegir. Podés continuar y el equipo te asignará la edición al contactarte.</p>}
               {errs.edicion && <div className="err">{errs.edicion}</div>}
             </div>

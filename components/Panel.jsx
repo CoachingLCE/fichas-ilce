@@ -28,6 +28,20 @@ import ConstructorFormulario from './ConstructorFormulario';
 // Actividades, Formularios) — a la izquierda de todo, Fecha y después Nombre; el resto de las
 // columnas no cambia, solo el orden de estas dos primeras (ver también Actividades.jsx, donde
 // Formularios.jsx ya tenía este mismo orden desde antes).
+// Pedido del equipo: al desplazarse a la derecha por las columnas, el nombre del estudiante queda fijo para saber a quién corresponde cada fila.
+// Se fijan Nombre y, si está visible, Apellido (con un ancho fijo cada uno para poder apilarlos).
+const FIJAS = { nom: 190, ape: 150 };
+function estiloFija(k, visCols) {
+  if (!(k in FIJAS)) return undefined;
+  const left = k === 'ape' && visCols.has('nom') ? FIJAS.nom : 0;
+  return { left, width: FIJAS[k], minWidth: FIJAS[k], maxWidth: FIJAS[k] };
+}
+function claseFija(k, visCols) {
+  if (!(k in FIJAS)) return '';
+  const esUltima = k === 'ape' || (k === 'nom' && !visCols.has('ape'));
+  return ' col-fija' + (esUltima ? ' col-fija-ultima' : '');
+}
+const COLS_POR_DEFECTO = ['nom', 'curso', 'ed', 'pais', 'wa', 'estado', 'fecha', 'clickwa'];
 const ALL_COLS = [
   ['fecha', 'Fecha ficha'], ['nom', 'Nombre'], ['ape', 'Apellido'], ['em', 'Email'], ['curso', 'Curso'], ['ed', 'Edición'],
   ['pais', 'País'], ['prov', 'Provincia'], ['loc', 'Localidad'], ['wa', 'WhatsApp'], ['doc', 'Documento'],
@@ -154,8 +168,16 @@ export default function Panel() {
   // Filtros por lugar (vienen del reporte "Por localidad/provincia"): { clave, etiqueta } — la clave es la misma que usa el reporte.
   const [fLoc, setFLoc] = useState(null); const [fProv, setFProv] = useState(null);
   const [fDesde, setFDesde] = useState(''); const [fHasta, setFHasta] = useState('');
-  const [visCols, setVisCols] = useState(new Set(['nom', 'curso', 'ed', 'pais', 'wa', 'estado', 'fecha', 'clickwa']));
+  const [visCols, setVisCols] = useState(new Set(COLS_POR_DEFECTO));
   const [colModal, setColModal] = useState(false);
+  // Pedido del equipo: las columnas elegidas se mantienen (antes, al volver a entrar, había que elegirlas de nuevo). Se guardan en este navegador.
+  useEffect(() => {
+    try {
+      const g = JSON.parse(localStorage.getItem('ilce-fichas-cols') || 'null');
+      if (Array.isArray(g)) { const ok = g.filter((k) => ALL_COLS.some((c) => c[0] === k)); if (ok.length) setVisCols(new Set(ok)); }
+    } catch { /* si no se puede leer, quedan las columnas de siempre */ }
+  }, []);
+  function guardarCols(set) { try { localStorage.setItem('ilce-fichas-cols', JSON.stringify([...set])); } catch { /* */ } }
   const [sel, setSel] = useState(null); // registro abierto en drawer
   const [historial, setHistorial] = useState([]);
 
@@ -576,11 +598,11 @@ export default function Panel() {
             <p className="count">Mostrando <b>{Math.min(300, filtradas.length)}</b> de <b>{filtradas.length}</b> inscripciones{filtradas.length > 300 ? ' (afiná la búsqueda para ver el resto)' : ''}</p>
             <div className="tablewrap tablewrap-inscripciones">
               <table>
-                <thead><tr>{ALL_COLS.filter((c) => visCols.has(c[0])).map((c) => <th key={c[0]} className={'col-' + c[0]}>{c[1]}</th>)}</tr></thead>
+                <thead><tr>{ALL_COLS.filter((c) => visCols.has(c[0])).map((c) => <th key={c[0]} className={'col-' + c[0] + claseFija(c[0], visCols)} style={estiloFija(c[0], visCols)}>{c[1]}</th>)}</tr></thead>
                 <tbody>
                   {filtradas.slice(0, 300).map((r) => (
                     <tr key={r.id} onClick={() => abrir(r)}>
-                      {ALL_COLS.filter((c) => visCols.has(c[0])).map(([k]) => <td key={k} className={'col-' + k}>{celda(r, k)}</td>)}
+                      {ALL_COLS.filter((c) => visCols.has(c[0])).map(([k]) => <td key={k} className={'col-' + k + claseFija(k, visCols)} style={estiloFija(k, visCols)} title={k === 'nom' ? [r.nom, r.ape].filter(Boolean).join(' ') : undefined}>{celda(r, k)}</td>)}
                     </tr>
                   ))}
                 </tbody>
@@ -715,11 +737,12 @@ export default function Panel() {
           {ALL_COLS.map((c) => (
             <label className="colrow" key={c[0]}>
               <input type="checkbox" checked={visCols.has(c[0])} onChange={(e) => {
-                setVisCols((prev) => { const n = new Set(prev); e.target.checked ? n.add(c[0]) : n.delete(c[0]); return n; });
+                setVisCols((prev) => { const n = new Set(prev); e.target.checked ? n.add(c[0]) : n.delete(c[0]); guardarCols(n); return n; });
               }} />{c[1]}
             </label>
           ))}
-          <button className="btn-sm solid" style={{ width: '100%', justifyContent: 'center', marginTop: 14 }} onClick={() => setColModal(false)}>Listo</button>
+          <button className="btn-sm" style={{ width: '100%', justifyContent: 'center', marginTop: 10 }} onClick={() => { const d = new Set(COLS_POR_DEFECTO); setVisCols(d); guardarCols(d); }}>Volver a las columnas de siempre</button>
+          <button className="btn-sm solid" style={{ width: '100%', justifyContent: 'center', marginTop: 8 }} onClick={() => setColModal(false)}>Listo</button>
         </div>
       </div>
       <VersionBadge />
@@ -777,6 +800,16 @@ function fechaAmigable(iso) {
   // "31 ago 2026".
   return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
 }
+// "Principalmente en vivo / sincrónico" -> "Sincrónico" · "Principalmente grabaciones / asincrónico" -> "Asincrónico" · "Otro: …" -> "Otro".
+// (se mira "asincr" antes que "sincr" porque la primera palabra contiene a la segunda)
+export function modalidadCorta(v) {
+  const t = norm(v);
+  if (!t) return '';
+  if (t.includes('asincron')) return 'Asincrónico';
+  if (t.includes('sincron')) return 'Sincrónico';
+  if (t.startsWith('otro')) return 'Otro';
+  return String(v);
+}
 function celda(r, k) {
   if (k === 'nom') return <span className="ins-name">{[r.nom, r.ape].filter(Boolean).join(' ') || '—'}</span>;
   if (k === 'estado') return <span className={'badge b-' + (r.estado || '').replace(/\s/g, '')}>{r.estado}</span>;
@@ -793,6 +826,9 @@ function celda(r, k) {
     </span>
   ) : '';
   if (k === 'wa') return <span className="sec">{r.wa}</span>;
+  // Pedido del equipo: la respuesta de "cómo van a cursar" es larga ("Principalmente en vivo / sincrónico…") y ocupaba demasiado ancho. En la tabla se
+  // muestra "Sincrónico" / "Asincrónico" / "Otro" (el texto completo queda en el detalle de la ficha, en la exportación y al pasar el mouse).
+  if (k === 'mod') return r.mod ? <span title={r.mod}>{modalidadCorta(r.mod)}</span> : '';
   if (k === 'fecha') return <CeldaFechaReciente iso={r.fecha} />;
   if (k === 'clickwa') return r.clickWa ? <span className="badge-click-wa" title={'Clic el ' + r.clickWa}> Clic</span> : <span className="sec">—</span>;
   return r[k] || '';

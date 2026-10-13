@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { APP_URL, cantidadClasesFija, esAsincronica, calcularFechaFinEdicion, colorCurso } from '../lib/constants';
-import { generarHorarios } from '../lib/husos';
+import { generarHorarios, horariosDeEdicion } from '../lib/husos';
 import { useDialogos } from './Dialogos';
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -635,7 +635,7 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
                     {eds.slice(0, 3).map((e, i) => (
                       <div key={i} className="wiz-preview-ed">
                         <div style={{ fontWeight: 500 }}>{e.label || 'Edición'}</div>
-                        {e.horarios && <div style={{ fontSize: 12, color: 'rgb(var(--textMuted))' }}>{e.horarios}</div>}
+                        {horariosDeEdicion(e) && <div style={{ fontSize: 12, color: 'rgb(var(--textMuted))' }}>{horariosDeEdicion(e)}</div>}
                       </div>
                     ))}
                   </div>
