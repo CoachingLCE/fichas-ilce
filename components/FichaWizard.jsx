@@ -17,6 +17,7 @@ export default function FichaWizard({ def }) {
   const [token, setToken] = useState('');
   const [recover, setRecover] = useState(null); // {ts} si hay borrador
   const [enviando, setEnviando] = useState(false);
+  const [trampa, setTrampa] = useState(''); // campo invisible: una persona no lo ve ni lo llena; un programa que completa todo, sí (se descarta esa ficha)
   const [resultado, setResultado] = useState(null); // {ok, emailOk} tras enviar
   const saveTimer = useRef(null);
   const inicioRef = useRef(null);
@@ -116,7 +117,7 @@ export default function FichaWizard({ def }) {
     try {
       const res = await fetch('/api/inscripcion', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug: def.slug, token, form })
+        body: JSON.stringify({ slug: def.slug, token, form, trampa })
       });
       const data = await res.json();
       if (!data.ok) {
@@ -153,6 +154,14 @@ export default function FichaWizard({ def }) {
         <div className="f-band">
           <div className="kd">FORMACIÓN EN</div>
           <div className="ti">{def.curso}</div>
+        </div>
+
+        {/* Trampa para programas: fuera de pantalla, sin foco y oculta a lectores de pantalla. Una persona nunca la completa. El nombre es a propósito
+            neutro (no "website" ni "url") para que el autocompletado del navegador no lo llene por error. */}
+        <div aria-hidden="true" style={{ position: 'absolute', left: '-10000px', top: 'auto', width: 1, height: 1, overflow: 'hidden' }}>
+          <label>Dejá este campo vacío
+            <input type="text" name="ref_interna_confirmacion" tabIndex={-1} autoComplete="off" value={trampa} onChange={(e) => setTrampa(e.target.value)} />
+          </label>
         </div>
 
         {recover && step < 5 && (

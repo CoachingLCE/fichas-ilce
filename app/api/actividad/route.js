@@ -4,6 +4,8 @@ import { TABS } from '../../../lib/constants';
 import { getActividad, corregir } from '../../../lib/actividades';
 import { validarEmail, validarNombre, soloDigitos } from '../../../lib/validacion';
 import { enviarResultadoActividad, enviarAvisoActividadDocente } from '../../../lib/mailer';
+import { limitador, ipDe, MIN10 } from '../../../lib/limiteRitmo';
+import { demasiadoGrande } from '../../../lib/entradaPublica';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,6 +37,10 @@ export async function GET(req) {
 export async function POST(req) {
   let body;
   try { body = await req.json(); } catch { return NextResponse.json({ ok: false, error: 'JSON inválido' }, { status: 400 }); }
+  // Ruta pública que escribe en la planilla: límite por conexión y por tamaño (revisión de seguridad, octubre de 2026).
+  if (demasiadoGrande(body)) return NextResponse.json({ ok: false, error: 'Las respuestas son demasiado grandes.' }, { status: 413 });
+  const limiteIp = limitador.intentar('act:ip:' + ipDe(req), 30, MIN10);
+  if (!limiteIp.permitido) return NextResponse.json({ ok: false, error: 'Se enviaron demasiadas respuestas desde tu conexión. Esperá unos minutos y volvé a intentar.' }, { status: 429, headers: { 'Retry-After': String(limiteIp.reintentarEnSeg) } });
   const { slug, email, nombre, edicion, respuestas, duracion } = body || {};
   if (!validarEmail(email)) return NextResponse.json({ ok: false, error: 'Email inválido' }, { status: 400 });
   // Nombre y edición son opcionales, pero si vienen tienen que tener la forma correcta —

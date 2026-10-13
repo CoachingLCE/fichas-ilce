@@ -1,6 +1,7 @@
 import { readSheet, readHeaders } from '../../lib/sheets';
 import { TABS, CURSOS } from '../../lib/constants';
 import { Isologo, IsologoDefs } from '../../components/Isologo';
+import { tokenValido } from '../../lib/accesoTecnico';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,12 +22,17 @@ async function estadoSheet() {
   return { okGlobal, resultados };
 }
 
-export default async function Home() {
+export default async function Home({ searchParams }) {
+  // Sin la llave técnica (?token=, la misma SETUP_TOKEN de /api/setup) esta página NO lee la planilla ni muestra su estructura: antes lo hacía para
+  // cualquiera en cada visita, y repetirla en bucle podía agotar la cuota de Google. Solo muestra los enlaces públicos de las fichas.
+  const conAcceso = tokenValido(searchParams && searchParams.token);
   let estado = null, errorFatal = null;
-  try {
-    estado = await estadoSheet();
-  } catch (e) {
-    errorFatal = e.message;
+  if (conAcceso) {
+    try {
+      estado = await estadoSheet();
+    } catch (e) {
+      errorFatal = e.message;
+    }
   }
 
   return (
@@ -41,6 +47,7 @@ export default async function Home() {
         Esqueleto desplegado correctamente. Esta pantalla verifica la conexión con la Google Sheet.
       </p>
 
+      {conAcceso && (<>
       <section style={card}>
         <h2 style={{ fontSize: 16, marginTop: 0 }}>Estado de la Sheet</h2>
         {errorFatal ? (
@@ -70,6 +77,7 @@ export default async function Home() {
           Esto prueba también el permiso de <b>escritura</b>.
         </p>
       </section>
+      </>)}
 
       <section style={card}>
         <h2 style={{ fontSize: 16, marginTop: 0 }}>Fichas públicas (demo)</h2>

@@ -4,12 +4,18 @@ import { TABS } from '../../../lib/constants';
 import { getFormulario } from '../../../lib/formularios';
 import { cursoAGuardar } from '../../../lib/formularioCurso';
 import { validarEmail, validarValorCampo } from '../../../lib/validacion';
+import { limitador, ipDe, MIN10 } from '../../../lib/limiteRitmo';
+import { demasiadoGrande } from '../../../lib/entradaPublica';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req) {
   let body;
   try { body = await req.json(); } catch { return NextResponse.json({ ok: false, error: 'JSON inválido' }, { status: 400 }); }
+  // Ruta pública que escribe en la planilla: límite por conexión y por tamaño (revisión de seguridad, octubre de 2026).
+  if (demasiadoGrande(body)) return NextResponse.json({ ok: false, error: 'Las respuestas son demasiado grandes.' }, { status: 413 });
+  const limiteIp = limitador.intentar('form:ip:' + ipDe(req), 20, MIN10);
+  if (!limiteIp.permitido) return NextResponse.json({ ok: false, error: 'Se enviaron demasiadas respuestas desde tu conexión. Esperá unos minutos y volvé a intentar.' }, { status: 429, headers: { 'Retry-After': String(limiteIp.reintentarEnSeg) } });
   const { slug, respuestas } = body || {};
   const form = await getFormulario(slug);
   if (!form) return NextResponse.json({ ok: false, error: 'Formulario no encontrado' }, { status: 404 });

@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server';
 import { readSheet } from '../../../lib/sheets';
 import { TABS } from '../../../lib/constants';
+import { tokenValido } from '../../../lib/accesoTecnico';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+// Antes era pública y leía TODAS las pestañas de la planilla en cada llamada (sin caché), y devolvía el nombre de cada pestaña, su cantidad de
+// filas, parte del ID de la planilla y los mensajes de error de Google. Cualquiera podía repetirla en bucle y agotar la cuota de lectura de Google
+// (con lo que las inscripciones reales fallarían). Ahora, sin la llave técnica (?token=, la misma SETUP_TOKEN de /api/setup), solo dice que el
+// servicio responde y NO toca la planilla.
+export async function GET(req) {
+  const { searchParams } = new URL(req.url);
+  if (!tokenValido(searchParams.get('token'))) return NextResponse.json({ ok: true, servicio: 'fichas-ilce' });
   const out = {};
   let ok = true;
   for (const t of Object.values(TABS)) {

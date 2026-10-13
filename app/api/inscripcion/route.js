@@ -4,6 +4,8 @@ import { TABS } from '../../../lib/constants';
 import { validarFicha } from '../../../lib/validacion';
 import { getCurso } from '../../../lib/fichas';
 import { enviarConfirmacionInscripcion, enviarAvisoEquipo } from '../../../lib/mailer';
+import { limitador, ipDe, MIN10 } from '../../../lib/limiteRitmo';
+import { acotarForm, demasiadoGrande, pareceRobot } from '../../../lib/entradaPublica';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,15 +27,33 @@ export async function POST(req) {
     return NextResponse.json({ ok: false, error: 'JSON inválido' }, { status: 400 });
   }
 
-  const { slug, token, form = {} } = body;
+  // ---- Frenos contra abuso (revisión de seguridad, octubre de 2026). Esta ruta es pública, escribe en la planilla y manda mails a la dirección que
+  // venga en la ficha: sin frenos, alguien podía llenarla de fichas falsas, mandar mails en nombre de ILCE a terceros y agotar la cuota de Google/Gmail.
+  if (demasiadoGrande(body)) return NextResponse.json({ ok: false, error: 'La ficha es demasiado grande.' }, { status: 413 });
+  const { slug, token, trampa } = body;
+  const formCrudo = body.form && typeof body.form === 'object' ? body.form : {};
+  // Un programa (campo trampa con algo escrito, o enviada en menos de 2 segundos desde que empezó) recibe "ok" pero NO se guarda ni se manda nada.
+  if (pareceRobot({ trampa, inicio: formCrudo._inicio })) {
+    console.warn('[inscripcion] ficha descartada: parece enviada por un programa');
+    return NextResponse.json({ ok: true, id: nuevoId(), emailOk: true });
+  }
+  const limiteIp = limitador.intentar('insc:ip:' + ipDe(req), 8, MIN10);
+  if (!limiteIp.permitido) return NextResponse.json({ ok: false, error: 'Se enviaron demasiadas fichas desde tu conexión. Esperá unos minutos y volvé a intentar.' }, { status: 429, headers: { 'Retry-After': String(limiteIp.reintentarEnSeg) } });
+
   const curso = getCurso(slug);
   if (!curso) return NextResponse.json({ ok: false, error: 'Curso desconocido' }, { status: 400 });
+
+  // Se recorta cada texto a su tope y se limpian los caracteres de control ANTES de validar y guardar.
+  const form = acotarForm(formCrudo);
 
   // Revalidación server-side (nunca se confía en el cliente)
   const errores = validarFicha(form);
   if (Object.keys(errores).length) {
     return NextResponse.json({ ok: false, error: 'Faltan datos obligatorios', errores }, { status: 400 });
   }
+  // Un mismo correo no puede recibir más de 3 confirmaciones en 10 minutos (evita usar ILCE para mandar mails a una persona).
+  const limiteMail = limitador.intentar('insc:mail:' + String(form.email || '').trim().toLowerCase(), 3, MIN10);
+  if (!limiteMail.permitido) return NextResponse.json({ ok: false, error: 'Ya recibimos varias fichas con este correo. Esperá unos minutos y volvé a intentar.' }, { status: 429, headers: { 'Retry-After': String(limiteMail.reintentarEnSeg) } });
 
   const id = nuevoId();
   const edicionLabel = form.edicion || '';
