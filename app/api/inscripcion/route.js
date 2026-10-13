@@ -6,6 +6,7 @@ import { getCurso } from '../../../lib/fichas';
 import { enviarConfirmacionInscripcion, enviarAvisoEquipo } from '../../../lib/mailer';
 import { limitador, ipDe, MIN10 } from '../../../lib/limiteRitmo';
 import { acotarForm, demasiadoGrande, pareceRobot } from '../../../lib/entradaPublica';
+import { getPago, conTimeout } from '../../../lib/pagos';
 
 export const dynamic = 'force-dynamic';
 
@@ -122,5 +123,9 @@ export async function POST(req) {
     });
   } catch (e) { /* noop */ }
 
-  return NextResponse.json({ ok: true, id, emailOk });
+  // Botones de pago de la 1ª cuota según el país de la ficha (Argentina: Mercado Pago y débito; otro país: PayPal). Viajan en esta respuesta y no en una
+  // ruta pública, así solo los recibe quien completó una ficha. Si falla o tarda (más de 2,5 s), la inscripción igual está guardada: simplemente no se muestra.
+  let pago = null;
+  try { pago = await conTimeout(getPago(slug, form.pais), 2500, null); } catch { pago = null; }
+  return NextResponse.json({ ok: true, id, emailOk, pago });
 }

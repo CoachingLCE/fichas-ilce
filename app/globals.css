@@ -1800,3 +1800,14 @@ button,input,select,textarea{font-family:inherit}
 .tablewrap-inscripciones thead th.col-fija{z-index:3;background:rgb(var(--surface2))}
 .tablewrap-inscripciones tbody tr:hover td.col-fija{background:rgb(var(--surface2))}
 .tablewrap-inscripciones .col-fija-ultima{box-shadow:2px 0 0 rgb(var(--border))}
+
+/* ── Pantalla final de la ficha: bloque de pago de la 1ª cuota ─────────────────────────────────────────────────────────────────────────────────── */
+.pago{margin:18px 0 6px;padding-top:16px;border-top:1px solid rgb(var(--border));text-align:left}
+.pago-tit{font-family:Dosis;font-weight:700;font-size:17px;line-height:1.1;margin:0 0 3px;text-align:center}
+.pago-sub{font-size:14px;color:rgb(var(--textMuted));margin:0 0 12px;text-align:center;line-height:1.25}
+.pay-btn{display:flex;align-items:center;gap:11px;width:100%;box-sizing:border-box;margin:0 0 9px;padding:10px 14px;border-radius:14px;border:1px solid rgb(var(--border));background:rgb(var(--surface2));color:rgb(var(--text));text-decoration:none;font-family:Dosis;font-weight:600;font-size:16px;cursor:pointer}
+.pay-btn:hover{border-color:#0595ad}
+.pay-btn.principal{background:linear-gradient(90deg,#065f74,#0595ad);border-color:transparent;color:#fff;box-shadow:0 8px 22px -12px rgba(5,149,173,.9)}
+.pay-ico{flex:0 0 22px;display:flex}.pay-ico svg{width:22px;height:22px}
+.pay-txt{display:flex;flex-direction:column;align-items:flex-start;line-height:1.15;flex:1;text-align:left}
+.pay-txt small{font-weight:500;font-size:13px;opacity:.85}

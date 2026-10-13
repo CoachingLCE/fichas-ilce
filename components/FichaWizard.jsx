@@ -4,6 +4,7 @@ import { PAISES, PROVINCIAS_AR } from '../lib/constants';
 import { validarEmail, validarWhatsapp, validarDoc, validarNombre, filtrarTelefono, esArgentina } from '../lib/validacion';
 import { useDialogos } from './Dialogos';
 import { horariosDeEdicion } from '../lib/husos';
+import BloquePago from './BloquePago';
 
 const STEP_NAMES = ['Bienvenida', 'Edición y horario', 'Datos personales', 'Sobre vos', 'Revisión', '¡Listo!'];
 
@@ -297,6 +298,8 @@ export default function FichaWizard({ def }) {
               {resultado?.emailOk
                 ? <p className="success-email">Te enviamos un correo de confirmación a <b>{form.email}</b>.</p>
                 : <p className="success-email">El correo de confirmación a <b>{form.email}</b> puede demorar unos minutos.</p>}
+              {/* Pago de la 1ª cuota: Argentina -> Mercado Pago y débito; otro país -> PayPal (ver lib/pagos.js). Si no hay nada que mostrar, no aparece. */}
+              <BloquePago pago={resultado?.pago} />
               <div className="success-actions">
                 <a className="btn btn-wa" href={`https://api.whatsapp.com/send?phone=5491163245246&text=${encodeURIComponent(`Hola, ya cargué la ficha de inscripción de la edición de ${def.curso}.`)}`} target="_blank" rel="noreferrer"> Consultar por WhatsApp</a>
                 <button className="btn btn-ghost btn-block" onClick={nuevaFicha}>Cargar otra ficha</button>
