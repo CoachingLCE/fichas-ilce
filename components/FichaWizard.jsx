@@ -1,7 +1,9 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { PAISES, PROVINCIAS_AR } from '../lib/constants';
-import { validarEmail, validarWhatsapp, validarDoc, validarNombre, filtrarTelefono, esArgentina } from '../lib/validacion';
+import { validarEmail, validarDoc, validarNombre, esArgentina } from '../lib/validacion';
+import CampoWhatsapp from './CampoWhatsapp';
+import { isoDeResidencia } from '../lib/waLink';
 import { useDialogos } from './Dialogos';
 import { horariosDeEdicion } from '../lib/husos';
 import BloquePago from './BloquePago';
@@ -14,7 +16,8 @@ export default function FichaWizard({ def }) {
   const { avisar } = useDialogos();
   const [errEnvio, setErrEnvio] = useState('');
   const [step, setStep] = useState(0);
-  const [form, setForm] = useState({ pais: 'Argentina' });
+  const [form, setForm] = useState({ pais: 'Argentina', waPais: 'AR' }); // waPais = país del número de WhatsApp (se autocompleta con el país de residencia; waManual = lo cambió la persona)
+  const [wa, setWa] = useState(null); // lib/whatsapp.js (validación de teléfonos, 39 KB): se carga en segundo plano al abrir la ficha
   const [errs, setErrs] = useState({});
   const [saved, setSaved] = useState('');      // texto del chip
   const [saving, setSaving] = useState(false);
@@ -50,6 +53,20 @@ export default function FichaWizard({ def }) {
     } catch {}
   }, [draftKey]);
 
+  // La librería de teléfonos se carga al abrir la ficha, en segundo plano: cuando la persona llega al paso del teléfono ya está lista (y no pesa en las primeras pantallas).
+  useEffect(() => {
+    let vivo = true;
+    import('../lib/whatsapp').then((m) => { if (vivo) setWa(m); }).catch(() => { /* sin conexión: se reintenta al validar */ });
+    return () => { vivo = false; };
+  }, []);
+
+  // Borradores guardados antes de este cambio: el WhatsApp era un solo texto. Se separa en país + número (con "+" toma el país del propio número; sin "+", el de residencia).
+  const sinPaisDelNumero = form.waPais === undefined;
+  useEffect(() => {
+    if (!wa || !sinPaisDelNumero) return;
+    setForm((f) => { if (f.waPais !== undefined) return f; const sep = wa.separarGuardado(f.wa, f.pais); return { ...f, waPais: sep.iso || '', wa: sep.num }; });
+  }, [wa, sinPaisDelNumero]);
+
   function chipHora(dt) {
     return ' Guardado ' + dt.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
   }
@@ -65,6 +82,8 @@ export default function FichaWizard({ def }) {
   function set(k, v) {
     setForm((prev) => {
       const next = { ...prev, [k]: v };
+      // El país del número sigue al país de residencia ("Otro" lo deja vacío para que la persona elija), salvo que ya lo haya cambiado a mano.
+      if (k === 'pais' && !prev.waManual) next.waPais = isoDeResidencia(v) || '';
       if (!inicioRef.current) { inicioRef.current = new Date().toISOString(); next._inicio = inicioRef.current; }
       setSaving(true);
       clearTimeout(saveTimer.current);
@@ -72,6 +91,22 @@ export default function FichaWizard({ def }) {
       return next;
     });
     setErrs((e) => { if (!e[k]) return e; const c = { ...e }; delete c[k]; return c; });
+  }
+
+  // Cambios del campo de WhatsApp: país del número y/o el número. `manual` = la persona eligió el país (desde ese momento no lo pisamos con el de residencia).
+  function cambiarWa(p) {
+    setForm((prev) => {
+      const next = { ...prev };
+      if (p.iso !== undefined) next.waPais = p.iso;
+      if (p.num !== undefined) next.wa = p.num;
+      if (p.manual) next.waManual = true;
+      if (!inicioRef.current) { inicioRef.current = new Date().toISOString(); next._inicio = inicioRef.current; }
+      setSaving(true);
+      clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => persist(next, step), 500);
+      return next;
+    });
+    setErrs((e) => { if (!e.wa) return e; const c = { ...e }; delete c.wa; return c; });
   }
 
   function copiarEnlace() {
@@ -82,7 +117,7 @@ export default function FichaWizard({ def }) {
   }
 
   // --- validación por paso ---
-  function validarPaso(s) {
+  function validarPaso(s, m = wa) {
     const e = {};
     const arg = esArgentina(form.pais);
     if (s === 0 && !validarEmail(form.email)) e.email = 'Ingresá un correo válido.';
@@ -95,7 +130,9 @@ export default function FichaWizard({ def }) {
       if (!(form.prov || '').trim()) e.prov = 'Completá este dato.';
       if (!validarDoc(form.doc, form.pais)) e.doc = arg ? 'DNI (7-8) o CUIT (11) válido.' : 'Documento inválido.';
       if (!(form.loc || '').trim()) e.loc = 'Completá tu localidad.';
-      if (!validarWhatsapp(form.wa)) e.wa = 'WhatsApp inválido.';
+      // El WhatsApp se valida para el país elegido (celular válido de ese país) y se normaliza a formato internacional al enviar.
+      if (m) { const r = m.normalizarWhatsapp(form.wa, form.waPais); if (!r.ok) e.wa = m.mensajeWhatsapp(r, form.waPais); }
+      else if (!(form.wa || '').trim()) e.wa = 'WhatsApp inválido: ingresá tu número.';
       if (!form.modalidad) e.modalidad = 'Elegí una modalidad.';
     }
     if (s === 3) {
@@ -106,8 +143,13 @@ export default function FichaWizard({ def }) {
     }
     return e;
   }
-  function next() {
-    const e = validarPaso(step);
+  async function next() {
+    let m = wa;
+    if (step === 2 && !m) {
+      try { m = await import('../lib/whatsapp'); setWa(m); }
+      catch { setErrs({ wa: 'No pudimos verificar el número. Revisá tu conexión y probá de nuevo.' }); return; }
+    }
+    const e = validarPaso(step, m);
     setErrs(e);
     if (Object.keys(e).length) return;
     const s = step + 1; setStep(s); persist(form, s);
@@ -119,9 +161,15 @@ export default function FichaWizard({ def }) {
     setErrEnvio('');
     setEnviando(true);
     try {
+      // El WhatsApp viaja en formato internacional completo (E.164, "+5491155551234"): sirve directo para abrir el chat. El servidor lo revalida.
+      const m = wa || await import('../lib/whatsapp');
+      const rw = m.normalizarWhatsapp(form.wa, form.waPais);
+      if (!rw.ok) { setErrs((e) => ({ ...e, wa: m.mensajeWhatsapp(rw, form.waPais) })); setStep(2); setEnviando(false); return; }
+      const formEnviar = { ...form, wa: rw.e164, waPais: rw.iso || form.waPais };
+      delete formEnviar.waManual;
       const res = await fetch('/api/inscripcion', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug: def.slug, token, form, trampa })
+        body: JSON.stringify({ slug: def.slug, token, form: formEnviar, trampa })
       });
       const data = await res.json();
       if (!data.ok) {
@@ -142,10 +190,12 @@ export default function FichaWizard({ def }) {
     url.searchParams.delete('token'); window.history.replaceState(null, '', url.toString());
     const t = 'CD-' + Math.random().toString(36).slice(2, 8).toUpperCase();
     url.searchParams.set('token', t); window.history.replaceState(null, '', url.toString());
-    setToken(t); setForm({ pais: 'Argentina' }); setStep(0); setErrs({}); setResultado(null); setRecover(null); inicioRef.current = null;
+    setToken(t); setForm({ pais: 'Argentina', waPais: 'AR' }); setStep(0); setErrs({}); setResultado(null); setRecover(null); inicioRef.current = null;
   }
 
   const arg = esArgentina(form.pais);
+  const resWa = wa && form.wa ? wa.normalizarWhatsapp(form.wa, form.waPais) : null; // para mostrar en la revisión cómo queda el número
+  const waRevision = resWa && resWa.ok ? resWa.internacional : (form.wa || '—');
   const Radio = ({ k, val, label, sub }) => (
     <div className={'opt' + (form[k] === val ? ' sel' : '')} onClick={() => set(k, val)}>
       <span className="dot" /><div><span>{label}</span>{sub && <span className="sub">{sub}</span>}</div>
@@ -240,7 +290,7 @@ export default function FichaWizard({ def }) {
                 <input className="ctrl" value={form.doc || ''} onChange={(e) => set('doc', e.target.value)} placeholder={arg ? 'Ej.: 30123456' : 'Número de documento'} />
                 {!arg && <div className="help">México: INE · Bolivia, Chile, Costa Rica, Ecuador, Uruguay, Paraguay, Venezuela: cédula de identidad</div>}</Campo>
               <Campo err={errs.wa}><label>Número de WhatsApp <span className="req">*</span></label>
-                <input className="ctrl" value={form.wa || ''} onChange={(e) => set('wa', filtrarTelefono(e.target.value))} inputMode="tel" placeholder="Ej.: +54 9 11 5555 1234" /></Campo>
+                <CampoWhatsapp lib={wa} iso={form.waPais || ''} num={form.wa || ''} onCambio={cambiarWa} invalido={!!errs.wa} /></Campo>
               <div className="field"><label>Fecha de nacimiento</label>
                 <input className="ctrl" type="date" value={form.fnac || ''} onChange={(e) => set('fnac', e.target.value)} /></div>
               <div className="field"><label>Instagram</label>
@@ -285,7 +335,7 @@ export default function FichaWizard({ def }) {
               ['Curso', def.curso], ['Edición', form.edicion || '—'], ['Email', form.email || '—'],
               ['Nombre', `${form.nom || ''} ${form.ape || ''}`.trim() || '—'], ['País', form.pais || 'Argentina'],
               ['Provincia', form.prov || '—'], ['Documento', form.doc || '—'], ['Localidad', form.loc || '—'],
-              ['WhatsApp', form.wa || '—'], ['Modalidad', form.modalidad === 'Otro' ? `Otro: ${form.modOtro || ''}` : (form.modalidad || '—')],
+              ['WhatsApp', waRevision], ['Modalidad', form.modalidad === 'Otro' ? `Otro: ${form.modOtro || ''}` : (form.modalidad || '—')],
               ['Nos conociste por', form.origen || '—'], ['Contacto', form.medio || '—']
             ].map(([k, v]) => <div className="rev-row" key={k}><span className="k">{k}</span><span className="v">{v}</span></div>)}
             <div style={{ marginTop: 10 }}>

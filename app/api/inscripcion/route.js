@@ -7,6 +7,7 @@ import { enviarConfirmacionInscripcion, enviarAvisoEquipo } from '../../../lib/m
 import { limitador, ipDe, MIN10 } from '../../../lib/limiteRitmo';
 import { acotarForm, demasiadoGrande, pareceRobot } from '../../../lib/entradaPublica';
 import { getPago, conTimeout } from '../../../lib/pagos';
+import { normalizarWhatsapp, isoDeResidencia, mensajeWhatsapp } from '../../../lib/whatsapp';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,9 +50,15 @@ export async function POST(req) {
 
   // Revalidación server-side (nunca se confía en el cliente)
   const errores = validarFicha(form);
+  // WhatsApp: se valida para el país del número (celular válido de ese país) y se GUARDA en formato internacional completo (E.164, "+5491155551234"), que sirve directo en WhatsApp.
+  // El país sale de "waPais" (lo elige la persona) o, si no vino (una ficha abierta antes de este cambio), del país de residencia. Reemplaza la regla vieja de "8 dígitos o más".
+  const isoWa = form.waPais || isoDeResidencia(form.pais) || undefined;
+  const wn = normalizarWhatsapp(form.wa, isoWa);
+  if (wn.ok) delete errores.wa; else errores.wa = mensajeWhatsapp(wn, isoWa);
   if (Object.keys(errores).length) {
     return NextResponse.json({ ok: false, error: 'Faltan datos obligatorios', errores }, { status: 400 });
   }
+  form.wa = wn.e164;
   // Un mismo correo no puede recibir más de 3 confirmaciones en 10 minutos (evita usar ILCE para mandar mails a una persona).
   const limiteMail = limitador.intentar('insc:mail:' + String(form.email || '').trim().toLowerCase(), 3, MIN10);
   if (!limiteMail.permitido) return NextResponse.json({ ok: false, error: 'Ya recibimos varias fichas con este correo. Esperá unos minutos y volvé a intentar.' }, { status: 429, headers: { 'Retry-After': String(limiteMail.reintentarEnSeg) } });

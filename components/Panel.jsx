@@ -28,6 +28,7 @@ import ConstructorFormulario from './ConstructorFormulario';
 import { paginarPorMes } from '../lib/respuestasPorMes';
 import VerMasMeses from './VerMasMeses';
 import { letra } from '../lib/escalaLetra';
+import { enlaceWhatsapp } from '../lib/waLink';
 
 // Pedido de Diego: misma estructura de orden en las tres tablas de "Respuestas" (Fichas,
 // Actividades, Formularios) — a la izquierda de todo, Fecha y después Nombre; el resto de las
@@ -735,7 +736,7 @@ export default function Panel() {
               <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {sel.em && <button className="btn-sm" onClick={() => { navigator.clipboard?.writeText(sel.em); showToast(' Email copiado'); }}> Copiar email</button>}
                 {sel.wa && <button className="btn-sm" onClick={() => { navigator.clipboard?.writeText(sel.wa); showToast(' WhatsApp copiado'); }}> Copiar WhatsApp</button>}
-                {sel.wa && <a className="btn-sm" href={`https://wa.me/${digits(sel.wa)}`} target="_blank" rel="noreferrer">↗ Abrir WhatsApp</a>}
+                {sel.wa && <a className="btn-sm" href={enlaceWhatsapp(sel.wa) || `https://wa.me/${digits(sel.wa)}`} target="_blank" rel="noreferrer">↗ Abrir WhatsApp</a>}
               </div>
             </div>
             <div className="dr-body">
@@ -850,7 +851,8 @@ function celda(r, k) {
       <span style={{ color: colorCurso(r.curso) }}>{r.curso}</span>
     </span>
   ) : '';
-  if (k === 'wa') return <span className="sec">{r.wa}</span>;
+  // WhatsApp en formato internacional completo (+54911…): es un enlace que abre el chat. Las inscripciones viejas (cargadas a mano, sin código de país) se muestran como texto, igual que siempre.
+  if (k === 'wa') { const l = enlaceWhatsapp(r.wa); return l ? <a className="sec" href={l} target="_blank" rel="noopener noreferrer" title="Abrir el chat en WhatsApp" onClick={(e) => e.stopPropagation()}>{r.wa}</a> : <span className="sec">{r.wa}</span>; }
   // Pedido del equipo: la respuesta de "cómo van a cursar" es larga ("Principalmente en vivo / sincrónico…") y ocupaba demasiado ancho. En la tabla se
   // muestra "Sincrónico" / "Asincrónico" / "Otro" (el texto completo queda en el detalle de la ficha, en la exportación y al pasar el mouse).
   if (k === 'mod') return r.mod ? <span title={r.mod}>{modalidadCorta(r.mod)}</span> : '';

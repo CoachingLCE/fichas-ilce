@@ -20,7 +20,7 @@ const EJEMPLO = {
   ],
   nombre: 'María', apellido: 'González', curso: 'Coaching de Equipos',
   edicion: 'Edición 20 — Jueves 29 de octubre de 2026',
-  email: 'maria.gonzalez@correo.com', whatsapp: '+54 9 11 5555 1234',
+  email: 'maria.gonzalez@correo.com', whatsapp: '+5491155551234',
   pais: 'Argentina', medio: 'WhatsApp', origen: 'Instagram',
   fecha: new Date().toISOString().slice(0, 10),
   password: 'Hola123',

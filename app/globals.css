@@ -2224,3 +2224,35 @@ button,input,select,textarea{font-family:inherit}
 .ctl-letra button:hover{background:rgba(255,255,255,.18)}
 .ctl-letra button[aria-checked=true]{background:#fff;color:#065f74}
 .ctl-letra button:focus-visible{outline:2px solid #fff;outline-offset:1px}
+
+/* ══ Campo "Número de WhatsApp" de la ficha (país + número) ═══════════════════════════════════════════════════════════════════════════════════════
+   Desplegable de países con buscador. Colores y bordes salen de las variables de la app (claro y oscuro). Los tamaños de letra siguen la escala elegida por el estudiante
+   (--escala-letra). El desplegable se dibuja en <body> (portal), así que sus reglas no cuelgan de la tarjeta. */
+.wa-campo{display:flex;gap:8px;align-items:stretch}
+.wa-pais{flex:0 0 auto;display:flex;align-items:center;gap:6px;min-width:96px;padding:0 10px;background:rgb(var(--surface2));border:1px solid rgb(var(--border));color:rgb(var(--text));border-radius:12px;cursor:pointer;font-family:inherit;font-size:calc(15px * var(--escala-letra, 1));transition:border-color .15s,box-shadow .15s}
+.wa-pais:hover{border-color:rgb(var(--textMuted))}
+.wa-pais:focus-visible,.wa-pais[aria-expanded=true]{outline:none;border-color:rgb(var(--accentTeal));box-shadow:0 0 0 3px rgba(5,149,173,.18)}
+.wa-pais-carga{cursor:default;opacity:.7}
+.wa-campo .wa-fl{font-size:calc(20px * var(--escala-letra, 1));line-height:1}
+.wa-campo .wa-pre,.wa-pop .wa-pre{font-variant-numeric:tabular-nums;color:rgb(var(--textMuted))}
+.wa-campo .wa-pais .wa-pre{color:rgb(var(--text));font-weight:500}
+.wa-car{font-size:calc(11px * var(--escala-letra, 1));color:rgb(var(--textMuted))}
+.wa-num{flex:1 1 auto;min-width:0;width:auto}
+.wa-malo .wa-pais,.wa-malo .wa-num{border-color:rgb(248 113 113)}
+.wa-ok{font-size:calc(12.5px * var(--escala-letra, 1));color:rgb(var(--accentTeal));margin:2px 0 6px}
+.wa-fondo{position:fixed;inset:0;z-index:1000;background:transparent}
+.wa-fondo-hoja{background:rgba(2,10,20,.55)}
+.wa-pop{position:fixed;z-index:1001;display:flex;flex-direction:column;background:rgb(var(--surface));color:rgb(var(--text));border:1px solid rgb(var(--border));border-radius:14px;box-shadow:0 18px 50px -12px rgba(0,0,0,.55);overflow:hidden;font-family:inherit}
+.wa-hoja{left:0;right:0;bottom:0;width:auto;max-height:min(75vh,75dvh);border-radius:20px 20px 0 0;padding-bottom:env(safe-area-inset-bottom,0px)}
+.wa-busca{display:flex;gap:8px;align-items:center;padding:10px;border-bottom:1px solid rgb(var(--border))}
+.wa-busca input{flex:1;min-width:0;background:rgb(var(--surface2));color:rgb(var(--text));border:1px solid rgb(var(--border));border-radius:10px;padding:10px 12px;font-size:16px;font-family:inherit;outline:none}
+.wa-busca input:focus{border-color:rgb(var(--accentTeal));box-shadow:0 0 0 3px rgba(5,149,173,.18)}
+.wa-x{flex:0 0 auto;width:40px;height:40px;border:0;border-radius:10px;background:rgb(var(--surface2));color:rgb(var(--text));font-size:15px;cursor:pointer}
+.wa-lista{list-style:none;margin:0;padding:4px 0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.wa-op{display:flex;align-items:center;gap:10px;padding:10px 14px;min-height:44px;cursor:pointer;font-size:calc(15px * var(--escala-letra, 1))}
+.wa-op .wa-fl{font-size:calc(20px * var(--escala-letra, 1));line-height:1}
+.wa-op .wa-nom{flex:1;min-width:0}
+.wa-op.act{background:rgba(5,149,173,.16)}
+.wa-op.sel{font-weight:600}
+.wa-sep{padding:8px 14px 4px;font-size:calc(11.5px * var(--escala-letra, 1));letter-spacing:1.5px;text-transform:uppercase;color:rgb(var(--textMuted));border-top:1px solid rgb(var(--border));margin-top:4px}
+.wa-vacio{padding:18px 14px;color:rgb(var(--textMuted));font-size:calc(14px * var(--escala-letra, 1))}
