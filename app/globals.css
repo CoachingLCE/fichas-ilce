@@ -2132,3 +2132,95 @@ button,input,select,textarea{font-family:inherit}
 .zona-lectura :is(.main,.drawer) .pago-sub:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:calc(14px * var(--escala-letra, 1))}
 .zona-lectura :is(.main,.drawer) .pay-btn:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:calc(16px * var(--escala-letra, 1))}
 .zona-lectura :is(.main,.drawer) .pay-txt small:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:calc(14px * var(--escala-letra, 1))}
+
+/* ══ Escala de letra para el estudiante ═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+   Control "A A A" (Normal / Grande / Muy grande) en la banda de la ficha de inscripción, las actividades y los formularios públicos. La preferencia es la misma que ya
+   usa el equipo en el panel (ilce-fichas-letra) y llega acá como --escala-letra (1, 1,12 o 1,25). Todo cuelga de la clase .escala-publica en <html>, que SOLO se agrega en
+   las direcciones públicas (/inscripcion, /actividad, /formulario): el panel y las vistas previas de los constructores nunca la tienen, así que no se ven afectados.
+   Bloque GENERADO a partir de las reglas de este mismo archivo y de los estilos propios de ActividadForm (ESTILO_PRACTICA); si cambia un tamaño base, regenerarlo. */
+.escala-publica body{font-size:calc(16px * var(--escala-letra, 1))}
+.escala-publica .f-band .kd{font-size:calc(12px * var(--escala-letra, 1))}
+.escala-publica .f-band .ti{font-size:calc(26px * var(--escala-letra, 1))}
+.escala-publica .f-meta .st{font-size:calc(13px * var(--escala-letra, 1))}
+.escala-publica .saved{font-size:calc(12px * var(--escala-letra, 1))}
+.escala-publica .f-body h3{font-size:calc(17px * var(--escala-letra, 1))}
+.escala-publica .f-lead{font-size:calc(14px * var(--escala-letra, 1))}
+.escala-publica .field>label{font-size:calc(13.5px * var(--escala-letra, 1))}
+.escala-publica .field .help{font-size:calc(12px * var(--escala-letra, 1))}
+.escala-publica .ctrl{font-size:calc(15px * var(--escala-letra, 1))}
+.escala-publica .opt{font-size:calc(14.5px * var(--escala-letra, 1))}
+.escala-publica .opt .sub{font-size:calc(12px * var(--escala-letra, 1))}
+.escala-publica .cons{font-size:calc(13px * var(--escala-letra, 1))}
+.escala-publica .err{font-size:calc(12px * var(--escala-letra, 1))}
+.escala-publica .btn{font-size:calc(15px * var(--escala-letra, 1))}
+.escala-publica .linkbtn{font-size:calc(12.5px * var(--escala-letra, 1))}
+.escala-publica .rev-row{font-size:calc(14px * var(--escala-letra, 1))}
+.escala-publica .rev-edit{font-size:calc(12px * var(--escala-letra, 1))}
+.escala-publica .success .ring{font-size:calc(34px * var(--escala-letra, 1))}
+.escala-publica .recover{font-size:calc(13px * var(--escala-letra, 1))}
+.escala-publica table{font-size:calc(13.5px * var(--escala-letra, 1))}
+.escala-publica .cv-field .req{font-size:calc(12px * var(--escala-letra, 1))}
+.escala-publica .fmetric .v{font-size:calc(20px * var(--escala-letra, 1))}
+.escala-publica .fmetric .k{font-size:calc(12px * var(--escala-letra, 1))}
+.escala-publica .quiz-band .kd{font-size:calc(12px * var(--escala-letra, 1))}
+.escala-publica .quiz-band .ti{font-size:calc(22px * var(--escala-letra, 1))}
+.escala-publica .quiz-postlink{font-size:calc(13.5px * var(--escala-letra, 1))}
+.escala-publica .quiz-count{font-size:calc(12px * var(--escala-letra, 1))}
+.escala-publica .quiz-field>label{font-size:calc(13.5px * var(--escala-letra, 1))}
+.escala-publica .quiz-opt{font-size:calc(15px * var(--escala-letra, 1))}
+.escala-publica .quiz-ring{font-size:calc(36px * var(--escala-letra, 1))}
+.escala-publica .quiz-help{font-size:calc(12px * var(--escala-letra, 1))}
+.escala-publica .escala-b{font-size:calc(15px * var(--escala-letra, 1))}
+.escala-publica .success .ring{font-size:calc(40px * var(--escala-letra, 1))}
+.escala-publica .success-title{font-size:calc(22px * var(--escala-letra, 1))}
+.escala-publica .success-sub{font-size:calc(14.5px * var(--escala-letra, 1))}
+.escala-publica .success-email{font-size:calc(14px * var(--escala-letra, 1))}
+.escala-publica .success-home{font-size:calc(13px * var(--escala-letra, 1))}
+.escala-publica .f-section{font-size:calc(12px * var(--escala-letra, 1))}
+.escala-publica .wiz-campo-check .req{font-size:calc(12px * var(--escala-letra, 1))}
+.escala-publica .detalle-meta .k{font-size:calc(12px * var(--escala-letra, 1))}
+.escala-publica .detalle-meta .v{font-size:calc(14px * var(--escala-letra, 1))}
+.escala-publica .quiz-band-sub{font-size:calc(13px * var(--escala-letra, 1))}
+.escala-publica .quiz-section-h{font-size:calc(17px * var(--escala-letra, 1))}
+.escala-publica .quiz-section-hint{font-size:calc(13px * var(--escala-letra, 1))}
+.escala-publica .quiz-field > label{font-size:calc(14.5px * var(--escala-letra, 1))}
+.escala-publica .escala-b{font-size:calc(16px * var(--escala-letra, 1))}
+.escala-publica .quiz-submit{font-size:calc(16px * var(--escala-letra, 1))}
+.escala-publica .quiz-intro-box{font-size:calc(13.5px * var(--escala-letra, 1))}
+.escala-publica .cf-q-r select.ctrl{font-size:calc(13.5px * var(--escala-letra, 1))}
+.escala-publica .grilla th,
+.escala-publica .grilla td{font-size:calc(13px * var(--escala-letra, 1))}
+.escala-publica .pr-cnt{font-size:calc(15px * var(--escala-letra, 1))}
+.escala-publica .pr-n{font-size:calc(18px * var(--escala-letra, 1))}
+.escala-publica .pr-q{font-size:calc(20px * var(--escala-letra, 1))}
+.escala-publica .pr-num{font-size:calc(34px * var(--escala-letra, 1))}
+.escala-publica .pr-txt{font-size:calc(16.5px * var(--escala-letra, 1))}
+.escala-publica .pr-radio{font-size:calc(15px * var(--escala-letra, 1))}
+.escala-publica .pr-fb{font-size:calc(18px * var(--escala-letra, 1))}
+.escala-publica .pr-fb small{font-size:calc(14px * var(--escala-letra, 1))}
+.escala-publica .pr-btn{font-size:calc(15px * var(--escala-letra, 1))}
+.escala-publica .pr-bien{font-size:calc(30px * var(--escala-letra, 1))}
+.escala-publica .pr-nota{font-size:calc(56px * var(--escala-letra, 1))}
+.escala-publica .pr-link{font-size:calc(14.5px * var(--escala-letra, 1))}
+.escala-publica .pr-r{font-size:calc(14.5px * var(--escala-letra, 1))}
+@media (max-width:640px){
+.escala-publica .pr-num{font-size:calc(22px * var(--escala-letra, 1))}
+}
+@media (max-width:640px){
+.escala-publica .pr-txt{font-size:calc(15px * var(--escala-letra, 1))}
+}
+@media (max-width:640px){
+.escala-publica .pr-q{font-size:calc(17.5px * var(--escala-letra, 1))}
+}
+@media (max-width:640px){
+.escala-publica .pr-nota{font-size:calc(46px * var(--escala-letra, 1))}
+}
+/* Las vistas previas de los constructores muestran lo que ve el estudiante en NORMAL, elija lo que elija el equipo en el panel. */
+.cf-pv,.ctor-preview-col,.cw-preview{--escala-letra:1}
+/* El control, dentro de la banda turquesa (tamaños fijos: no se agranda con la escala). */
+.ctl-letra-fila{display:flex;justify-content:flex-end;margin-top:12px}
+.ctl-letra{display:inline-flex;gap:2px;padding:2px;border-radius:13px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3)}
+.ctl-letra button{width:40px;height:40px;border:0;border-radius:11px;background:transparent;color:#fff;font-family:inherit;font-weight:600;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.ctl-letra button:hover{background:rgba(255,255,255,.18)}
+.ctl-letra button[aria-checked=true]{background:#fff;color:#065f74}
+.ctl-letra button:focus-visible{outline:2px solid #fff;outline-offset:1px}

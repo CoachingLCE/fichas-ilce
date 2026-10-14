@@ -36,10 +36,15 @@ export const metadata = {
   }
 };
 
+// Se ejecuta en el <head> antes de que se pinte la página (ver el comentario de abajo).
+const GUION_LETRA = String.raw`(function(){try{if(/^\/(inscripcion|actividad|formulario)(\/|$)/.test(location.pathname)){document.documentElement.classList.add('escala-publica');var m={'grande':1.12,'muy-grande':1.25},g=localStorage.getItem('ilce-fichas-letra');if(m[g])document.documentElement.style.setProperty('--escala-letra',m[g])}}catch(e){}})();`;
+
 export default function RootLayout({ children }) {
   return (
     <html lang="es" data-theme="dark">
       <head>
+        {/* Tamaño de letra del estudiante: se aplica ANTES de pintar para que no se vea un salto de tamaño al cargar. Solo en las direcciones públicas. */}
+        <script dangerouslySetInnerHTML={{ __html: GUION_LETRA }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>

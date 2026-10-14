@@ -5,6 +5,8 @@ import { validarEmail, validarWhatsapp, validarDoc, validarNombre, filtrarTelefo
 import { useDialogos } from './Dialogos';
 import { horariosDeEdicion } from '../lib/husos';
 import BloquePago from './BloquePago';
+import ControlLetraPublico from './ControlLetraPublico';
+import { letra } from '../lib/escalaLetra';
 
 const STEP_NAMES = ['Bienvenida', 'Edición y horario', 'Datos personales', 'Sobre vos', 'Revisión', '¡Listo!'];
 
@@ -156,6 +158,7 @@ export default function FichaWizard({ def }) {
         <div className="f-band">
           <div className="kd">FORMACIÓN EN</div>
           <div className="ti">{def.curso}</div>
+          <ControlLetraPublico oculto={false} />
         </div>
 
         {/* Trampa para programas: fuera de pantalla, sin foco y oculta a lectores de pantalla. Una persona nunca la completa. El nombre es a propósito
@@ -169,8 +172,8 @@ export default function FichaWizard({ def }) {
         {recover && step < 5 && (
           <div className="recover"> <b>Recuperamos tu ficha</b> guardada el {new Date(recover.ts).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}. Seguimos donde la dejaste.
             <div style={{ marginTop: 10, display: 'flex', gap: 8 }}>
-              <button className="btn-ghost btn" style={{ padding: '7px 12px', fontSize: 13 }} onClick={() => setRecover(null)}>Continuar</button>
-              <button className="btn-ghost btn" style={{ padding: '7px 12px', fontSize: 13 }} onClick={() => { try { localStorage.removeItem(draftKey(token)); } catch {}; setForm({ pais: 'Argentina' }); setStep(0); setRecover(null); }}>Empezar de nuevo</button>
+              <button className="btn-ghost btn" style={{ padding: '7px 12px', fontSize: letra(13) }} onClick={() => setRecover(null)}>Continuar</button>
+              <button className="btn-ghost btn" style={{ padding: '7px 12px', fontSize: letra(13) }} onClick={() => { try { localStorage.removeItem(draftKey(token)); } catch {}; setForm({ pais: 'Argentina' }); setStep(0); setRecover(null); }}>Empezar de nuevo</button>
             </div>
           </div>
         )}
@@ -312,7 +315,7 @@ export default function FichaWizard({ def }) {
         {step > 0 && step < 5 && <button className="linkbtn" onClick={copiarEnlace}> Copiar enlace para continuar después</button>}
 
         {step === 4 && errEnvio && (
-          <div role="alert" style={{ background: 'rgb(var(--badBg))', color: 'rgb(var(--bad))', border: '1px solid rgb(var(--bad))', borderRadius: 10, padding: '10px 12px', fontSize: 13, margin: '12px 22px 4px' }}>
+          <div role="alert" style={{ background: 'rgb(var(--badBg))', color: 'rgb(var(--bad))', border: '1px solid rgb(var(--bad))', borderRadius: 10, padding: '10px 12px', fontSize: letra(13), margin: '12px 22px 4px' }}>
             {errEnvio}
           </div>
         )}

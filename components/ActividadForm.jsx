@@ -4,6 +4,8 @@ import { validarEmail } from '../lib/validacion';
 
 import { Isologo } from './Isologo';
 import { PieFinal, URL_CAMPUS } from './PieFinal';
+import ControlLetraPublico from './ControlLetraPublico';
+import { letra } from '../lib/escalaLetra';
 
 // Las actividades se distinguen de los formularios por el color de acento: violeta/magenta (aprender) en vez de turquesa (completar).
 const ESTILO_ACTIVIDAD = `.quizcard-act .quiz-band{background:linear-gradient(120deg,#1d0b3a 0%,#4a1a85 52%,#96198f 100%)}
@@ -240,7 +242,7 @@ export default function ActividadForm({ act, modoPreview = false, pasoInicial = 
     if (!guardado) return null;
     const txt = guardado === 'guardando' ? 'Guardando…' : guardado === 'error' ? ' No se pudo guardar en este dispositivo' : ' Respuestas guardadas en este dispositivo';
     const color = guardado === 'error' ? 'rgb(248 113 113)' : guardado === 'guardando' ? 'rgb(var(--textMuted))' : 'rgb(74 222 128)';
-    return <div style={{ fontSize: 12, color, textAlign: compacto ? 'right' : 'left', marginTop: compacto ? 0 : 8 }}>{txt}</div>;
+    return <div style={{ fontSize: letra(12), color, textAlign: compacto ? 'right' : 'left', marginTop: compacto ? 0 : 8 }}>{txt}</div>;
   };
 
   // "Ya completada": gana siempre sobre cualquier otra pantalla — ni se le llega a mostrar
@@ -252,17 +254,18 @@ export default function ActividadForm({ act, modoPreview = false, pasoInicial = 
         <div className="quiz-band">
           <div className="quiz-band-top"><div className="kd">ACTIVIDAD · {act.curso.toUpperCase()}</div><Isologo size={20} /></div>
           <div className="ti">{act.titulo}</div>
+          <ControlLetraPublico oculto={modoPreview} />
         </div>
         <div className="quiz-body" style={{ textAlign: 'center', padding: '40px 30px 8px' }}>
           <div className="quiz-ring"></div>
-          <h3 style={{ fontSize: 20, margin: '4px 0' }}>Ya completaste esta actividad</h3>
+          <h3 style={{ fontSize: letra(20), margin: '4px 0' }}>Ya completaste esta actividad</h3>
           {yaCompletada.fecha ? (
-            <p className="muted" style={{ fontSize: 14 }}>La respondiste el {new Date(yaCompletada.fecha).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}.</p>
+            <p className="muted" style={{ fontSize: letra(14) }}>La respondiste el {new Date(yaCompletada.fecha).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}.</p>
           ) : null}
           {(act.mostrarResultado !== false && yaCompletada.total > 0) && (
-            <div style={{ fontFamily: 'Jost', fontWeight: 500, fontSize: 40, color: 'rgb(var(--accentTeal))', margin: '10px 0' }}>{yaCompletada.puntaje} / {yaCompletada.total}</div>
+            <div style={{ fontFamily: 'Jost', fontWeight: 500, fontSize: letra(40), color: 'rgb(var(--accentTeal))', margin: '10px 0' }}>{yaCompletada.puntaje} / {yaCompletada.total}</div>
           )}
-          <p className="muted" style={{ fontSize: 13, marginTop: 14 }}>Ya no podés volver a enviarla ni modificar tus respuestas.</p>
+          <p className="muted" style={{ fontSize: letra(13), marginTop: 14 }}>Ya no podés volver a enviarla ni modificar tus respuestas.</p>
         </div>
         <PieFinal />
       </div></div>
@@ -277,18 +280,19 @@ export default function ActividadForm({ act, modoPreview = false, pasoInicial = 
         <div className="quiz-band">
           <div className="quiz-band-top"><div className="kd">ACTIVIDAD · {act.curso.toUpperCase()}</div><Isologo size={20} /></div>
           <div className="ti">{act.titulo}</div>
+          <ControlLetraPublico oculto={modoPreview} />
         </div>
         <div className="quiz-body" style={{ textAlign: 'center', padding: '30px 24px 8px' }}>
           <PulgarArriba />
           <h3 className="pr-bien">¡Muy bien!</h3>
-          <p className="muted" style={{ fontSize: 15, margin: '0 0 4px' }}>Completaste tu práctica de repaso.</p>
+          <p className="muted" style={{ fontSize: letra(15), margin: '0 0 4px' }}>Completaste tu práctica de repaso.</p>
           <hr className="pr-hr" />
           {act.mostrarResultado !== false && nota && (<>
-            <p className="muted" style={{ fontSize: 15, margin: 0 }}>Tu resultado es:</p>
+            <p className="muted" style={{ fontSize: letra(15), margin: 0 }}>Tu resultado es:</p>
             <div className="pr-nota">{nota}</div>
-            {cantAbiertas > 0 && <p className="muted" style={{ fontSize: 12.5, margin: '0 0 4px' }}>({cantAbiertas} pregunta{cantAbiertas === 1 ? '' : 's'} abierta{cantAbiertas === 1 ? '' : 's'} no entra{cantAbiertas === 1 ? '' : 'n'} en la nota)</p>}
+            {cantAbiertas > 0 && <p className="muted" style={{ fontSize: letra(12.5), margin: '0 0 4px' }}>({cantAbiertas} pregunta{cantAbiertas === 1 ? '' : 's'} abierta{cantAbiertas === 1 ? '' : 's'} no entra{cantAbiertas === 1 ? '' : 'n'} en la nota)</p>}
           </>)}
-          {intento > 1 && <p className="muted" style={{ fontSize: 12.5, margin: '4px 0' }}>Este intento fue solo de práctica y no se guarda: cuenta tu primer intento.</p>}
+          {intento > 1 && <p className="muted" style={{ fontSize: letra(12.5), margin: '4px 0' }}>Este intento fue solo de práctica y no se guarda: cuenta tu primer intento.</p>}
           <div><button type="button" className="pr-link" onClick={reintentar}>{I_RETRY} Intentar de nuevo</button></div>
           <div style={{ margin: '10px 0 4px' }}><a className="btn btn-teal pr-btn" href={URL_CAMPUS} target="_blank" rel="noopener noreferrer">Finalizar</a></div>
           <details className="pr-det">
@@ -320,17 +324,18 @@ export default function ActividadForm({ act, modoPreview = false, pasoInicial = 
         <div className="quiz-band">
           <div className="quiz-band-top"><div className="kd">ACTIVIDAD</div><Isologo size={20} /></div>
           <div className="ti">{act.curso}</div>
+          <ControlLetraPublico oculto={modoPreview} />
         </div>
         <div className="quiz-body" style={{ textAlign: 'center', padding: '40px 30px 8px' }}>
           <div className="quiz-ring"></div>
-          <h3 style={{ fontSize: 22, margin: '4px 0' }}>¡Actividad completada! </h3>
+          <h3 style={{ fontSize: letra(22), margin: '4px 0' }}>¡Actividad completada! </h3>
           {act.mostrarResultado === false ? (
-            <p className="muted" style={{ fontSize: 14 }}>Registramos tus respuestas de <b>{act.titulo}</b>{resultado.emailOk ? ` y te enviamos el detalle a ${email}` : ''}.</p>
+            <p className="muted" style={{ fontSize: letra(14) }}>Registramos tus respuestas de <b>{act.titulo}</b>{resultado.emailOk ? ` y te enviamos el detalle a ${email}` : ''}.</p>
           ) : (<>
-            <p className="muted" style={{ fontSize: 14 }}>Tu resultado en <b>{act.titulo}</b>:</p>
-            <div style={{ fontFamily: 'Jost', fontWeight: 500, fontSize: 48, color: 'rgb(var(--accentTeal))', margin: '6px 0' }}>{resultado.puntaje} / {resultado.total}</div>
-            <p className="muted" style={{ fontSize: 14 }}>{pct}% correctas{resultado.emailOk ? ` · te enviamos el detalle a ${email}` : ''}</p>
-            {cantAbiertas > 0 && <p className="muted" style={{ fontSize: 12.5 }}>({cantAbiertas} pregunta{cantAbiertas === 1 ? '' : 's'} de desarrollo no {cantAbiertas === 1 ? 'entra' : 'entran'} en este puntaje — el equipo la{cantAbiertas === 1 ? '' : 's'} revisa aparte.)</p>}
+            <p className="muted" style={{ fontSize: letra(14) }}>Tu resultado en <b>{act.titulo}</b>:</p>
+            <div style={{ fontFamily: 'Jost', fontWeight: 500, fontSize: letra(48), color: 'rgb(var(--accentTeal))', margin: '6px 0' }}>{resultado.puntaje} / {resultado.total}</div>
+            <p className="muted" style={{ fontSize: letra(14) }}>{pct}% correctas{resultado.emailOk ? ` · te enviamos el detalle a ${email}` : ''}</p>
+            {cantAbiertas > 0 && <p className="muted" style={{ fontSize: letra(12.5) }}>({cantAbiertas} pregunta{cantAbiertas === 1 ? '' : 's'} de desarrollo no {cantAbiertas === 1 ? 'entra' : 'entran'} en este puntaje — el equipo la{cantAbiertas === 1 ? '' : 's'} revisa aparte.)</p>}
           </>)}
         </div>
         {/* Pie fijo al finalizar cualquier actividad, pedido por Diego: volver al campus,
@@ -396,15 +401,16 @@ export default function ActividadForm({ act, modoPreview = false, pasoInicial = 
       <div className="quiz-band">
         <div className="quiz-band-top"><div className="kd">ACTIVIDAD · {act.curso.toUpperCase()}{act.edicion ? ` · ED. ${act.edicion}` : ''}</div><Isologo size={20} /></div>
         <div className="ti">{act.titulo}</div>
+        <ControlLetraPublico oculto={modoPreview} />
       </div>
       {!(practica && !esDatos) && <div className="quiz-prog"><div className="quiz-prog-fill" style={{ width: (esDatos ? 4 : confirmarEnvio ? 100 : progreso) + '%' }} /></div>}
 
       <div className="quiz-body">
         {esDatos ? (
           <>
-            <h3 style={{ fontSize: 18, margin: '0 0 4px' }}>Antes de empezar</h3>
-            {act.intro && <p className="quiz-intro" style={{ fontSize: 13.5, marginTop: 0, marginBottom: 10, whiteSpace: 'pre-line', color: 'rgb(var(--textSec))', lineHeight: 1.55 }}>{act.intro}</p>}
-            <p className="muted" style={{ fontSize: 13.5, marginTop: 0, marginBottom: 16 }}>
+            <h3 style={{ fontSize: letra(18), margin: '0 0 4px' }}>Antes de empezar</h3>
+            {act.intro && <p className="quiz-intro" style={{ fontSize: letra(13.5), marginTop: 0, marginBottom: 10, whiteSpace: 'pre-line', color: 'rgb(var(--textSec))', lineHeight: 1.55 }}>{act.intro}</p>}
+            <p className="muted" style={{ fontSize: letra(13.5), marginTop: 0, marginBottom: 16 }}>
               Son {total} pregunta{total === 1 ? '' : 's'}.{' '}
               {practica
                 ? `Vas a ver si acertaste apenas respondés cada una${cantAbiertas > 0 ? `; ${cantAbiertas} ${cantAbiertas === 1 ? 'es de desarrollo' : 'son de desarrollo'} y no tienen corrección inmediata` : ''}.`
@@ -428,13 +434,13 @@ export default function ActividadForm({ act, modoPreview = false, pasoInicial = 
           </>
         ) : confirmarEnvio ? (
           <div style={{ textAlign: 'center', padding: '14px 0' }}>
-            <h3 style={{ fontSize: 17, margin: '0 0 10px' }}>¿Querés enviar tus respuestas?</h3>
-            <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.5 }}>Respondiste las {total} preguntas. Una vez enviada, <b>no vas a poder modificarlas</b> — revisá antes de confirmar si querés volver atrás.</p>
+            <h3 style={{ fontSize: letra(17), margin: '0 0 10px' }}>¿Querés enviar tus respuestas?</h3>
+            <p className="muted" style={{ fontSize: letra(13.5), lineHeight: 1.5 }}>Respondiste las {total} preguntas. Una vez enviada, <b>no vas a poder modificarlas</b> — revisá antes de confirmar si querés volver atrás.</p>
           </div>
         ) : preguntaPractica ? preguntaPractica : (
           <>
             <div className="quiz-count">Pregunta {step} de {total}</div>
-            <h3 style={{ fontSize: 18, margin: '4px 0 16px', lineHeight: 1.3 }}>{step}. {p.pregunta}</h3>
+            <h3 style={{ fontSize: letra(18), margin: '4px 0 16px', lineHeight: 1.3 }}>{step}. {p.pregunta}</h3>
             {p.tipo === 'abierta' ? (
               <textarea className="ctrl" rows={5} value={resp[qIndex] || ''} onChange={(e) => escribir(e.target.value)}
                 placeholder="Escribí tu respuesta…" style={{ resize: 'vertical', width: '100%' }} />
