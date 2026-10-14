@@ -222,11 +222,13 @@ function Respuestas({ usuario, showToast, soloEspeciales }) {
   if (!data) return <div className="spin" />;
   return (
     <div>
-      {/* Pedido de Diego: el buscador de texto vive en un solo lugar (el ícono  de arriba de
-          todo) — se saca este cuadro de búsqueda repetido. El combo de Formulario pasa a
-          SelectDropdown (mismo look "chip" chico que el resto de los filtros de la app). */}
+      {/* Cuadro "Buscar persona": la lupa de arriba del todo busca inscripciones, fichas, actividades y formularios (sus definiciones), pero NO las respuestas de
+          los formularios: este componente ni siquiera la recibe. Sin este cuadro no había forma de encontrar a alguien en las respuestas, y con el "mes por mes"
+          obligaba a apretar "Ver más" una y otra vez. Con texto escrito se miran TODOS los meses (ver `pag`). Es el mismo cuadro que ya tienen las respuestas de
+          actividades. El combo de Formulario pasa a SelectDropdown (mismo look "chip" chico que el resto de los filtros de la app). */}
       <div className="filters">
-        {(fForm || fCurso) && <button className="btn-sm" onClick={() => { setFForm(''); setFCurso(''); }}>Limpiar</button>}
+        <div className="fsearch" style={{ maxWidth: 280, flex: 'none' }}> <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar persona (nombre o correo)…" aria-label="Buscar persona en las respuestas" /></div>
+        {(q || fForm || fCurso) && <button className="btn-sm" onClick={() => { setQ(''); setFForm(''); setFCurso(''); }}>Limpiar</button>}
         <span className="spacer" />
         <button className="btn-sm solid" onClick={() => setImportarAbierto(true)}> Importar respuestas históricas</button>
       </div>
