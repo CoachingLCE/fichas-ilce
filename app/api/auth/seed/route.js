@@ -22,7 +22,7 @@ export async function GET(req) {
   if (!email || !password) return NextResponse.json({ ok: false, error: 'Faltan email o password' }, { status: 400 });
   if (!roles.length) return NextResponse.json({ ok: false, error: 'Rol inválido. Usá: ' + ROLES.join(', ') }, { status: 400 });
 
-  const existe = await usuarioDeSolicitud(req, email);
+  const existe = await findUsuario(email); // búsqueda de existencia (la ruta se protege con SETUP_TOKEN), no identidad de quien pide
   if (existe) return NextResponse.json({ ok: false, error: 'Ese email ya existe en Usuarios' }, { status: 409 });
 
   await appendRow(TABS.USUARIOS, [email, nombre, roles.join(','), encryptPassword(password), 'TRUE']);

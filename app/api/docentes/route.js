@@ -29,7 +29,9 @@ export async function POST(req) {
 
   // Si el docente todavía no tiene acceso, se le crea usuario rol Docente y se le envía la contraseña.
   let accesoCreado = false, emailEnviado = null;
-  const existe = await usuarioDeSolicitud(req, email);
+  // Es una BÚSQUEDA ("¿este docente ya tiene usuario?"), no la identidad de quien pide: va con findUsuario. Con usuarioDeSolicitud, una Coordinación de Estudiantes con token
+  // (que no es Admin) siempre recibía "no existe" y se creaba un usuario duplicado con la contraseña genérica.
+  const existe = await findUsuario(email);
   if (!existe) {
     await appendRow(TABS.USUARIOS, [email, nombre || email.split('@')[0], 'Docente', encryptPassword(PASSWORD_GENERICA), 'TRUE']);
     accesoCreado = true;
