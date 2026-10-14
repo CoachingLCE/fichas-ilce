@@ -9,6 +9,7 @@ import { useDialogos } from './Dialogos';
 import DrawerRespuesta from './DrawerRespuesta';
 import { paginarPorMes } from '../lib/respuestasPorMes';
 import VerMasMeses from './VerMasMeses';
+import { letra } from '../lib/escalaLetra';
 
 const slugify = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -80,7 +81,7 @@ function fmtFechaCorta(iso) {
   if (isNaN(d)) return String(iso).slice(0, 10);
   return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
 }
-const lbl = { fontSize: 13, fontWeight: 500, display: 'block', marginBottom: 5, color: 'rgb(var(--textSec))' };
+const lbl = { fontSize: letra(13), fontWeight: 500, display: 'block', marginBottom: 5, color: 'rgb(var(--textSec))' };
 
 // El alta/baja de acceso de docentes se gestiona en una única pantalla, "Equipo Docente"
 // (ver Equipo.jsx); antes había una pestaña "Docentes" duplicada acá adentro con el mismo
@@ -290,7 +291,7 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
           </div>
         )}
       </div>
-      {!e._nuevo && <p className="muted" style={{ fontSize: 13, fontFamily: 'monospace', margin: '-10px 0 14px' }}>{APP_URL}/actividad/{e.slug}</p>}
+      {!e._nuevo && <p className="muted" style={{ fontSize: letra(13), fontFamily: 'monospace', margin: '-10px 0 14px' }}>{APP_URL}/actividad/{e.slug}</p>}
       {tieneRespuestas && (
         <div className="note" style={{ margin: '0 0 16px' }}>
            Esta actividad ya tiene <b>{e.totalRespuestas} respuesta{e.totalRespuestas === 1 ? '' : 's'}</b>. Si eliminás o cambiás una pregunta existente (o su opción correcta), el puntaje de las respuestas ya enviadas no se recalcula — las respuestas en sí nunca se borran.
@@ -316,7 +317,7 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
                 <option>Publicada</option><option>Borrador</option><option>Archivada</option>
               </select></div>
           </div>
-          <p className="muted" style={{ fontSize: 13, marginTop: 10 }}>
+          <p className="muted" style={{ fontSize: letra(13), marginTop: 10 }}>
             {e.edicion
               ? 'Al fijar la edición acá, el estudiante ya no la va a tener que escribir al responder.'
               : 'Si dejás la edición vacía, se le va a seguir pidiendo al estudiante que la escriba al responder.'}
@@ -327,7 +328,7 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
             <p className="cf-sec-t">Preguntas</p>
           {/* Pedido de Diego: que se vea de entrada cuántas preguntas hay y de qué tipo,
               mientras se van agregando (no solo al final, en "Revisar"). */}
-          <p className="muted" style={{ fontSize: 13.5, marginTop: 0, marginBottom: 14 }}>
+          <p className="muted" style={{ fontSize: letra(13.5), marginTop: 0, marginBottom: 14 }}>
             {preguntas.length} pregunta{preguntas.length === 1 ? '' : 's'} · {preguntas.filter((p) => p.tipo !== 'abierta').length} cerrada{preguntas.filter((p) => p.tipo !== 'abierta').length === 1 ? '' : 's'} (se autocorrige) · {preguntas.filter((p) => p.tipo === 'abierta').length} abierta{preguntas.filter((p) => p.tipo === 'abierta').length === 1 ? '' : 's'} (se revisa a mano)
           </p>
           {preguntas.map((p, i) => (
@@ -348,9 +349,9 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
               </div>
               <input className="ctrl" value={p.pregunta} onChange={(ev) => setPreg(i, { pregunta: ev.target.value })} placeholder="Texto de la pregunta" />
               {p.tipo === 'abierta' ? (
-                <p className="muted" style={{ fontSize: 13, margin: '10px 0 0' }}>El estudiante va a escribir su respuesta libremente — no se autocorrige, queda para revisar a mano en "Respuestas".</p>
+                <p className="muted" style={{ fontSize: letra(13), margin: '10px 0 0' }}>El estudiante va a escribir su respuesta libremente — no se autocorrige, queda para revisar a mano en "Respuestas".</p>
               ) : (<>
-              <p className="muted" style={{ fontSize: 13, margin: '10px 0 6px' }}>Marcá la opción correcta </p>
+              <p className="muted" style={{ fontSize: letra(13), margin: '10px 0 6px' }}>Marcá la opción correcta </p>
               {p.tipo === 'vf' ? (
                 p.opciones.map((op, j) => (
                   <div key={j} className="preg-vf-row">
@@ -383,7 +384,7 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
             <p className="cf-sec-t">Fechas y configuración</p>
           <label style={lbl}>Instrucciones para el estudiante (opcional)</label>
           <textarea className="ctrl" rows={3} style={{ resize: 'vertical', width: '100%' }} value={e.intro || ''} onChange={(ev) => set({ intro: ev.target.value })} placeholder="Ej: Mirá la clase grabada antes de responder. Tenés hasta el domingo." />
-          <p className="muted" style={{ fontSize: 13, marginTop: 6 }}>Se le muestra al estudiante en "Antes de empezar", antes de pedirle el correo. Vacío = usa el texto genérico ({'"'}Completá tus datos y respondé las N preguntas{'"'}).</p>
+          <p className="muted" style={{ fontSize: letra(13), marginTop: 6 }}>Se le muestra al estudiante en "Antes de empezar", antes de pedirle el correo. Vacío = usa el texto genérico ({'"'}Completá tus datos y respondé las N preguntas{'"'}).</p>
 
           <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginTop: 18 }}>
             <div>
@@ -394,12 +395,12 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
                   <input className="ctrl" type="time" style={{ maxWidth: 110 }} value={e.horaDisponible || ''} onChange={(ev) => set({ horaDisponible: ev.target.value })} title="Hora de disponibilidad (opcional)" />
                 )}
               </div>
-              <p className="muted" style={{ fontSize: 13, marginTop: 6, maxWidth: 280 }}>Vacío = disponible apenas la publiques. Con una fecha futura, figura como <b>Programada</b> hasta ese día{e.fechaDisponible ? ' (y esa hora, si la ponés)' : ''}.</p>
+              <p className="muted" style={{ fontSize: letra(13), marginTop: 6, maxWidth: 280 }}>Vacío = disponible apenas la publiques. Con una fecha futura, figura como <b>Programada</b> hasta ese día{e.fechaDisponible ? ' (y esa hora, si la ponés)' : ''}.</p>
             </div>
             <div>
               <label style={lbl}>Fecha de cierre (opcional)</label>
               <input className="ctrl" type="date" style={{ maxWidth: 200 }} value={e.fechaCierre || ''} onChange={(ev) => set({ fechaCierre: ev.target.value })} />
-              <p className="muted" style={{ fontSize: 13, marginTop: 6, maxWidth: 260 }}>Vacío = sin fecha límite. Pasado ese día, figura como <b>Cerrada</b> y el estudiante ya no puede responderla (ni ver el formulario).</p>
+              <p className="muted" style={{ fontSize: letra(13), marginTop: 6, maxWidth: 260 }}>Vacío = sin fecha límite. Pasado ese día, figura como <b>Cerrada</b> y el estudiante ya no puede responderla (ni ver el formulario).</p>
             </div>
           </div>
 
@@ -407,15 +408,15 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
             <input type="checkbox" checked={e.mostrarResultado !== false} onChange={(ev) => set({ mostrarResultado: ev.target.checked })} />
             Mostrarle el puntaje al estudiante al terminar
           </label>
-          <p className="muted" style={{ fontSize: 13, marginTop: 6, marginLeft: 26 }}>Si lo desmarcás, igual se corrige y se guarda todo — solo no se le muestra el número en pantalla.</p>
+          <p className="muted" style={{ fontSize: letra(13), marginTop: 6, marginLeft: 26 }}>Si lo desmarcás, igual se corrige y se guarda todo — solo no se le muestra el número en pantalla.</p>
           <label className="wiz-check-inline" style={{ marginTop: 14 }}>
             <input type="checkbox" checked={e.feedbackInmediato === true} onChange={(ev) => set({ feedbackInmediato: ev.target.checked })} />
             Mostrar si acertó en cada pregunta (práctica de repaso)
           </label>
-          <p className="muted" style={{ fontSize: 13, marginTop: 6, marginLeft: 26 }}>El estudiante responde una pregunta por pantalla y, apenas la contesta, ve si acertó y cuál era la correcta. Usalo para prácticas, no para evaluaciones con nota: en este modo la página le entrega las respuestas correctas al navegador.</p>
+          <p className="muted" style={{ fontSize: letra(13), marginTop: 6, marginLeft: 26 }}>El estudiante responde una pregunta por pantalla y, apenas la contesta, ve si acertó y cuál era la correcta. Usalo para prácticas, no para evaluaciones con nota: en este modo la página le entrega las respuestas correctas al navegador.</p>
           <details className="wiz-avanzado">
             <summary> Próximamente</summary>
-            <p className="muted" style={{ fontSize: 13.5 }}>Límite de intentos y tiempo límite por actividad quedan para una próxima etapa: necesitan su propia lógica de control (contar intentos previos, cronómetro con envío automático) para no arriesgar respuestas de estudiantes ya en curso.</p>
+            <p className="muted" style={{ fontSize: letra(13.5) }}>Límite de intentos y tiempo límite por actividad quedan para una próxima etapa: necesitan su propia lógica de control (contar intentos previos, cronómetro con envío automático) para no arriesgar respuestas de estudiantes ya en curso.</p>
           </details>
           </div>
 
@@ -435,7 +436,7 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
 
       <div className="cf-acts" style={{ alignItems: 'center' }}>
         {guardadoEstado && (
-          <span style={{ fontSize: 13, fontWeight: 500, color: guardadoEstado === 'error' ? 'rgb(248 113 113)' : guardadoEstado === 'guardando' ? 'rgb(var(--textMuted))' : 'rgb(74 222 128)' }}>
+          <span style={{ fontSize: letra(13), fontWeight: 500, color: guardadoEstado === 'error' ? 'rgb(248 113 113)' : guardadoEstado === 'guardando' ? 'rgb(var(--textMuted))' : 'rgb(74 222 128)' }}>
             {guardadoEstado === 'guardando' ? 'Guardando…' : guardadoEstado === 'error' ? ' Error al guardar' : ' Guardado'}
           </span>
         )}
@@ -482,7 +483,7 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
             <div className="preview-body" style={{ padding: 16 }}>
               {otrasActividades.filter((a) => (a.preguntas || []).length > 0).map((a) => (
                 <div key={a.slug} style={{ marginBottom: 14 }}>
-                  <div className="muted" style={{ fontSize: 13, fontWeight: 500, marginBottom: 6 }}>{a.titulo} · {a.curso}</div>
+                  <div className="muted" style={{ fontSize: letra(13), fontWeight: 500, marginBottom: 6 }}>{a.titulo} · {a.curso}</div>
                   {a.preguntas.map((p, j) => (
                     <button type="button" key={j} className="celda-edit-btn" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', marginBottom: 4 }} onClick={() => reutilizarPregunta(p)}>
                       {p.pregunta || <span className="muted">(sin texto)</span>}
@@ -677,10 +678,10 @@ function DetalleActividad({ a, puedeGestionar, showToast, onEditar, onDuplicar, 
           {puedeGestionar && <button className="btn-sm solid" onClick={() => onEditar(a)}> Editar</button>}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10 }}>
-          <span className="curso-avatar" style={{ background: color + '22', color, width: 42, height: 42, borderRadius: 12, fontSize: 15, flex: '0 0 auto' }}>{inicialesCurso(a.curso)}</span>
+          <span className="curso-avatar" style={{ background: color + '22', color, width: 42, height: 42, borderRadius: 12, fontSize: letra(15), flex: '0 0 auto' }}>{inicialesCurso(a.curso)}</span>
           <div style={{ minWidth: 0 }}>
-            <div className="htitle" style={{ fontSize: 20, lineHeight: 1.2 }}>{a.titulo}</div>
-            <div style={{ fontSize: 14, color, fontWeight: 600 }}>{a.curso}{a.edicion ? ` · Edición ${a.edicion}` : ''}</div>
+            <div className="htitle" style={{ fontSize: letra(20), lineHeight: 1.2 }}>{a.titulo}</div>
+            <div style={{ fontSize: letra(14), color, fontWeight: 600 }}>{a.curso}{a.edicion ? ` · Edición ${a.edicion}` : ''}</div>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
@@ -728,7 +729,7 @@ function DetalleActividad({ a, puedeGestionar, showToast, onEditar, onDuplicar, 
           <div className="detalle-preg" key={i}>
             <div className="detalle-preg-head">
               <span className="detalle-preg-num">{i + 1}</span>
-              <b style={{ fontSize: 14.5 }}>{p.pregunta}</b>
+              <b style={{ fontSize: letra(14.5) }}>{p.pregunta}</b>
             </div>
             {(p.opciones || []).map((op, j) => (
               <div key={j} className={'detalle-op' + (Number(p.correcta) === j ? ' ok' : '')}>
@@ -987,7 +988,7 @@ function ModalRespuestaDetalle({ x, onCerrar }) {
       sub={`${x.actividad} · ${x.curso}${x.edicion ? ` · Ed. ${x.edicion}` : ''}`}
       chips={[{ texto: `Puntaje ${x.puntaje}/${x.total}`, color: colorPorPuntaje(x.puntaje, x.total) }, ...(x.duracion ? [{ texto: `Tiempo ${fmtTiempo(x.duracion)}` }] : [])]}>
       <div>
-        <p className="muted" style={{ fontSize: 13.5, marginTop: 0 }}>{[x.email, cerradas.length ? `${x.puntaje}/${x.total} correctas en las cerradas` : ''].filter(Boolean).join(' · ')}</p>
+        <p className="muted" style={{ fontSize: letra(13.5), marginTop: 0 }}>{[x.email, cerradas.length ? `${x.puntaje}/${x.total} correctas en las cerradas` : ''].filter(Boolean).join(' · ')}</p>
         {todas.length === 0 && <p className="muted">No encontramos las preguntas de esta actividad (puede haberse modificado o eliminado después de que se respondió).</p>}
         {cerradas.length > 0 && (
           <>
@@ -999,7 +1000,7 @@ function ModalRespuestaDetalle({ x, onCerrar }) {
               <div key={d.n} className="detalle-preg">
                 <div className="detalle-preg-head">
                   <span className="detalle-preg-num">{d.n}</span>
-                  <b style={{ fontSize: 14.5 }}>{d.pregunta}</b>
+                  <b style={{ fontSize: letra(14.5) }}>{d.pregunta}</b>
                 </div>
                 <div className={'detalle-op ' + (d.ok ? 'ok' : 'mal')}>
                   <span className={d.ok ? 'detalle-op-check' : 'detalle-op-cruz'} aria-hidden="true">{d.ok ? '✓' : '✕'}</span>
@@ -1015,12 +1016,12 @@ function ModalRespuestaDetalle({ x, onCerrar }) {
         )}
         {abiertas.length > 0 && (
           <>
-            <div className="sectitle" style={{ margin: '14px 0 8px', fontSize: 13.5, letterSpacing: 1, textTransform: 'uppercase', color: 'rgb(var(--textMuted))' }}>Respuestas abiertas</div>
+            <div className="sectitle" style={{ margin: '14px 0 8px', fontSize: letra(13.5), letterSpacing: 1, textTransform: 'uppercase', color: 'rgb(var(--textMuted))' }}>Respuestas abiertas</div>
             {abiertas.map((d) => (
               <div key={d.n} className="detalle-preg">
                 <div className="detalle-preg-head">
                   <span className="detalle-preg-num">{d.n}</span>
-                  <b style={{ fontSize: 14.5 }}>{d.pregunta}</b>
+                  <b style={{ fontSize: letra(14.5) }}>{d.pregunta}</b>
                 </div>
                 <div className="detalle-op" style={{ whiteSpace: 'pre-wrap' }}>{d.respuesta ? String(d.respuesta) : <span className="muted">(sin responder)</span>}</div>
               </div>
@@ -1123,7 +1124,7 @@ function Respuestas({ usuario, irABuscador, showToast }) {
           ))}
         </div>
       )}
-      {data.alcance === 'docente' && <p className="muted" style={{ fontSize: 13, marginTop: -4, marginBottom: 10 }}>Mostrando solo tus cursos/ediciones asignados.</p>}
+      {data.alcance === 'docente' && <p className="muted" style={{ fontSize: letra(13), marginTop: -4, marginBottom: 10 }}>Mostrando solo tus cursos/ediciones asignados.</p>}
       {filtradas.length === 0 ? <div className="empty empty-sm"><p>No encontramos respuestas con estos filtros.</p></div> : (
         <div className="tablewrap"><table>
           {/* Pedido de Diego: misma estructura de orden en las tres tablas de "Respuestas" —
@@ -1149,7 +1150,7 @@ function Respuestas({ usuario, irABuscador, showToast }) {
               <td style={{ color: colorCurso(x.curso) }}>{x.actividad}</td>
               <td className="sec">{x.email}</td>
               <td className="sec">{fmtTiempo(x.duracion)}</td>
-              <td style={{ textAlign: 'right' }}><b style={{ color: colorPorPuntaje(x.puntaje, x.total) }}>{x.puntaje}/{x.total}</b>{abiertas.length > 0 && <div className="sec" style={{ fontSize: 12.5 }}>{abiertas.length} abierta{abiertas.length === 1 ? '' : 's'}</div>}</td>
+              <td style={{ textAlign: 'right' }}><b style={{ color: colorPorPuntaje(x.puntaje, x.total) }}>{x.puntaje}/{x.total}</b>{abiertas.length > 0 && <div className="sec" style={{ fontSize: letra(12.5) }}>{abiertas.length} abierta{abiertas.length === 1 ? '' : 's'}</div>}</td>
               {/* Pedido de Diego: "Super Admin puede eliminar rtas" — solo visible con permiso
                   (tienePermisoEliminarRespuestas, hoy equivale a rol Admin). */}
               {puedeEliminar && <td><button className="btn-sm" style={{ color: 'rgb(248 113 113)' }} onClick={(e) => { e.stopPropagation(); eliminarRespuesta(x); }} title="Eliminar esta respuesta"></button></td>}

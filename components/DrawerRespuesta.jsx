@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef } from 'react';
+import { letra } from '../lib/escalaLetra';
 
 // Panel lateral con el detalle de UNA respuesta. Es el mismo que ya usaba "Respuestas fichas" (cabecera con el nombre, cuerpo con los datos) y ahora lo usan
 // también "Respuestas actividades" y "Respuestas formularios" (pedido del equipo: una sola forma de ver las respuestas, la más directa: tocar la fila).
@@ -29,7 +30,7 @@ export default function DrawerRespuesta({ abierto, onCerrar, nombre, sub, chips 
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
                 <div>
                   <div className="dr-name">{nombre || '—'}</div>
-                  {sub && <div style={{ fontSize: 13, color: 'rgb(var(--textMuted))', marginTop: 2 }}>{sub}</div>}
+                  {sub && <div style={{ fontSize: letra(13), color: 'rgb(var(--textMuted))', marginTop: 2 }}>{sub}</div>}
                 </div>
                 <button ref={cerrarRef} className="btn-sm" onClick={() => alCerrar.current && alCerrar.current()} aria-label="Cerrar"></button>
               </div>

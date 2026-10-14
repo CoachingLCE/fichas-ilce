@@ -8,6 +8,7 @@ import { useDialogos } from './Dialogos';
 import DrawerRespuesta from './DrawerRespuesta';
 import { paginarPorMes } from '../lib/respuestasPorMes';
 import VerMasMeses from './VerMasMeses';
+import { letra } from '../lib/escalaLetra';
 
 const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
@@ -122,7 +123,7 @@ function Lista({ usuario, showToast, onNuevo, onEditar }) {
                 <span className={'pcard-dot ' + (f.estado === 'Publicada' ? 'pub' : 'bor')}><span className="d" />{f.estado}</span>
                 <span className="tagchip">{f.tipo || 'Formulario'}</span>
               </div>
-              <div className="pcard-title" title={f.titulo} style={{ fontSize: 16.5, whiteSpace: 'normal', lineHeight: 1.25 }}>{f.titulo}</div>
+              <div className="pcard-title" title={f.titulo} style={{ fontSize: letra(16.5), whiteSpace: 'normal', lineHeight: 1.25 }}>{f.titulo}</div>
               <div className="pcard-datos">
                 <span>{f.campos.length} campos{nResp(f) !== null ? ` · ${nResp(f)} respuesta${nResp(f) === 1 ? '' : 's'}` : ''}</span>
                 <BadgeCreado iso={f.creado} />
@@ -302,19 +303,19 @@ function Respuestas({ usuario, showToast, soloEspeciales }) {
           <div style={{ display: 'grid', gap: 8 }}>
             {[['Fecha', (abierto.fecha || '').slice(0, 10)], ['Email', abierto.email || 'Anónimo'], ['Curso', abierto.curso], ['Edición', abierto.edicion], ['Formulario', abierto.formulario]].filter(([, v]) => v).map(([k, v]) => (
               <div key={k} style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 13, color: 'rgb(var(--textMuted))', flex: '0 0 110px' }}>{k}</span>
-                <span style={{ fontSize: 14.5 }}>{String(v)}</span>
+                <span style={{ fontSize: letra(13), color: 'rgb(var(--textMuted))', flex: '0 0 110px' }}>{k}</span>
+                <span style={{ fontSize: letra(14.5) }}>{String(v)}</span>
               </div>
             ))}
-            <h3 style={{ fontSize: 14, margin: '14px 0 4px' }}>Respuestas</h3>
+            <h3 style={{ fontSize: letra(14), margin: '14px 0 4px' }}>Respuestas</h3>
             {/* Pedido de Diego: cada campo (etiqueta: valor) en un renglón. */}
             {Object.entries(abierto.r || {}).filter(([k]) => !['email', 'nombre', 'curso', 'edicion', 'importadoDe'].includes(k)).map(([k, v]) => (
               <div key={k} style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 13, color: 'rgb(var(--textMuted))', textTransform: 'capitalize', flex: '0 0 110px' }}>{k}</span>
-                <span style={{ fontSize: 14.5, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', flex: 1, minWidth: 0 }}>{String(v)}</span>
+                <span style={{ fontSize: letra(13), color: 'rgb(var(--textMuted))', textTransform: 'capitalize', flex: '0 0 110px' }}>{k}</span>
+                <span style={{ fontSize: letra(14.5), whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', flex: 1, minWidth: 0 }}>{String(v)}</span>
               </div>
             ))}
-            {Object.keys(abierto.r || {}).filter((k) => !['email', 'nombre', 'curso', 'edicion', 'importadoDe'].includes(k)).length === 0 && <p className="muted" style={{ fontSize: 14 }}>Esta respuesta no tiene campos para mostrar.</p>}
+            {Object.keys(abierto.r || {}).filter((k) => !['email', 'nombre', 'curso', 'edicion', 'importadoDe'].includes(k)).length === 0 && <p className="muted" style={{ fontSize: letra(14) }}>Esta respuesta no tiene campos para mostrar.</p>}
           </div>
         )}
       </DrawerRespuesta>
@@ -387,7 +388,7 @@ function ImportarRespuestas({ usuario, onCerrar, onImportado }) {
     <div className="mwrap on">
       <div className="modal" style={{ maxWidth: 540 }}>
         <h3> Importar respuestas históricas</h3>
-        <p className="muted" style={{ fontSize: 13.5, margin: '4px 0 14px' }}>
+        <p className="muted" style={{ fontSize: letra(13.5), margin: '4px 0 14px' }}>
           Subí el archivo tal cual lo bajaste de Google Forms (Respuestas → ⋮ → Descargar respuestas, en .csv o .xlsx).
           Se lee acá mismo en tu navegador — nada se transcribe a mano, así no hay riesgo de cargar mal un nombre o un email de un estudiante real.
         </p>
@@ -411,12 +412,12 @@ function ImportarRespuestas({ usuario, onCerrar, onImportado }) {
           <div className="fgroup-label">Archivo (.csv o .xlsx)</div>
           <input type="file" accept=".csv,.xlsx,.xls" onChange={onArchivo} style={{ marginBottom: 10 }} />
 
-          {error && <p style={{ color: 'rgb(248 113 113)', fontSize: 13.5, marginBottom: 10 }}>{error}</p>}
+          {error && <p style={{ color: 'rgb(248 113 113)', fontSize: letra(13.5), marginBottom: 10 }}>{error}</p>}
 
           {filas && (
             <div className="note" style={{ marginBottom: 14 }}>
               <b>{filas.length}</b> fila(s) detectadas en «{nombreArchivo}», con {columnas.length} columna(s):
-              <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>{columnas.slice(0, 6).join(' · ')}{columnas.length > 6 ? '…' : ''}</div>
+              <div className="muted" style={{ fontSize: letra(13), marginTop: 4 }}>{columnas.slice(0, 6).join(' · ')}{columnas.length > 6 ? '…' : ''}</div>
             </div>
           )}
 

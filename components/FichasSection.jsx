@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState, forwardRef, useImperativeHandle }
 import { APP_URL, colorCurso, inicialesCurso, cantidadClasesFija, calcularFechaFinEdicion } from '../lib/constants';
 import Constructor from './Constructor';
 import { generarHorarios } from '../lib/husos';
+import { letra } from '../lib/escalaLetra';
 
 const ESTADO_META = {
   Publicada: { cls: 'pub', label: 'Publicada', dot: '🟢' },
@@ -459,7 +460,7 @@ function NuevaEdicionPanel({ def, usuario, onVolver, onCreada }) {
           )}
 
           {ondemand ? (
-            <p className="muted" style={{ fontSize: 13.5, marginBottom: 14 }}>
+            <p className="muted" style={{ fontSize: letra(13.5), marginBottom: 14 }}>
               El curso queda disponible siempre, sin ediciones programadas (mismo criterio que Coaching Inmobiliario) — no hace falta cargar fecha ni número.
             </p>
           ) : sincronica ? (
@@ -472,7 +473,7 @@ function NuevaEdicionPanel({ def, usuario, onVolver, onCreada }) {
               </div>
             </>
           ) : (
-            <p className="muted" style={{ fontSize: 13.5, marginBottom: 14 }}>No tiene día ni horario fijo, así que esos campos no aplican acá.</p>
+            <p className="muted" style={{ fontSize: letra(13.5), marginBottom: 14 }}>No tiene día ni horario fijo, así que esos campos no aplican acá.</p>
           )}
 
           {!ondemand && (
@@ -500,7 +501,7 @@ function NuevaEdicionPanel({ def, usuario, onVolver, onCreada }) {
                   <input className="ctrl" style={{ width: '100%', marginBottom: docentesDelCurso.length > 0 ? 6 : 14 }} value={docente} onChange={(e) => setDocente(e.target.value)} placeholder="Nombre del docente (opcional por ahora)" />
                   {docentesDelCurso.length > 0 && (
                     <button type="button" onClick={() => { setModoDocenteLibre(false); setDocente(''); }}
-                      style={{ background: 'none', border: 'none', color: 'rgb(var(--accentTeal))', cursor: 'pointer', padding: 0, fontSize: 13, marginBottom: 14, display: 'block' }}>
+                      style={{ background: 'none', border: 'none', color: 'rgb(var(--accentTeal))', cursor: 'pointer', padding: 0, fontSize: letra(13), marginBottom: 14, display: 'block' }}>
                        Elegir del equipo docente
                     </button>
                   )}
@@ -509,7 +510,7 @@ function NuevaEdicionPanel({ def, usuario, onVolver, onCreada }) {
             </>
           )}
 
-          {error && <p style={{ color: 'rgb(248 113 113)', fontSize: 13.5, marginBottom: 10 }}>{error}</p>}
+          {error && <p style={{ color: 'rgb(248 113 113)', fontSize: letra(13.5), marginBottom: 10 }}>{error}</p>}
 
           <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
             <button className="btn-sm solid" onClick={crear} disabled={guardando}>{guardando ? 'Creando…' : 'Crear edición'}</button>
@@ -525,14 +526,14 @@ function NuevaEdicionPanel({ def, usuario, onVolver, onCreada }) {
             <span className="curso-avatar" style={{ background: colorCurso(def.curso) + '22', color: colorCurso(def.curso) }}>{inicialesCurso(def.curso)}</span>
             <b style={{ color: colorCurso(def.curso) }}>{def.curso}</b>
           </div>
-          <div style={{ fontSize: 13.5, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ fontSize: letra(13.5), display: 'flex', flexDirection: 'column', gap: 6 }}>
             <FilaPreview label={ondemand ? 'Modalidad' : 'Edición'}>{ondemand ? 'A demanda' : (numero.trim() ? numero.trim() : '—')}</FilaPreview>
             {!ondemand && <FilaPreview label="Docente">{docente.trim() || '— Sin asignar —'}</FilaPreview>}
             {!ondemand && <FilaPreview label="Fecha de inicio">{sincronica ? (fecha ? diaFechaLabel(fecha) : '—') : 'No aplica'}</FilaPreview>}
             {!ondemand && <FilaPreview label="Fecha de finalización">{sincronica ? (fechaFinPreview ? diaFechaLabel(fechaFinPreview) : '— Elegí la fecha de inicio —') : 'No aplica'}</FilaPreview>}
           </div>
           {labelPreview && (
-            <div className="note" style={{ marginTop: 12, fontSize: 13 }}>
+            <div className="note" style={{ marginTop: 12, fontSize: letra(13) }}>
               Se va a crear: <b>{labelPreview}</b>.
             </div>
           )}

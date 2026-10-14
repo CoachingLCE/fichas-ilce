@@ -1,5 +1,6 @@
 'use client';
 import { nombreMes } from '../lib/respuestasPorMes';
+import { letra } from '../lib/escalaLetra';
 
 // Pie común de las pantallas de "Respuestas": cuántas se ven y el botón para sumar el mes anterior ("Ver más · Septiembre 2026 (23)").
 // `conConteo=false` cuando la pantalla ya muestra el conteo arriba (Fichas completadas).
@@ -7,7 +8,7 @@ export default function VerMasMeses({ visibles, total, proximoMes, onVerMas, eti
   if (!total) return null;
   return (
     <div data-pie="meses" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, flexWrap: 'wrap', margin: '16px 0 4px' }}>
-      {conConteo && <span className="muted" style={{ fontSize: 14 }}>Mostrando <b>{visibles}</b> de <b>{total}</b> {etiqueta}</span>}
+      {conConteo && <span className="muted" style={{ fontSize: letra(14) }}>Mostrando <b>{visibles}</b> de <b>{total}</b> {etiqueta}</span>}
       {proximoMes && <button className="btn-sm solid" onClick={onVerMas}>Ver más · {nombreMes(proximoMes.clave)} ({proximoMes.cantidad})</button>}
     </div>
   );

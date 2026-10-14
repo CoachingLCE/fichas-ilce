@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { APP_URL, cantidadClasesFija, esAsincronica, calcularFechaFinEdicion, colorCurso } from '../lib/constants';
 import { generarHorarios, horariosDeEdicion } from '../lib/husos';
 import { useDialogos } from './Dialogos';
+import { letra } from '../lib/escalaLetra';
 
 // ───────────────────────────────────────────────────────────────────────────
 // Biblioteca de campos estándar ILCE, agrupados. Es la base con la que se
@@ -153,7 +154,7 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
   if (errorCarga) {
     return (
       <div className="empty" style={{ textAlign: 'center', padding: '40px 20px' }}>
-        <p style={{ fontSize: 15, fontWeight: 500, marginBottom: 6 }}> No se pudo abrir el Constructor</p>
+        <p style={{ fontSize: letra(15), fontWeight: 500, marginBottom: 6 }}> No se pudo abrir el Constructor</p>
         <p className="muted" style={{ marginBottom: 16 }}>{errorCarga}</p>
         <button className="btn-sm solid" onClick={() => { setErrorCarga(''); setDefs(null); window.location.reload(); }}>Reintentar</button>
         {onVolver && <button className="btn-sm" style={{ marginLeft: 8 }} onClick={onVolver}> Volver</button>}
@@ -336,7 +337,7 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
           );
         })}
         {defsFiltrados.length === 0 && <p className="vacio vacio-chico">Sin resultados.</p>}
-        <p className="muted" style={{ fontSize: 13, marginTop: 10, padding: '0 4px' }}>Agregar formaciones nuevas llega en el próximo lote.</p>
+        <p className="muted" style={{ fontSize: letra(13), marginTop: 10, padding: '0 4px' }}>Agregar formaciones nuevas llega en el próximo lote.</p>
       </div>
 
       {/* CENTRO — editor */}
@@ -375,7 +376,7 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
               </button>
             ))}
           </div>
-          <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>{estadoActual.explicacion}</p>
+          <p className="muted" style={{ fontSize: letra(13), marginTop: 8 }}>{estadoActual.explicacion}</p>
         </div>
 
         <div className="ctor-section" ref={refEdiciones} id="ediciones">
@@ -443,7 +444,7 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
 
                         <div className="ctor-ed-sub-lbl">Cursada</div>
                         {asincronica ? (
-                          <p className="muted" style={{ fontSize: 13, marginTop: -4 }}>Es una cursada asincrónica: no tiene día ni horario fijo, así que esos campos no aplican acá.</p>
+                          <p className="muted" style={{ fontSize: letra(13), marginTop: -4 }}>Es una cursada asincrónica: no tiene día ni horario fijo, así que esos campos no aplican acá.</p>
                         ) : (
                           <>
                             <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -482,14 +483,14 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
           <div className="ctor-resumen-row">
             <div>
               <div className="ctor-section-lbl" style={{ margin: 0 }}>Campos del formulario</div>
-              <p className="muted" style={{ fontSize: 13.5, marginTop: 4 }}>{activos.length} activos · {campos.filter((c) => c.personalizado).length} personalizados</p>
+              <p className="muted" style={{ fontSize: letra(13.5), marginTop: 4 }}>{activos.length} activos · {campos.filter((c) => c.personalizado).length} personalizados</p>
             </div>
             <button className="btn-sm" onClick={() => setCamposAbierto((v) => !v)}>{camposAbierto ? 'Ocultar campos' : 'Editar campos'}</button>
           </div>
 
           {camposAbierto && (
             <div style={{ marginTop: 16 }}>
-              <p className="muted" style={{ fontSize: 13.5, marginBottom: 10 }}>Elegí qué campos van a aparecer en el formulario y en qué orden (arrastrando).</p>
+              <p className="muted" style={{ fontSize: letra(13.5), marginBottom: 10 }}>Elegí qué campos van a aparecer en el formulario y en qué orden (arrastrando).</p>
               {GRUPOS.map((g) => (
                 <div key={g} style={{ marginBottom: 14 }}>
                   <div className="wiz-grupo-lbl">{g}</div>
@@ -535,7 +536,7 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
               {activos.length > 0 && (
                 <>
                   <div className="wiz-grupo-lbl" style={{ marginTop: 18 }}>Orden</div>
-                  <p className="muted" style={{ fontSize: 13, marginTop: -4, marginBottom: 8 }}>Arrastrá los campos para cambiar el orden en que aparecerán en la ficha.</p>
+                  <p className="muted" style={{ fontSize: letra(13), marginTop: -4, marginBottom: 8 }}>Arrastrá los campos para cambiar el orden en que aparecerán en la ficha.</p>
                   <div className="wiz-orden-list">
                     {activos.map((c, i) => (
                       <div
@@ -563,7 +564,7 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
           <div className="ctor-resumen-row">
             <div>
               <div className="ctor-section-lbl" style={{ margin: 0 }}>Configuración</div>
-              <p className="muted" style={{ fontSize: 13.5, marginTop: 4 }}>
+              <p className="muted" style={{ fontSize: letra(13.5), marginTop: 4 }}>
                 {(cfg.destinatarios || []).length} destinatario{(cfg.destinatarios || []).length === 1 ? '' : 's'} · Notificaciones {cfg.notificar ? 'activadas' : 'desactivadas'} · Mensaje de confirmación {cfg.mensajePost ? 'configurado' : 'sin configurar'}
               </p>
             </div>
@@ -575,7 +576,7 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
               <div className="wiz-grupo-lbl">Notificaciones</div>
               <label style={lbl}>Destinatarios de las respuestas</label>
               <div className="wiz-dest-list">
-                {(cfg.destinatarios || []).length === 0 && <p className="muted" style={{ fontSize: 13.5 }}>Sin destinatarios cargados todavía.</p>}
+                {(cfg.destinatarios || []).length === 0 && <p className="muted" style={{ fontSize: letra(13.5) }}>Sin destinatarios cargados todavía.</p>}
                 {(cfg.destinatarios || []).map((e) => (
                   <span className="tagchip" key={e}>{e} <button onClick={() => quitarDest(e)} title="Quitar"></button></span>
                 ))}
