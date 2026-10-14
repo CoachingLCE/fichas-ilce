@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { findUsuario, tienePermisoFormularios } from '../../../../lib/auth';
+import { findUsuario, usuarioDeSolicitud, tienePermisoFormularios } from '../../../../lib/auth';
 import { leerAlertasFormularios } from '../../../../lib/alertasFormulariosServer';
 
 export const dynamic = 'force-dynamic';
@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 // contenido de las respuestas, solo títulos, fechas y días.
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
-  const usuario = await findUsuario(searchParams.get('solicitanteEmail'));
+  const usuario = await usuarioDeSolicitud(req, searchParams.get('solicitanteEmail'));
   if (!usuario || !tienePermisoFormularios(usuario)) return NextResponse.json({ ok: false, error: 'No autorizado' }, { status: 403 });
   try {
     const r = await leerAlertasFormularios();

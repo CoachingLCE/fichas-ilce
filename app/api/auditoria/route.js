@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { readSheet } from '../../../lib/sheets';
 import { TABS } from '../../../lib/constants';
-import { findUsuario, tienePermisoAuditoria } from '../../../lib/auth';
+import { findUsuario, usuarioDeSolicitud, tienePermisoAuditoria } from '../../../lib/auth';
 import { paginaDeHistorial } from '../../../lib/historialMeses';
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 // un filtro activo, que se aplican en la pantalla y tienen que poder encontrar movimientos de cualquier mes.
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
-  const usuario = await findUsuario(searchParams.get('solicitanteEmail'));
+  const usuario = await usuarioDeSolicitud(req, searchParams.get('solicitanteEmail'));
   if (!usuario || !tienePermisoAuditoria(usuario)) return NextResponse.json({ ok: false, error: 'No autorizado' }, { status: 403 });
   const todos = (await readSheet(TABS.HISTORIAL))
     .filter((f) => f.Fecha && (f['Acción'] || f['Inscripción ID']))

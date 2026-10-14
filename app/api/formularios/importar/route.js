@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { appendRows, readSheet } from '../../../../lib/sheets';
 import { TABS } from '../../../../lib/constants';
-import { findUsuario, tienePermisoFormularios } from '../../../../lib/auth';
+import { findUsuario, usuarioDeSolicitud, tienePermisoFormularios } from '../../../../lib/auth';
 import { getFormulario } from '../../../../lib/formularios';
 import { registrarAccion } from '../../../../lib/auditoria';
 
@@ -25,7 +25,7 @@ export async function POST(req) {
   let body;
   try { body = await req.json(); } catch { return NextResponse.json({ ok: false, error: 'JSON inválido' }, { status: 400 }); }
   const { solicitanteEmail, slug, tituloManual, curso, edicion, filas } = body || {};
-  const usuario = await findUsuario(solicitanteEmail);
+  const usuario = await usuarioDeSolicitud(req, solicitanteEmail);
   if (!usuario || !tienePermisoFormularios(usuario)) return NextResponse.json({ ok: false, error: 'Sin permiso' }, { status: 403 });
 
   // El formulario de destino puede ser uno ya definido en la app (se elige por slug), o —

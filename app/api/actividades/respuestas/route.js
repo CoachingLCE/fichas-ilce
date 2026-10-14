@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
 import { readSheet, updateRow } from '../../../../lib/sheets';
 import { TABS } from '../../../../lib/constants';
-import { findUsuario, tienePermisoVerRespuestasActividades, tienePermisoVerTodasRespuestas, tienePermisoEliminarRespuestas } from '../../../../lib/auth';
+import { findUsuario, usuarioDeSolicitud, tienePermisoVerRespuestasActividades, tienePermisoVerTodasRespuestas, tienePermisoEliminarRespuestas } from '../../../../lib/auth';
 import { registrarAccion } from '../../../../lib/auditoria';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
-  const usuario = await findUsuario(searchParams.get('solicitanteEmail'));
+  const usuario = await usuarioDeSolicitud(req, searchParams.get('solicitanteEmail'));
   if (!usuario || !tienePermisoVerRespuestasActividades(usuario)) return NextResponse.json({ ok: false, error: 'No autorizado' }, { status: 403 });
 
   // Definiciones (para poder mostrar, por fila, cada pregunta con lo que respondió ese
@@ -64,7 +64,7 @@ export async function GET(req) {
 // existe una función en lib/sheets.js para eliminar una fila real de la planilla.
 export async function DELETE(req) {
   const body = await req.json();
-  const usuario = await findUsuario(body.solicitanteEmail);
+  const usuario = await usuarioDeSolicitud(req, body.solicitanteEmail);
   if (!usuario || !tienePermisoEliminarRespuestas(usuario)) return NextResponse.json({ ok: false, error: 'Sin permiso' }, { status: 403 });
   const { id } = body || {};
   if (!id) return NextResponse.json({ ok: false, error: 'Falta el id' }, { status: 400 });

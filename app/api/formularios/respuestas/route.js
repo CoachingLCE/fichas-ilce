@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { readSheet, updateRow } from '../../../../lib/sheets';
 import { TABS } from '../../../../lib/constants';
-import { findUsuario, tienePermisoVerRespuestasFormularios, tienePermisoEliminarRespuestas } from '../../../../lib/auth';
+import { findUsuario, usuarioDeSolicitud, tienePermisoVerRespuestasFormularios, tienePermisoEliminarRespuestas } from '../../../../lib/auth';
 import { registrarAccion } from '../../../../lib/auditoria';
 import { parseCampos } from '../../../../lib/formularios';
 import { esActividadEspecial, normTitulo } from '../../../../lib/formularioConstructor';
@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
-  const usuario = await findUsuario(searchParams.get('solicitanteEmail'));
+  const usuario = await usuarioDeSolicitud(req, searchParams.get('solicitanteEmail'));
   if (!usuario || !tienePermisoVerRespuestasFormularios(usuario)) return NextResponse.json({ ok: false, error: 'No autorizado' }, { status: 403 });
   try {
     // Qué formularios son actividades especiales (laboratorio, masterclass…): se lee la definición para marcar cada respuesta.
@@ -41,7 +41,7 @@ export async function GET(req) {
 // en lib/sheets.js) y mismo permiso (tienePermisoEliminarRespuestas, hoy equivale a Admin).
 export async function DELETE(req) {
   const body = await req.json();
-  const usuario = await findUsuario(body.solicitanteEmail);
+  const usuario = await usuarioDeSolicitud(req, body.solicitanteEmail);
   if (!usuario || !tienePermisoEliminarRespuestas(usuario)) return NextResponse.json({ ok: false, error: 'Sin permiso' }, { status: 403 });
   const { id } = body || {};
   if (!id) return NextResponse.json({ ok: false, error: 'Falta el id' }, { status: 400 });

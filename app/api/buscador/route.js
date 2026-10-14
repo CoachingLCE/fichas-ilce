@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { readSheet } from '../../../lib/sheets';
 import { TABS } from '../../../lib/constants';
-import { findUsuario, tienePermisoInscripciones, tienePermisoActividades, tienePermisoFormularios } from '../../../lib/auth';
+import { findUsuario, usuarioDeSolicitud, tienePermisoInscripciones, tienePermisoActividades, tienePermisoFormularios } from '../../../lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,7 +44,7 @@ function coincide(bolsa, q) {
 // Formularios. Cada sección solo se busca si la persona tiene permiso para verla.
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
-  const usuario = await findUsuario(searchParams.get('solicitanteEmail'));
+  const usuario = await usuarioDeSolicitud(req, searchParams.get('solicitanteEmail'));
   if (!usuario || !usuario.activo) return NextResponse.json({ ok: false, error: 'No autorizado' }, { status: 403 });
   const q = norm(searchParams.get('q') || '');
   if (q.length < 2) return NextResponse.json({ ok: true, resultados: [] });

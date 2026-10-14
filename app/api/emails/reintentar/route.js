@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { findUsuario, tienePermisoEmails } from '../../../../lib/auth';
+import { findUsuario, usuarioDeSolicitud, tienePermisoEmails } from '../../../../lib/auth';
 import { puedeReintentar, reintentarEnvio } from '../../../../lib/mailer';
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +12,7 @@ export async function POST(req) {
   try { body = await req.json(); } catch { return NextResponse.json({ ok: false, error: 'JSON inválido' }, { status: 400 }); }
   const { solicitanteEmail, tipo, payload } = body || {};
 
-  const usuario = await findUsuario(solicitanteEmail);
+  const usuario = await usuarioDeSolicitud(req, solicitanteEmail);
   if (!usuario || !tienePermisoEmails(usuario)) {
     return NextResponse.json({ ok: false, error: 'No autorizado' }, { status: 403 });
   }

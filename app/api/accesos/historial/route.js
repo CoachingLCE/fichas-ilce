@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { readSheet } from '../../../../lib/sheets';
 import { TABS } from '../../../../lib/constants';
-import { findUsuario, tienePermisoAccesos } from '../../../../lib/auth';
+import { findUsuario, usuarioDeSolicitud, tienePermisoAccesos } from '../../../../lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +10,7 @@ const CLAVES = ['usuario', 'roles', 'contraseña', 'acceso', 'docente', 'sesión
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
-  const usuario = await findUsuario(searchParams.get('solicitanteEmail'));
+  const usuario = await usuarioDeSolicitud(req, searchParams.get('solicitanteEmail'));
   if (!usuario || !tienePermisoAccesos(usuario)) return NextResponse.json({ ok: false, error: 'No autorizado' }, { status: 403 });
 
   const filas = await readSheet(TABS.HISTORIAL);

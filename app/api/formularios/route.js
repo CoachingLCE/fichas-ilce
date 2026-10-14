@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { readSheet, appendRow, updateRow } from '../../../lib/sheets';
 import { TABS, CURSOS } from '../../../lib/constants';
-import { findUsuario, tienePermisoFormularios } from '../../../lib/auth';
+import { findUsuario, usuarioDeSolicitud, tienePermisoFormularios } from '../../../lib/auth';
 import { parseCampos } from '../../../lib/formularios';
 import { validarPayloadServidor, serializarCampos } from '../../../lib/formularioConstructor';
 import { registrarAccion } from '../../../lib/auditoria';
@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
-  const usuario = await findUsuario(searchParams.get('solicitanteEmail'));
+  const usuario = await usuarioDeSolicitud(req, searchParams.get('solicitanteEmail'));
   if (!usuario || !tienePermisoFormularios(usuario)) return NextResponse.json({ ok: false, error: 'No autorizado' }, { status: 403 });
   try {
     const filas = await readSheet(TABS.FORMULARIOS);
@@ -31,7 +31,7 @@ export async function GET(req) {
 export async function POST(req) {
   let body;
   try { body = await req.json(); } catch { return NextResponse.json({ ok: false, error: 'JSON inválido' }, { status: 400 }); }
-  const usuario = await findUsuario(body && body.solicitanteEmail);
+  const usuario = await usuarioDeSolicitud(req, body && body.solicitanteEmail);
   if (!usuario || !tienePermisoFormularios(usuario)) return NextResponse.json({ ok: false, error: 'Sin permiso' }, { status: 403 });
   // El servidor valida y LIMPIA todo (no se confía en lo que manda el navegador): solo pasan las propiedades que el formulario
   // público realmente lee, y el curso fijo tiene que existir. Un formulario puede no tener curso (cursoFijo vacío).

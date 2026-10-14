@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { readSheet, appendRow, updateRow } from '../../../lib/sheets';
 import { TABS } from '../../../lib/constants';
 import { parseActDef } from '../../../lib/actividades';
-import { findUsuario, tienePermisoActividades, tienePermisoGestionActividades } from '../../../lib/auth';
+import { findUsuario, usuarioDeSolicitud, tienePermisoActividades, tienePermisoGestionActividades } from '../../../lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +12,7 @@ const normNom = (v) => (v || '').toString().toLowerCase().normalize('NFD').repla
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
-  const usuario = await findUsuario(searchParams.get('solicitanteEmail'));
+  const usuario = await usuarioDeSolicitud(req, searchParams.get('solicitanteEmail'));
   if (!usuario || !tienePermisoActividades(usuario)) return NextResponse.json({ ok: false, error: 'No autorizado' }, { status: 403 });
   const filas = await readSheet(TABS.ACTIVIDADES);
   // Cuántas respuestas ya tiene cada actividad (por título) — se usa en el editor para avisar
@@ -36,7 +36,7 @@ export async function GET(req) {
 
 export async function POST(req) {
   const body = await req.json();
-  const usuario = await findUsuario(body.solicitanteEmail);
+  const usuario = await usuarioDeSolicitud(req, body.solicitanteEmail);
   if (!usuario || !tienePermisoGestionActividades(usuario)) return NextResponse.json({ ok: false, error: 'Sin permiso' }, { status: 403 });
 
   // Reordenamiento en bloque (drag & drop en el listado): solo toca el campo "orden" de cada
@@ -87,7 +87,7 @@ export async function POST(req) {
 // en RESPUESTAS_ACT no se tocan: quedan en el historial aunque la actividad se borre.
 export async function DELETE(req) {
   const body = await req.json();
-  const usuario = await findUsuario(body.solicitanteEmail);
+  const usuario = await usuarioDeSolicitud(req, body.solicitanteEmail);
   if (!usuario || !tienePermisoGestionActividades(usuario)) return NextResponse.json({ ok: false, error: 'Sin permiso' }, { status: 403 });
   const { slug } = body || {};
   if (!slug) return NextResponse.json({ ok: false, error: 'Falta el slug' }, { status: 400 });

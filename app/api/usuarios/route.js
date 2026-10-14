@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { findUsuario } from '../../../lib/auth';
+import { findUsuario, usuarioDeSolicitud } from '../../../lib/auth';
 import { readSheet, appendRow, updateRow } from '../../../lib/sheets';
 import { encryptPassword, decryptPassword } from '../../../lib/passwords';
 import { enviarMailContrasena } from '../../../lib/mailer';
@@ -8,8 +8,9 @@ import { PASSWORD_GENERICA, TABS } from '../../../lib/constants';
 
 export const dynamic = 'force-dynamic';
 
-async function esAdmin(email) {
-  const u = await findUsuario(email);
+// Quién pide: la persona del token (o, en la etapa de transición, la del email declarado). Solo Admin.
+async function esAdmin(request, email) {
+  const u = await usuarioDeSolicitud(request, email);
   return u && u.roles.includes('Admin') ? u : null;
 }
 
@@ -17,7 +18,7 @@ async function esAdmin(email) {
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   if (searchParams.get('list') !== 'true') return NextResponse.json({ error: 'Parámetro inválido' }, { status: 400 });
-  const admin = await esAdmin(searchParams.get('solicitanteEmail'));
+  const admin = await esAdmin(request, searchParams.get('solicitanteEmail'));
   if (!admin) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
 
   const usuarios = await readSheet(TABS.USUARIOS);
@@ -33,7 +34,7 @@ export async function GET(request) {
 // POST -> alta de usuario. body: { solicitanteEmail, nuevoEmail, nombre, roles:[], password? }
 export async function POST(request) {
   const body = await request.json();
-  const admin = await esAdmin(body.solicitanteEmail);
+  const admin = await esAdmin(request, body.solicitanteEmail);
   if (!admin) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
 
   const yaExiste = await findUsuario(body.nuevoEmail);
@@ -52,7 +53,7 @@ export async function POST(request) {
 // PATCH -> editar. body: { solicitanteEmail, targetEmail, nuevaPassword?, nuevosRoles?, activo? }
 export async function PATCH(request) {
   const body = await request.json();
-  const admin = await esAdmin(body.solicitanteEmail);
+  const admin = await esAdmin(request, body.solicitanteEmail);
   if (!admin) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
 
   const usuarios = await readSheet(TABS.USUARIOS, { noCache: true });
@@ -92,7 +93,7 @@ export async function PATCH(request) {
 // DELETE -> borrar (marca fila vacía). body: { solicitanteEmail, targetEmail }
 export async function DELETE(request) {
   const body = await request.json();
-  const admin = await esAdmin(body.solicitanteEmail);
+  const admin = await esAdmin(request, body.solicitanteEmail);
   if (!admin) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
 
   const usuarios = await readSheet(TABS.USUARIOS, { noCache: true });

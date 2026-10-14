@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { readSheet } from '../../../lib/sheets';
 import { TABS } from '../../../lib/constants';
-import { findUsuario } from '../../../lib/auth';
+import { findUsuario, usuarioDeSolicitud } from '../../../lib/auth';
 import { puedeVerComoOtro } from '../../../lib/permisos';
 
 export const dynamic = 'force-dynamic';
@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 // Lista de personas que un Admin puede usar en "Ver como" (previsualización).
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
-  const usuario = await findUsuario(searchParams.get('solicitanteEmail'));
+  const usuario = await usuarioDeSolicitud(req, searchParams.get('solicitanteEmail'));
   if (!usuario || !puedeVerComoOtro(usuario)) {
     return NextResponse.json({ ok: false, error: 'No autorizado' }, { status: 403 });
   }

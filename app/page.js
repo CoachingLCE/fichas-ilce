@@ -25,7 +25,7 @@ export default function LoginRoot() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'No se pudo iniciar sesión'); return; }
-      login(data.usuario, mantenerSesion);
+      login({ ...data.usuario, token: data.token || undefined }, mantenerSesion);
       router.push('/panel');
     } catch (err) {
       setError('Error de conexión. Probá de nuevo.');

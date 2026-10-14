@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { findUsuario, tienePermisoEmails } from '../../../../lib/auth';
+import { findUsuario, usuarioDeSolicitud, tienePermisoEmails } from '../../../../lib/auth';
 import {
   asuntoConfirmacion, plantillaConfirmacion,
   asuntoAvisoEquipo, plantillaAvisoEquipo,
@@ -34,7 +34,7 @@ const EJEMPLO = {
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
-  const usuario = await findUsuario(searchParams.get('solicitanteEmail'));
+  const usuario = await usuarioDeSolicitud(req, searchParams.get('solicitanteEmail'));
   if (!usuario || !tienePermisoEmails(usuario)) {
     return NextResponse.json({ ok: false, error: 'No autorizado' }, { status: 403 });
   }

@@ -4,6 +4,7 @@ import ErrorBoundary from '../components/ErrorBoundary';
 import RecuperadorDeChunks from '../components/RecuperadorDeChunks';
 import { DialogosProvider } from '../components/Dialogos';
 import TablasEnTarjetas from '../components/TablasEnTarjetas';
+import InstalarSesion from '../components/InstalarSesion';
 
 export const metadata = {
   // Dominio de producción: hace que la imagen y el enlace de la vista previa sean absolutos (WhatsApp/Slack/Telegram lo exigen).
@@ -46,6 +47,7 @@ export default function RootLayout({ children }) {
         <ThemeProvider>
           <DialogosProvider>
             <RecuperadorDeChunks />
+            <InstalarSesion />
             <TablasEnTarjetas />
             <ErrorBoundary>{children}</ErrorBoundary>
           </DialogosProvider>

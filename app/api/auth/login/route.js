@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { limiteLogin, claveEmail, ipDe, mensajeBloqueo, demoraTrasFallo } from '../../../../lib/limiteLogin';
 import { findUsuario } from '../../../../lib/auth';
+import { crearToken } from '../../../../lib/sesionFirmada';
 import { verifyPassword } from '../../../../lib/passwords';
 import { registrarAccion } from '../../../../lib/auditoria';
 
@@ -52,5 +53,7 @@ export async function POST(request) {
   }
   limiteLogin.registrarExito(emailClave, ipCliente);
   await registrarAccion(body.email, usuario.nombre, 'Inició sesión', '');
-  return NextResponse.json({ usuario: { email: usuario.email, nombre: usuario.nombre, roles: usuario.roles } });
+  // Token firmado de la sesión (null si no hay clave de firma configurada: en ese caso la app sigue como antes).
+  const token = crearToken(usuario.email, (usuario.roles || []).includes('Admin'));
+  return NextResponse.json({ usuario: { email: usuario.email, nombre: usuario.nombre, roles: usuario.roles }, token });
 }

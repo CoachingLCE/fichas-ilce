@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { findUsuario } from '../../../lib/auth';
+import { findUsuario, usuarioDeSolicitud } from '../../../lib/auth';
 import { registrarAccion } from '../../../lib/auditoria';
 
 export const dynamic = 'force-dynamic';
@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req) {
   let body;
   try { body = await req.json(); } catch { return NextResponse.json({ ok: false, error: 'Pedido inválido' }, { status: 400 }); }
-  const usuario = await findUsuario(body && body.solicitanteEmail);
+  const usuario = await usuarioDeSolicitud(req, body && body.solicitanteEmail);
   if (!usuario) return NextResponse.json({ ok: false, error: 'No autorizado' }, { status: 403 });
   const texto = String((body && body.texto) || '').replace(/\s+/g, ' ').trim().slice(0, 200);
   if (texto.length < 2) return NextResponse.json({ ok: false, error: 'Escribí qué buscabas' }, { status: 400 });

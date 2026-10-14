@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { readSheet, appendRow, updateRow } from '../../../lib/sheets';
 import { TABS, CURSOS, EDICIONES_DEFAULT } from '../../../lib/constants';
-import { findUsuario, tienePermisoConstructor } from '../../../lib/auth';
+import { findUsuario, usuarioDeSolicitud, tienePermisoConstructor } from '../../../lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +13,7 @@ function defDefault(slug, nombre) {
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
-  const usuario = await findUsuario(searchParams.get('solicitanteEmail'));
+  const usuario = await usuarioDeSolicitud(req, searchParams.get('solicitanteEmail'));
   if (!usuario) return NextResponse.json({ ok: false, error: 'No autorizado' }, { status: 403 });
   const guardadas = await readSheet(TABS.FICHAS);
   const porSlug = {};
@@ -36,7 +36,7 @@ export async function GET(req) {
 export async function POST(req) {
   let body;
   try { body = await req.json(); } catch { return NextResponse.json({ ok: false, error: 'JSON inválido' }, { status: 400 }); }
-  const usuario = await findUsuario(body.solicitanteEmail);
+  const usuario = await usuarioDeSolicitud(req, body.solicitanteEmail);
   if (!usuario || !tienePermisoConstructor(usuario)) return NextResponse.json({ ok: false, error: 'Sin permiso' }, { status: 403 });
   const { slug, def } = body || {};
   const curso = CURSOS.find((c) => c.slug === slug);

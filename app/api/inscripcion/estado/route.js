@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { readSheet, updateRow, readHeaders } from '../../../../lib/sheets';
 import { TABS, ESTADOS } from '../../../../lib/constants';
-import { findUsuario, tienePermisoCambiarEstado } from '../../../../lib/auth';
+import { findUsuario, usuarioDeSolicitud, tienePermisoCambiarEstado } from '../../../../lib/auth';
 import { registrarAccion } from '../../../../lib/auditoria';
 
 export const dynamic = 'force-dynamic';
@@ -17,7 +17,7 @@ function colLetra(nombreCol, headers) {
 export async function POST(req) {
   let body;
   try { body = await req.json(); } catch { return NextResponse.json({ ok: false, error: 'JSON inválido' }, { status: 400 }); }
-  const usuario = await findUsuario(body.solicitanteEmail);
+  const usuario = await usuarioDeSolicitud(req, body.solicitanteEmail);
   if (!usuario || !tienePermisoCambiarEstado(usuario)) return NextResponse.json({ ok: false, error: 'Sin permiso' }, { status: 403 });
 
   const { id, estado, responsable } = body || {};

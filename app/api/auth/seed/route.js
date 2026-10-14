@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { findUsuario } from '../../../../lib/auth';
+import { findUsuario, usuarioDeSolicitud } from '../../../../lib/auth';
 import { appendRow } from '../../../../lib/sheets';
 import { TABS, ROLES } from '../../../../lib/constants';
 import { encryptPassword } from '../../../../lib/passwords';
@@ -22,7 +22,7 @@ export async function GET(req) {
   if (!email || !password) return NextResponse.json({ ok: false, error: 'Faltan email o password' }, { status: 400 });
   if (!roles.length) return NextResponse.json({ ok: false, error: 'Rol inválido. Usá: ' + ROLES.join(', ') }, { status: 400 });
 
-  const existe = await findUsuario(email);
+  const existe = await usuarioDeSolicitud(req, email);
   if (existe) return NextResponse.json({ ok: false, error: 'Ese email ya existe en Usuarios' }, { status: 409 });
 
   await appendRow(TABS.USUARIOS, [email, nombre, roles.join(','), encryptPassword(password), 'TRUE']);
