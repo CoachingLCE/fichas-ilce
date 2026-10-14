@@ -29,7 +29,7 @@ export default function DrawerRespuesta({ abierto, onCerrar, nombre, sub, chips 
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
                 <div>
                   <div className="dr-name">{nombre || '—'}</div>
-                  {sub && <div style={{ fontSize: 12, color: 'rgb(var(--textMuted))', marginTop: 2 }}>{sub}</div>}
+                  {sub && <div style={{ fontSize: 13, color: 'rgb(var(--textMuted))', marginTop: 2 }}>{sub}</div>}
                 </div>
                 <button ref={cerrarRef} className="btn-sm" onClick={() => alCerrar.current && alCerrar.current()} aria-label="Cerrar"></button>
               </div>

@@ -1815,3 +1815,213 @@ button,input,select,textarea{font-family:inherit}
 /* ── Respuestas (Fichas, Actividades y Formularios): tocar la fila abre el panel lateral ──────────────────────────────────────────────────────── */
 .fila-click{cursor:pointer}
 .fila-click:focus-visible{outline:2px solid rgb(var(--accentTeal));outline-offset:-2px}
+
+/* ══ Zona de lectura ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+   Pedido del equipo: "la letra de actividades, formularios, fichas y actividades especiales está un poco chica". Medido: ~40 % de las letras medía menos de 13 px y entre el
+   80 % y el 94 % menos de 14 px. Regla simple: +1 px a todo lo que medía menos de 14 px (12→13, 12,5→13,5, 13→14, 13,5→14,5), SOLO dentro de las pestañas Fichas, Respuestas
+   fichas, Actividades y formularios y Respuestas (clase .zona-lectura en el Panel), y en sus paneles laterales. NO toca la barra de arriba, lo que ve el estudiante ni
+   la vista previa de los constructores (una miniatura fiel de la ficha pública). Bloque generado a partir de las reglas de este mismo archivo; si cambia un tamaño base
+   arriba, regenerarlo. */
+.zona-lectura :is(.main,.drawer) .err:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .linkbtn:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .rev-edit:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .recover:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .topbar .crumb:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .fsel:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .btn-sm:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .count:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .url-txt:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .url-copy:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) table:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14.5px}
+.zona-lectura :is(.main,.drawer) thead th:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .badge:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .av:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .kv:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14.5px}
+.zona-lectura :is(.main,.drawer) .tl .ev .t:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .tl .ev .d:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14.5px}
+.zona-lectura :is(.main,.drawer) .sel-select:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14.5px}
+.zona-lectura :is(.main,.drawer) .kpi .l:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .bar:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .funnel .stg:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .funnel .cap:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .note:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .cv-field .tp:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .cv-field .req:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .fchip:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .fchip .cnt:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .curso-avatar:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .fstate:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .fcard .fsub:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .fmeta:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .flink:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .flink button:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .fmenu-pop button:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14.5px}
+.zona-lectura :is(.main,.drawer) .subtabs-pill button:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .sechead .hcount:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .minikpi .l:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .tagchip:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .acard-link-label:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .fcard-upd:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .fmetric .k:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .fnoed:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .fnoed button:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .flink:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .flink button:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .fhead-stats:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .fbanner:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14.5px}
+.zona-lectura :is(.main,.drawer) .fbig-l:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .feds-title:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .fed-row:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .fed-more:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .pill:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .dash-kpi .l:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .dash-panel h3:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .dash-evol-n:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .dash-evol-lb:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .dash-atencion h3:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .dash-atencion-item:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .fdrop-label:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .fdrop-btn:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .fdrop-search:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .fdrop-opt:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .fdrop-empty:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .tagcloud .tc:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .minibar:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .chipfilt:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .ins-kpi .l:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .fstate:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .tagchip:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .fcard-upd:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .feds-title:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .fchip:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .acard-link-label:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .fbanner-txt b:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14.5px}
+.zona-lectura :is(.main,.drawer) .fbanner-txt span:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .fed-info .nm:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14.5px}
+.zona-lectura :is(.main,.drawer) .fed-info .fe:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .fnoed-neutral:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .fnoed-neutral button:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .escala-hint:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .navdrop-pop button:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14.5px}
+.zona-lectura :is(.main,.drawer) .fstatpill:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .success-home:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .preview-kd:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .f-section:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .fgroup-label:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .fchips-sm .pill:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .fchips-sm .fchip:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .fchips-sm .fchip .cnt:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *),
+.zona-lectura :is(.main,.drawer) .fchips-sm .pill .cnt:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .pchip:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *),
+.zona-lectura :is(.main,.drawer) .edchip:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *),
+.zona-lectura :is(.main,.drawer) .cchip:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .fver-insc:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .pill:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *),
+.zona-lectura :is(.main,.drawer) .fchip:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *),
+.zona-lectura :is(.main,.drawer) .tagchip:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *),
+.zona-lectura :is(.main,.drawer) .badge:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *),
+.zona-lectura :is(.main,.drawer) .pchip:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *),
+.zona-lectura :is(.main,.drawer) .edchip:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *),
+.zona-lectura :is(.main,.drawer) .cchip:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *),
+.zona-lectura :is(.main,.drawer) .chipfilt:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .fchip .cnt:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .fstat-card .l:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .vercomo-chip:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .vercomo-chip button:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .vercomo-banner:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .linklike:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .ctor-list-title:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .ctor-list-buscar:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .ctor-list-item:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14.5px}
+.zona-lectura :is(.main,.drawer) .ctor-list-dirty:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .ctor-head-eyebrow:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .ctor-head-sub:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .ctor-secnav-item:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .ctor-collapse summary:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .ctor-collapse summary:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *)::before{font-size:13px}
+.zona-lectura :is(.main,.drawer) .ctor-estado-opt:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .ctor-ed-titulo:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14.5px}
+.zona-lectura :is(.main,.drawer) .ctor-ed-meta:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .ctor-ed-sub-lbl:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .ctor-fin-destacado:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .pcard-dot:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .pcard-menu-btn:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .pcard-sub:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .pcard-datos:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .pcard-url-txt:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .pcard-url-copy:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .repx-head-meta:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .repx-nav-pill:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14.5px}
+.zona-lectura :is(.main,.drawer) .repx-kpi-l:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .metrica-lbl:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .repx-kpi-sub:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .repx-insight:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14.5px}
+.zona-lectura :is(.main,.drawer) .repx-funnel-grouplbl span:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .repx-funnel-grouplbl b:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .repx-completion-txt:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .repx-crosslink:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .repx-viewtoggle button:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .repx-actcard-t:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14.5px}
+.zona-lectura :is(.main,.drawer) .repx-actcard-c:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .repx-actcard-row:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .repx-deemph .sechead .htitle:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14.5px}
+.zona-lectura :is(.main,.drawer) .preg-card-head b:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14.5px}
+.zona-lectura :is(.main,.drawer) .preg-vf-row:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14.5px}
+.zona-lectura :is(.main,.drawer) .acts-grupo>summary .arw:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .acts-subgrupo-lbl:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .acts-toggle-arch:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .detalle-preg-num:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .detalle-op:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14.5px}
+.zona-lectura :is(.main,.drawer) .detalle-op-check:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .busc-hero-clear:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .detalle-meta .k:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .evol-kpi .l:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .cta-d:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .cta-btn:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .pcard-act:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .evol-panel-h span:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .evol-var:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .cw-tipo-txt small:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .cw-label:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .cw-hint:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .cw-btn:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .repx-minitable:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .repx-ed-item:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .badge-fecha-hoy:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .badge-fecha-nueva:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .badge-click-wa:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .curso-plano:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .badge-enviado-reciente:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .btn-sm.solid.fichas-editar-btn:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .aud-mes-row td:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .aud-x-cnt:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .section-lead:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .empty.empty-sm p:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .busc-hint:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .busc-cnt:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .tablewrap-emailslog table:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+@media (max-width:640px){
+.zona-lectura :is(.main,.drawer) .mcard-curso:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14.5px}
+}
+@media (max-width:640px){
+.zona-lectura :is(.main,.drawer) .mcard-meta:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+}
+@media (max-width:640px){
+.zona-lectura :is(.main,.drawer) table.tabla-en-tarjetas td[data-label]:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *)::before{font-size:13px}
+}
+.zona-lectura :is(.main,.drawer) .vacio-chico:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .detalle-op-cruz:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .cf-bad:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14.5px}
+.zona-lectura :is(.main,.drawer) .cf-sec-t:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .cf-f>label:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .cf-err:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .cf-help:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .cf-modo span:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13.5px}
+.zona-lectura :is(.main,.drawer) .cf-q-n:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:13px}
+.zona-lectura :is(.main,.drawer) .cf-q-r label:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .cf-sum>div:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .cf-seg button:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14.5px}
+.zona-lectura :is(.main,.drawer) .grilla th:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *),
+.zona-lectura :is(.main,.drawer) .grilla td:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}
+.zona-lectura :is(.main,.drawer) .repx-nav-badge:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:12px}
+.zona-lectura :is(.main,.drawer) .pay-txt small:not(:is(.ctor-preview-col,.cf-pv,.cw-preview) *){font-size:14px}

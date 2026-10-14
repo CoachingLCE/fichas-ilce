@@ -415,7 +415,7 @@ export default function Panel() {
   const puedeCambiar = tienePermisoCambiarEstado(usuario);
 
   return (
-    <div className="appwrap">
+    <div className={'appwrap' + (['fichas', 'inscripciones', 'actividadesyformularios', 'respuestas'].includes(tab) ? ' zona-lectura' : '')}>
       <IsologoDefs />
       {navMenu && <div className="navoverlay" onClick={() => setNavMenu(null)} />}
       <header className={'topnav' + (navOculto ? ' topnav-oculto' : '')}>
@@ -600,7 +600,7 @@ export default function Panel() {
             </div>
             {(q || fCurso || fEd || fPais || fLoc || fProv || fEstado || fDesde || fHasta) && (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
-                {(() => { const n = [q, fEstado, fCurso, fEd, fPais, fLoc, fProv, (fDesde || fHasta)].filter(Boolean).length; return <span style={{ fontSize: 12.5, color: 'rgb(var(--textMuted))', fontWeight: 500 }}>{n} {n === 1 ? 'filtro activo' : 'filtros activos'}</span>; })()}
+                {(() => { const n = [q, fEstado, fCurso, fEd, fPais, fLoc, fProv, (fDesde || fHasta)].filter(Boolean).length; return <span style={{ fontSize: 13.5, color: 'rgb(var(--textMuted))', fontWeight: 500 }}>{n} {n === 1 ? 'filtro activo' : 'filtros activos'}</span>; })()}
                 {q && <FiltroChip label={`Buscando: "${q}"`} onClear={() => setQ('')} />}
                 {fEstado && <FiltroChip label={`Estado: ${fEstado}`} onClear={() => setFEstado('')} />}
                 {fCurso && <FiltroChip label={`Curso: ${fCurso}`} onClear={() => setFCurso('')} />}
@@ -715,7 +715,7 @@ export default function Panel() {
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
                 <div>
                   <div className="dr-name">{(sel.nom + ' ' + sel.ape).trim() || '—'}</div>
-                  <div style={{ fontSize: 12, color: 'rgb(var(--textMuted))', marginTop: 2 }}>{sel.curso}{sel.ed ? ` · ${sel.ed}` : ''} · ID {sel.id}</div>
+                  <div style={{ fontSize: 13, color: 'rgb(var(--textMuted))', marginTop: 2 }}>{sel.curso}{sel.ed ? ` · ${sel.ed}` : ''} · ID {sel.id}</div>
                 </div>
                 <button className="btn-sm" onClick={() => setSel(null)}></button>
               </div>
@@ -736,7 +736,7 @@ export default function Panel() {
               <DrawerSeccion titulo="Contacto" campos={[['Email', sel.em], ['WhatsApp', sel.wa], ['Instagram', sel.ig], ['Medio preferido', sel.med]]} />
               <DrawerSeccion titulo="Cursada" campos={[['Curso', sel.curso], ['Edición', sel.ed], ['Modalidad', sel.mod], ['Inscrito', sel.inscrito || '—']]} />
               <DrawerSeccion titulo="Sobre vos" campos={[['Profesión', sel.prof], ['Origen', sel.origen], ['Fecha ficha', sel.fecha]]} />
-              {sel.sobre && <p style={{ fontSize: 13.5, marginTop: 4, color: 'rgb(var(--textSec))' }}>{sel.sobre}</p>}
+              {sel.sobre && <p style={{ fontSize: 14.5, marginTop: 4, color: 'rgb(var(--textSec))' }}>{sel.sobre}</p>}
               <h3 style={{ fontSize: 14, margin: '18px 0 10px' }}>Historial</h3>
               <div className="tl">
                 {historial.length ? historial.slice().reverse().map((ev, i) => (
@@ -796,7 +796,7 @@ function DrawerSeccion({ titulo, campos }) {
   if (!visibles.length) return null;
   return (
     <div style={{ marginBottom: 14 }}>
-      <div style={{ fontFamily: 'Jost', fontSize: 12, letterSpacing: 1.5, color: 'rgb(var(--textMuted))', textTransform: 'uppercase', marginBottom: 6 }}>{titulo}</div>
+      <div style={{ fontFamily: 'Jost', fontSize: 13, letterSpacing: 1.5, color: 'rgb(var(--textMuted))', textTransform: 'uppercase', marginBottom: 6 }}>{titulo}</div>
       <div className="kv" style={{ margin: 0 }}>
         {visibles.map(([k, v]) => <div key={k} style={{ display: 'contents' }}><div className="k">{k}</div><div>{v}</div></div>)}
       </div>
