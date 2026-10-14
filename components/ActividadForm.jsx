@@ -8,6 +8,9 @@ import ControlLetraPublico from './ControlLetraPublico';
 import { letra } from '../lib/escalaLetra';
 
 // Las actividades se distinguen de los formularios por el color de acento: violeta/magenta (aprender) en vez de turquesa (completar).
+// CSS fijo de las pantallas de actividad. Se inserta con dangerouslySetInnerHTML (es texto 100% nuestro, no de usuarios): si se dibujara como hijo de <style>, el servidor escribiría
+// los símbolos del CSS como entidades HTML (el ">" de ".pr-det>summary" salía como "&gt;"), el navegador NO las decodifica dentro de un <style>, el texto no coincidía con el que
+// arma React en el navegador y saltaban los avisos de hidratación #418, #423 y #425 (la pantalla se redibujaba entera, con las reglas con ">" rotas hasta entonces).
 const ESTILO_ACTIVIDAD = `.quizcard-act .quiz-band{background:linear-gradient(120deg,#1d0b3a 0%,#4a1a85 52%,#96198f 100%)}
 .quizcard-act .quiz-count{color:rgb(var(--accentMagenta))}
 .quizcard-act .quiz-opt:hover{border-color:rgb(var(--accentPurple))}
@@ -250,7 +253,7 @@ export default function ActividadForm({ act, modoPreview = false, pasoInicial = 
   // (no existe ese dato en el sistema), así que el mensaje es honesto: no es editable.
   if (yaCompletada) {
     return (
-      <div className="quizstage"><style>{ESTILO_ACTIVIDAD}</style><div className="quizcard quizcard-act">
+      <div className="quizstage"><style dangerouslySetInnerHTML={{ __html: ESTILO_ACTIVIDAD }} /><div className="quizcard quizcard-act">
         <div className="quiz-band">
           <div className="quiz-band-top"><div className="kd">ACTIVIDAD · {act.curso.toUpperCase()}</div><Isologo size={20} /></div>
           <div className="ti">{act.titulo}</div>
@@ -276,7 +279,7 @@ export default function ActividadForm({ act, modoPreview = false, pasoInicial = 
     // Nota sobre 10 con dos decimales (puntaje / total * 10). Las abiertas no cuentan. Si no hay preguntas corregibles, no hay nota.
     const nota = resultado.total > 0 ? ((resultado.puntaje / resultado.total) * 10).toFixed(2) : null;
     return (
-      <div className="quizstage"><style>{ESTILO_ACTIVIDAD}</style><style>{ESTILO_PRACTICA}</style><div className="quizcard quizcard-act quizcard-pr pr-final">
+      <div className="quizstage"><style dangerouslySetInnerHTML={{ __html: ESTILO_ACTIVIDAD }} /><style dangerouslySetInnerHTML={{ __html: ESTILO_PRACTICA }} /><div className="quizcard quizcard-act quizcard-pr pr-final">
         <div className="quiz-band">
           <div className="quiz-band-top"><div className="kd">ACTIVIDAD · {act.curso.toUpperCase()}</div><Isologo size={20} /></div>
           <div className="ti">{act.titulo}</div>
@@ -320,7 +323,7 @@ export default function ActividadForm({ act, modoPreview = false, pasoInicial = 
   if (resultado) {
     const pct = resultado.total ? Math.round((resultado.puntaje / resultado.total) * 100) : 0;
     return (
-      <div className="quizstage"><style>{ESTILO_ACTIVIDAD}</style><div className="quizcard quizcard-act">
+      <div className="quizstage"><style dangerouslySetInnerHTML={{ __html: ESTILO_ACTIVIDAD }} /><div className="quizcard quizcard-act">
         <div className="quiz-band">
           <div className="quiz-band-top"><div className="kd">ACTIVIDAD</div><Isologo size={20} /></div>
           <div className="ti">{act.curso}</div>
@@ -397,7 +400,7 @@ export default function ActividadForm({ act, modoPreview = false, pasoInicial = 
   }
 
   return (
-    <div className="quizstage"><style>{ESTILO_ACTIVIDAD}</style>{practica && <style>{ESTILO_PRACTICA}</style>}<div className={'quizcard quizcard-act' + (practica ? ' quizcard-pr' : '')}>
+    <div className="quizstage"><style dangerouslySetInnerHTML={{ __html: ESTILO_ACTIVIDAD }} />{practica && <style dangerouslySetInnerHTML={{ __html: ESTILO_PRACTICA }} />}<div className={'quizcard quizcard-act' + (practica ? ' quizcard-pr' : '')}>
       <div className="quiz-band">
         <div className="quiz-band-top"><div className="kd">ACTIVIDAD · {act.curso.toUpperCase()}{act.edicion ? ` · ED. ${act.edicion}` : ''}</div><Isologo size={20} /></div>
         <div className="ti">{act.titulo}</div>
