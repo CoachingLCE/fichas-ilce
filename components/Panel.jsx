@@ -491,6 +491,7 @@ export default function Panel() {
             <b>{usuario.nombre}</b>
             <span>{nombreVisibleRoles(usuario.roles)}</span>
           </div>
+          <button className="btn-sm" onClick={() => window.dispatchEvent(new Event('ilce:cambiar-password'))}>Cambiar contraseña</button>
           <button className="btn-sm" onClick={() => { logout(); window.location.href = '/'; }}>Salir</button>
         </div>
         </div>

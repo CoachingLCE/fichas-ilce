@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { findUsuario, usuarioDeSolicitud } from '../../../../lib/auth';
 import { appendRow } from '../../../../lib/sheets';
 import { TABS, ROLES } from '../../../../lib/constants';
-import { encryptPassword } from '../../../../lib/passwords';
+import { hashPassword } from '../../../../lib/passwords';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +25,6 @@ export async function GET(req) {
   const existe = await findUsuario(email); // búsqueda de existencia (la ruta se protege con SETUP_TOKEN), no identidad de quien pide
   if (existe) return NextResponse.json({ ok: false, error: 'Ese email ya existe en Usuarios' }, { status: 409 });
 
-  await appendRow(TABS.USUARIOS, [email, nombre, roles.join(','), encryptPassword(password), 'TRUE']);
+  await appendRow(TABS.USUARIOS, [email, nombre, roles.join(','), hashPassword(password), 'TRUE']);
   return NextResponse.json({ ok: true, email, nombre, roles });
 }

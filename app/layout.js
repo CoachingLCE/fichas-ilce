@@ -5,6 +5,7 @@ import RecuperadorDeChunks from '../components/RecuperadorDeChunks';
 import { DialogosProvider } from '../components/Dialogos';
 import TablasEnTarjetas from '../components/TablasEnTarjetas';
 import InstalarSesion from '../components/InstalarSesion';
+import CambioPasswordGlobal from '../components/CambioPasswordGlobal';
 
 export const metadata = {
   // Dominio de producción: hace que la imagen y el enlace de la vista previa sean absolutos (WhatsApp/Slack/Telegram lo exigen).
@@ -53,6 +54,7 @@ export default function RootLayout({ children }) {
           <DialogosProvider>
             <RecuperadorDeChunks />
             <InstalarSesion />
+            <CambioPasswordGlobal />
             <TablasEnTarjetas />
             <ErrorBoundary>{children}</ErrorBoundary>
           </DialogosProvider>

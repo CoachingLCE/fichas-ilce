@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { readSheet, appendRow, updateRow } from '../../../lib/sheets';
 import { TABS, PASSWORD_GENERICA } from '../../../lib/constants';
 import { findUsuario, usuarioDeSolicitud, tienePermisoAsignarDocentes } from '../../../lib/auth';
-import { encryptPassword } from '../../../lib/passwords';
+import { hashPassword, generarTemporal } from '../../../lib/passwords';
 import { enviarMailContrasena } from '../../../lib/mailer';
 import { registrarAccion } from '../../../lib/auditoria';
 
@@ -33,9 +33,10 @@ export async function POST(req) {
   // (que no es Admin) siempre recibía "no existe" y se creaba un usuario duplicado con la contraseña genérica.
   const existe = await findUsuario(email);
   if (!existe) {
-    await appendRow(TABS.USUARIOS, [email, nombre || email.split('@')[0], 'Docente', encryptPassword(PASSWORD_GENERICA), 'TRUE']);
+    const temporal = generarTemporal(); // clave temporal aleatoria (ya no "Hola123" para todos los docentes): el docente la cambia al ingresar
+    await appendRow(TABS.USUARIOS, [email, nombre || email.split('@')[0], 'Docente', hashPassword(temporal, { temporal: true }), 'TRUE']);
     accesoCreado = true;
-    try { await enviarMailContrasena(email, nombre || '', PASSWORD_GENERICA); emailEnviado = true; } catch { emailEnviado = false; }
+    try { await enviarMailContrasena(email, nombre || '', temporal); emailEnviado = true; } catch { emailEnviado = false; }
     await registrarAccion(usuario.email, usuario.nombre, 'Creó acceso de Docente', `${nombre || ''} (${email}) — ${curso}${edicion ? ' · Ed. ' + edicion : ''}`);
   }
   return NextResponse.json({ ok: true, accesoCreado, emailEnviado });

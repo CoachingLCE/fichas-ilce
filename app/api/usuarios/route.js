@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { findUsuario, usuarioDeSolicitud } from '../../../lib/auth';
 import { readSheet, appendRow, updateRow } from '../../../lib/sheets';
-import { encryptPassword, decryptPassword } from '../../../lib/passwords';
+import { decryptPassword, hashPassword, generarTemporal, estadoPassword } from '../../../lib/passwords';
 import { enviarMailContrasena } from '../../../lib/mailer';
 import { registrarAccion } from '../../../lib/auditoria';
 import { PASSWORD_GENERICA, TABS } from '../../../lib/constants';
@@ -26,7 +26,9 @@ export async function GET(request) {
     usuarios: usuarios.map((u) => ({
       Email: u.Email, Nombre: u.Nombre, Roles: u.Roles,
       Activo: (u.Activo || '') !== 'FALSE' && (u.Activo || '').toLowerCase() !== 'no',
-      passwordActual: u.PasswordHash ? decryptPassword(u.PasswordHash) : null
+      // Solo las contraseñas que todavía están en el formato reversible anterior se pueden mostrar; las ya protegidas (de una sola vía) no se pueden recuperar.
+      passwordActual: estadoPassword(u.PasswordHash) === 'legacy' ? decryptPassword(u.PasswordHash) : null,
+      estadoPassword: estadoPassword(u.PasswordHash)
     }))
   });
 }
@@ -40,8 +42,9 @@ export async function POST(request) {
   const yaExiste = await findUsuario(body.nuevoEmail);
   if (yaExiste) return NextResponse.json({ error: 'Ese email ya existe' }, { status: 409 });
 
-  const password = (body.password || '').trim() || PASSWORD_GENERICA;
-  await appendRow(TABS.USUARIOS, [body.nuevoEmail, body.nombre, (body.roles || []).join(','), encryptPassword(password), 'TRUE']);
+  // Sin contraseña elegida se genera una clave TEMPORAL aleatoria (ya no "Hola123"). Toda contraseña fijada por un Admin es temporal: la persona la cambia al ingresar.
+  const password = (body.password || '').trim() || generarTemporal();
+  await appendRow(TABS.USUARIOS, [body.nuevoEmail, body.nombre, (body.roles || []).join(','), hashPassword(password, { temporal: true }), 'TRUE']);
 
   let emailEnviado = true;
   try { await enviarMailContrasena(body.nuevoEmail, body.nombre, password); } catch { emailEnviado = false; }
@@ -72,8 +75,8 @@ export async function PATCH(request) {
   let passwordFinal = target.PasswordHash;
   let emailEnviado = null;
   if (body.nuevaPassword !== undefined) {
-    const nueva = (body.nuevaPassword || '').trim() || PASSWORD_GENERICA;
-    passwordFinal = encryptPassword(nueva);
+    const nueva = (body.nuevaPassword || '').trim() || generarTemporal();
+    passwordFinal = hashPassword(nueva, { temporal: true });
     try { await enviarMailContrasena(target.Email, target.Nombre, nueva); emailEnviado = true; } catch { emailEnviado = false; }
   }
   const rolesFinal = body.nuevosRoles !== undefined ? body.nuevosRoles.join(',') : target.Roles;

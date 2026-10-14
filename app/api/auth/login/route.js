@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import { limiteLogin, claveEmail, ipDe, mensajeBloqueo, demoraTrasFallo } from '../../../../lib/limiteLogin';
 import { findUsuario } from '../../../../lib/auth';
 import { crearToken } from '../../../../lib/sesionFirmada';
-import { verifyPassword } from '../../../../lib/passwords';
+import { verifyPassword, estadoPassword, esPasswordGenerica, hashPassword } from '../../../../lib/passwords';
+import { updateRow } from '../../../../lib/sheets';
+import { TABS } from '../../../../lib/constants';
 import { registrarAccion } from '../../../../lib/auditoria';
 
 export const dynamic = 'force-dynamic';
@@ -53,7 +55,21 @@ export async function POST(request) {
   }
   limiteLogin.registrarExito(emailClave, ipCliente);
   await registrarAccion(body.email, usuario.nombre, 'Inició sesión', '');
+  // Contraseñas genéricas ("Hola123") o temporales: la persona tiene que elegir la suya antes de seguir. Su token lleva la marca "cp" y, cuando el servidor es estricto,
+  // solo sirve para cambiar la contraseña.
+  const estado = estadoPassword(usuario.passwordHash);
+  const debeCambiar = estado === 'temporal' || esPasswordGenerica(usuario.passwordHash);
+
+  // Migración al guardado de una sola vía: la contraseña vieja (reversible) se reemplaza por su hash la primera vez que la persona ingresa, sin que se entere. Se escribe SOLO la
+  // columna D (la contraseña): no se toca ningún otro dato de la fila. Si falla, el ingreso sigue y se reintenta la próxima vez.
+  // ES OPCIONAL (variable MIGRAR_CONTRASENAS=1 en Vercel): una vez migradas, la versión anterior de la app ya no entiende esas contraseñas, así que si hubiera que volver
+  // atrás con "rollback" nadie podría ingresar. Se enciende cuando se confirmó que todo anda bien.
+  if (estado === 'legacy' && process.env.MIGRAR_CONTRASENAS === '1') {
+    try { await updateRow(TABS.USUARIOS, usuario._rowIndex, [hashPassword(body.password, { temporal: debeCambiar })], 'D'); }
+    catch (err) { console.error('No se pudo pasar la contraseña al formato protegido (se reintenta en el próximo ingreso):', err); }
+  }
+
   // Token firmado de la sesión (null si no hay clave de firma configurada: en ese caso la app sigue como antes).
-  const token = crearToken(usuario.email, (usuario.roles || []).includes('Admin'));
-  return NextResponse.json({ usuario: { email: usuario.email, nombre: usuario.nombre, roles: usuario.roles }, token });
+  const token = crearToken(usuario.email, (usuario.roles || []).includes('Admin'), Date.now(), { cp: debeCambiar });
+  return NextResponse.json({ usuario: { email: usuario.email, nombre: usuario.nombre, roles: usuario.roles, debeCambiar }, token });
 }

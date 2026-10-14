@@ -121,6 +121,10 @@ export default function Accesos({ usuario }) {
                     onClick={() => setMostrarPassword((p) => ({ ...p, [u.Email]: !p[u.Email] }))} title="Mostrar/ocultar">
                     {mostrarPassword[u.Email] ? u.passwordActual : '••••••••'}
                   </button>
+                ) : u.estadoPassword === 'protegida' ? (
+                  <span className="badge b-Completada" title="La eligió la propia persona y no se puede ver. Si la olvida, tocá Restablecer.">protegida</span>
+                ) : u.estadoPassword === 'temporal' ? (
+                  <span className="badge b-Pendiente" title="Es una clave temporal que se mandó por mail: todavía no la cambió. No se puede volver a ver; si hace falta, Restablecer.">temporal · pendiente de cambio</span>
                 ) : <span className="badge b-Pendiente">sin contraseña</span>}
                 <button className="btn-sm" disabled={enviandoA === u.Email} onClick={() => restablecer(u.Email)}>
                   {enviandoA === u.Email ? 'Enviando…' : 'Restablecer'}
