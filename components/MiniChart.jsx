@@ -2,8 +2,19 @@
 // Gráfico de línea/área liviano en SVG puro (sin librerías nuevas) para "evolución en el
 // tiempo" en Reportes. Pensado para series cortas (30-365 puntos): una sola serie principal
 // (área + línea) y, opcional, una o más series secundarias solo de línea (para "por estado").
+import { useEffect, useRef, useState } from 'react';
 export default function MiniChart({ series, height = 180, formatValue = (v) => v }) {
-  const w = 640, h = height;
+  const ref = useRef(null);
+  const [w, setW] = useState(640);
+  useEffect(() => {
+    const el = ref.current; if (!el) return undefined;
+    const med = () => { const a = Math.round(el.getBoundingClientRect().width); if (a > 0) setW(a); };
+    med();
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(med); ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const h = height;
   const padL = 8, padR = 8, padT = 10, padB = 22;
   const innerW = w - padL - padR, innerH = h - padT - padB;
   const principal = series[0];
@@ -22,8 +33,8 @@ export default function MiniChart({ series, height = 180, formatValue = (v) => v
   const pasoEtiqueta = Math.max(1, Math.ceil(n / 6));
 
   return (
-    <div style={{ width: '100%' }}>
-      <svg viewBox={`0 0 ${w} ${h}`} style={{ width: '100%', height, display: 'block', overflow: 'visible' }} preserveAspectRatio="none">
+    <div ref={ref} style={{ width: '100%' }}>
+      <svg viewBox={`0 0 ${w} ${h}`} width={w} height={h} style={{ width: '100%', height, display: 'block', overflow: 'visible' }}>
         <defs>
           <linearGradient id="mchArea" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="rgb(var(--accentTeal))" stopOpacity="0.28" />

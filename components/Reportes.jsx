@@ -32,12 +32,30 @@ function pathSuave(pts, alto, cerrar) {
   return d;
 }
 
+
+// Ancho real del contenedor en píxeles: el SVG se dibuja a tamaño 1:1 (sin preserveAspectRatio="none"),
+// así los puntos son círculos y el trazo no se deforma ni se ve pixelado al estirarse.
+function useAnchoReal(def = 560) {
+  const ref = useRef(null);
+  const [w, setW] = useState(def);
+  useEffect(() => {
+    const el = ref.current; if (!el) return undefined;
+    const med = () => { const a = Math.round(el.getBoundingClientRect().width); if (a > 0) setW(a); };
+    med();
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(med); ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, w];
+}
+
 // Gráfico de línea con hover (estilo Informes RRSS): curva suave con relleno degradado y,
 // al pasar el mouse, un cartelito con la etiqueta y el número. Datos: etiquetas[] + puntos[].
 function GraficoLinea({ etiquetas, puntos, color = '#22d3ee', alto = 88 }) {
   const [hover, setHover] = useState(null);
   const gid = useId().replace(/:/g, '');
-  const ancho = 560, padY = 14;
+  const [wref, ancho] = useAnchoReal();
+  const padY = 14;
   const validos = puntos.filter((p) => p !== null && p !== undefined);
   if (!validos.length) return <div style={{ height: alto, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'rgb(var(--textMuted))' }}>Sin datos</div>;
   const max = Math.max(...validos, 1), min = Math.min(...validos, 0), rango = max - min || 1;
@@ -49,8 +67,8 @@ function GraficoLinea({ etiquetas, puntos, color = '#22d3ee', alto = 88 }) {
   const onMove = (e) => { const r = e.currentTarget.getBoundingClientRect(); if (!r.width) return; let i = Math.round(((e.clientX - r.left) / r.width) * Math.max(puntos.length - 1, 1)); i = Math.max(0, Math.min(puntos.length - 1, i)); setHover(puntos[i] === null || puntos[i] === undefined ? null : i); };
   const fmt = (n) => (typeof n === 'number' ? n.toLocaleString('es-AR') : n);
   return (
-    <div style={{ position: 'relative' }} onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
-      <svg viewBox={`0 0 ${ancho} ${alto}`} style={{ width: '100%', height: alto }} preserveAspectRatio="none">
+    <div ref={wref} style={{ position: 'relative' }} onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
+      <svg viewBox={`0 0 ${ancho} ${alto}`} width={ancho} height={alto} style={{ width: '100%', height: alto, display: 'block', overflow: 'visible' }}>
         <defs>
           <linearGradient id={`glf-${gid}`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={color} stopOpacity=".28" />
@@ -78,7 +96,8 @@ function GraficoLinea({ etiquetas, puntos, color = '#22d3ee', alto = 88 }) {
 function GraficoLineaDoble({ etiquetas, actual, anterior, color = '#22d3ee', colorAnterior = '#94a3b8', alto = 150, hoyIndex }) {
   const [hover, setHover] = useState(null);
   const gid = useId().replace(/:/g, '');
-  const ancho = 560, padY = 14;
+  const [wref, ancho] = useAnchoReal();
+  const padY = 14;
   const todos = [...(actual || []), ...(anterior || [])].filter((p) => p !== null && p !== undefined);
   if (!todos.length) return <div style={{ height: alto, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'rgb(var(--textMuted))' }}>Sin datos</div>;
   const max = Math.max(...todos, 1), min = Math.min(...todos, 0), rango = max - min || 1;
@@ -94,8 +113,8 @@ function GraficoLineaDoble({ etiquetas, actual, anterior, color = '#22d3ee', col
   const onMove = (e) => { const r = e.currentTarget.getBoundingClientRect(); if (!r.width) return; let i = Math.round(((e.clientX - r.left) / r.width) * Math.max(n - 1, 1)); i = Math.max(0, Math.min(n - 1, i)); setHover(i); };
   const fmt = (v) => (typeof v === 'number' ? v.toLocaleString('es-AR') : '—');
   return (
-    <div style={{ position: 'relative' }} onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
-      <svg viewBox={`0 0 ${ancho} ${alto}`} style={{ width: '100%', height: alto }} preserveAspectRatio="none">
+    <div ref={wref} style={{ position: 'relative' }} onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
+      <svg viewBox={`0 0 ${ancho} ${alto}`} width={ancho} height={alto} style={{ width: '100%', height: alto, display: 'block', overflow: 'visible' }}>
         <defs>
           <linearGradient id={`glf2-${gid}`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={color} stopOpacity=".24" />

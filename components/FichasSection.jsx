@@ -147,7 +147,6 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
       {/* Cabecera de gestión */}
       <div className="fhead">
         <div>
-          <p className="fhead-sub">Administrá los cursos, ediciones y páginas de inscripción.</p>
         </div>
         <span style={{ flex: 1 }} />
         {/* El acceso directo al Constructor ahora vive al lado de las sub-pestañas "Fichas de
@@ -463,7 +462,7 @@ function NuevaEdicionPanel({ def, usuario, onVolver, onCreada }) {
 
           {ondemand ? (
             <p className="muted" style={{ fontSize: letra(13.5), marginBottom: 14 }}>
-              El curso queda disponible siempre, sin ediciones programadas (mismo criterio que Coaching Inmobiliario) — no hace falta cargar fecha ni número.
+              El curso queda disponible siempre, sin ediciones programadas: no hace falta cargar fecha ni número.
             </p>
           ) : sincronica ? (
             <>

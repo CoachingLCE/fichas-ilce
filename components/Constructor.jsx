@@ -372,7 +372,7 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
             })}
           </div>
           {defsFiltrados.length === 0 && <p className="vacio vacio-chico">Sin resultados.</p>}
-          <p className="ctr-list-nota">Agregar formaciones nuevas llega en el próximo lote.</p>
+          <p className="ctr-list-nota">Por ahora se editan las formaciones existentes.</p>
         </div>
       </aside>
 

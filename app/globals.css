@@ -2875,3 +2875,67 @@ button,input,select,textarea{font-family:inherit}
 .pm-si.t-c i{color:rgb(var(--accentTeal))} .pm-si.t-g i{color:rgb(var(--warningText))} .pm-si.t-a i{color:rgb(var(--accentPurpleTxt))}
 .pm-no{color:rgb(var(--textMuted) / .6)}
 .pm-tabla .rol-chip{white-space:normal;text-align:center}
+
+/* v1.77.1 — Permisos por rol: tarjetas de igual altura, con resumen (barras por tipo), detalle plegable y "No puede" al pie. */
+.perm-grid-todas{align-items:stretch;grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
+.perm-card{border-top:3px solid rgb(var(--rc,var(--textMuted)) / .85);gap:12px}
+.perm-card-top{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.perm-card-top .perm-card-g{order:-1;font-size:11px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:rgb(var(--textMuted))}
+.perm-card-top .perm-card-desc{margin:0}
+.perm-meters{display:flex;flex-direction:column;gap:8px}
+.perm-meter-l{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:rgb(var(--textSec))}
+.perm-meter-l b{font-weight:600;color:rgb(var(--text))}
+.perm-meter.vacio0 .perm-meter-l b{color:rgb(var(--textMuted));font-weight:500}
+.perm-meter-bar{height:6px;border-radius:999px;background:rgb(var(--border) / .8);overflow:hidden;margin-top:4px}
+.perm-meter-bar span{display:block;height:100%;border-radius:999px;min-width:0}
+.perm-meter.t-c .perm-meter-bar span{background:rgb(var(--accentTeal))}
+.perm-meter.t-g .perm-meter-bar span{background:rgb(var(--warn))}
+.perm-meter.t-a .perm-meter-bar span{background:rgb(var(--accentPurple))}
+.perm-det{border-top:1px dashed rgb(var(--border));padding-top:8px}
+.perm-det summary{cursor:pointer;font-size:12.5px;font-weight:600;color:rgb(var(--accentTeal));list-style:none}
+.perm-det summary::-webkit-details-marker{display:none}
+.perm-det summary::before{content:'▸ ';font-size:11px}
+.perm-det[open] summary::before{content:'▾ '}
+.perm-det[open] summary{margin-bottom:10px}
+.perm-sin2{margin-top:auto;border-top:1px dashed rgb(var(--border));padding-top:9px;display:flex;flex-direction:column;gap:6px}
+.perm-sin2-t{font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:rgb(var(--textMuted))}
+.perm-sin2-l{display:flex;flex-wrap:wrap;gap:5px}
+.cap-no{display:inline-flex;align-items:center;gap:4px;font-size:12px;line-height:1.3;padding:2px 8px;border-radius:7px;color:rgb(var(--textMuted));border:1px dashed rgb(var(--textMuted) / .5);text-decoration:line-through;text-decoration-color:rgb(var(--textMuted) / .5)}
+
+/* v1.78.0 — Revisión de textos: la descripción de cada pantalla se lee mejor (color de lectura, sin brillo mientras se lee;
+   el brillo queda solo al pasar el mouse) y el aviso diario es un elemento aparte (ver PausaSemanal.jsx). */
+.section-lead{font-size:14.5px;font-weight:400;line-height:1.55;max-width:80ch;margin:0 0 2px;background:none;-webkit-text-fill-color:currentColor;color:rgb(var(--textSec));animation:none}
+.section-lead:hover{background:linear-gradient(100deg,rgb(var(--textSec)) 0%,rgb(var(--textSec)) 38%,rgb(var(--accentTeal)) 50%,rgb(var(--textSec)) 62%,rgb(var(--textSec)) 100%);background-size:240% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;animation:section-lead-shine 3.2s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.section-lead:hover{animation:none;background:none;-webkit-text-fill-color:currentColor;color:rgb(var(--textSec))}}
+.section-lead-sub{margin:10px 0 14px;font-size:13.5px;color:rgb(var(--textMuted))}
+.section-lead-sub:hover{background:none;-webkit-text-fill-color:currentColor;color:rgb(var(--textMuted));animation:none}
+
+/* ===== v1.78.1 · Tarjetas de permisos compactas, una al lado de la otra ===== */
+.perm-grid-todas{grid-template-columns:repeat(auto-fit,minmax(176px,1fr));gap:10px;align-items:start}
+.perm-grid-todas .perm-card{padding:10px 11px 11px;gap:9px;border-radius:12px}
+.perm-grid-todas .perm-card-top{gap:5px}
+.perm-grid-todas .perm-card-top .perm-card-g{font-size:10px;letter-spacing:.5px}
+.perm-grid-todas .perm-card-desc{font-size:12px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.perm-grid-todas .perm-meters{gap:6px}
+.perm-grid-todas .perm-meter-l{font-size:11.5px}
+.perm-grid-todas .perm-meter-bar{height:5px;margin-top:3px}
+.perm-grid-todas .perm-det{padding-top:7px}
+.perm-grid-todas .perm-det summary{font-size:12px}
+.perm-grid-todas .perm-det[open] summary{margin-bottom:8px}
+.perm-grid-todas .perm-sin2{margin-top:10px}
+@media(max-width:560px){.perm-grid-todas{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:380px){.perm-grid-todas{grid-template-columns:minmax(0,1fr)}}
+
+/* ===== v1.78.1 · Tonos entre contenedores =====
+   Varios contenedores iguales juntos llevan un fondo apenas distinto (3 tonos que se repiten, nunca dos
+   iguales pegados: lo asigna TonosContenedores.jsx con el atributo data-tono). */
+[data-tono="1"]{background-image:linear-gradient(rgb(var(--accentTeal) / .06),rgb(var(--accentTeal) / .06))}
+[data-tono="2"]{background-image:linear-gradient(rgb(var(--accentPurple) / .07),rgb(var(--accentPurple) / .07))}
+[data-theme="light"] [data-tono="1"]{background-image:linear-gradient(rgb(var(--accentTeal) / .055),rgb(var(--accentTeal) / .055))}
+[data-theme="light"] [data-tono="2"]{background-image:linear-gradient(rgb(var(--accentPurple) / .05),rgb(var(--accentPurple) / .05))}
+
+/* ===== v1.78.1 · Nitidez ===== */
+body{text-rendering:optimizeLegibility;-webkit-text-size-adjust:100%}
+svg{shape-rendering:geometricPrecision}
+img{image-rendering:auto}
+.repx-root .evol-paneles{margin-top:12px}

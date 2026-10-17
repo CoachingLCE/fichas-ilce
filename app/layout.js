@@ -4,6 +4,7 @@ import ErrorBoundary from '../components/ErrorBoundary';
 import RecuperadorDeChunks from '../components/RecuperadorDeChunks';
 import { DialogosProvider } from '../components/Dialogos';
 import TablasEnTarjetas from '../components/TablasEnTarjetas';
+import TonosContenedores from '../components/TonosContenedores';
 import InstalarSesion from '../components/InstalarSesion';
 import CambioPasswordGlobal from '../components/CambioPasswordGlobal';
 
@@ -56,6 +57,7 @@ export default function RootLayout({ children }) {
             <InstalarSesion />
             <CambioPasswordGlobal />
             <TablasEnTarjetas />
+            <TonosContenedores />
             <ErrorBoundary>{children}</ErrorBoundary>
           </DialogosProvider>
         </ThemeProvider>

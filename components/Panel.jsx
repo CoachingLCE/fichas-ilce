@@ -110,6 +110,15 @@ function SelectorDoble({ opciones }) {
   );
 }
 
+// Descripción corta de cada sub-pestaña de Respuestas (se muestra debajo de los botones).
+const DESC_RESPUESTAS = {
+  fichas: 'Inscripciones recibidas de cada curso y edición.',
+  actividades: 'Respuestas a las actividades de cada curso, con las incorrectas a la vista.',
+  formularios: 'Respuestas a los formularios públicos; también se pueden importar respuestas históricas.',
+  especiales: 'Respuestas a las actividades especiales: laboratorios, masterclasses, caja de ideas y similares.',
+  evaluaciones: 'Intentos de cada evaluación final, con su resultado.'
+};
+
 export default function Panel() {
   const fichasRef = useRef(null);
   const actividadesRef = useRef(null);
@@ -529,7 +538,7 @@ export default function Panel() {
 
       <div className="main">
         <div className="topbar">
-          <div>{(() => { const DESC = { fichas: 'Aquí encontrás las fichas de inscripción de cada curso: sus ediciones y las páginas públicas donde se anotan los estudiantes.', inscripciones: 'Aquí encontrás todas las inscripciones cargadas. Buscalas, filtralas y cambiá su estado.', reportes: 'Aquí encontrás el resumen general y las métricas y el análisis de inscripciones, actividades y cursos.', emails: 'Aquí están los correos automáticos que envía el sistema y sus plantillas.', actividadesyformularios: 'Aquí gestionás las actividades y postworks de cada curso, y los formularios públicos (encuestas, inscripciones y trámites).', respuestas: 'Aquí encontrás las respuestas ya cargadas de actividades y de formularios.', equipo: 'Aquí encontrás al equipo docente y su asignación a cursos y ediciones.', constructor: 'Aquí armás y editás las fichas de inscripción de cada curso.', herramientas: 'Herramientas internas del sistema.', accesos: 'Aquí gestionás quién entra al sistema y con qué permisos.', auditoria: 'Aquí encontrás el historial de acciones realizadas en el sistema.', buscador: 'Aquí buscás inscripciones en todos los cursos a la vez.' }; return <p className="section-lead">{DESC[tab] || ''}</p>; })()}</div>
+          <div>{(() => { const DESC = { fichas: 'Administrá la ficha de cada curso: ediciones, estado y enlace público de inscripción.', inscripciones: 'Revisá las inscripciones recibidas: buscalas, filtralas y, si tu rol lo permite, cambiá su estado.', reportes: 'Seguí los números de inscripciones, actividades, formularios y evaluaciones, por curso y por período.', emails: 'Mirá qué correos envía el sistema, cuándo y a quién, las pantallas finales y el registro de envíos.', actividadesyformularios: 'Creá y gestioná actividades con preguntas, formularios públicos y evaluaciones finales.', respuestas: 'Revisá lo que respondieron las personas en fichas, actividades, formularios y evaluaciones finales.', equipo: 'Consultá quiénes integran el equipo docente y en qué cursos y ediciones están asignados.', constructor: 'Armá y editá la ficha de inscripción de cada curso.', herramientas: 'Accesos rápidos y recursos de ILCE; se abren en una pestaña nueva.', accesos: 'Administrá quién entra al sistema, con qué rol y qué puede hacer cada rol.', auditoria: 'Revisá quién hizo qué y cuándo en el sistema, mes a mes.', buscador: 'Buscá en inscripciones, fichas, actividades y formularios.' }; return <p className="section-lead">{DESC[tab] || ''}</p>; })()}</div>
           {/* El buscador de texto libre vive en un solo lugar: el ícono  de arriba del todo
               (pestaña Buscador, busca en toda la app). Acá había un botón "Buscar" que lo
               duplicaba — se saca (pedido de Diego: "evitemos botones innecesarios y
@@ -575,8 +584,10 @@ export default function Panel() {
                 {tienePermisoVerRespuestasActividades(usuario) && <button onClick={() => { setTab('respuestas'); setVistaResp('actividades'); }}> Respuestas actividades</button>}
                 {tienePermisoVerRespuestasFormularios(usuario) && <button onClick={() => { setTab('respuestas'); setVistaResp('formularios'); }}> Respuestas formularios</button>}
                 {tienePermisoVerRespuestasFormularios(usuario) && <button onClick={() => { setTab('respuestas'); setVistaResp('especiales'); }}> Respuestas actividades especiales</button>}
+                <button onClick={() => { setTab('respuestas'); setVistaResp('evaluaciones'); }}> Respuestas evaluaciones finales</button>
               </div>
             )}
+            <p className="section-lead section-lead-sub">{DESC_RESPUESTAS.fichas}</p>
             {/* Los números/KPIs (Total, últimos 7 días, pendientes, etc.) se movieron a la
                 pestaña "Reportes" — acá solo quedan los filtros rápidos para trabajar el día a día. */}
             {(() => {
@@ -747,6 +758,7 @@ export default function Panel() {
                 {puedeForm && <button className={elegida === 'especiales' ? 'on' : ''} onClick={() => setVistaResp('especiales')}> Respuestas actividades especiales</button>}
                 <button className={elegida === 'evaluaciones' ? 'on' : ''} onClick={() => setVistaResp('evaluaciones')}> Respuestas evaluaciones finales</button>
               </div>
+              <p className="section-lead section-lead-sub">{DESC_RESPUESTAS[elegida] || ''}</p>
               {elegida === 'evaluaciones'
                 ? <RespuestasEvaluaciones usuario={usuario} showToast={showToast} />
                 : elegida === 'actividades'

@@ -33,12 +33,37 @@ function TarjetaRol({ rol, grupo }) {
   const caps = useMemo(() => capacidadesDe([rol]), [rol]);
   const sin = caps.filter((c) => c.clave && !c.ok);
   const info = INFO_ROL[rol];
+  const permitidas = caps.filter((c) => c.ok).length;
   return (
-    <div className="perm-card">
-      <div className="perm-card-h"><RolChip rol={rol} />{grupo && <span className="perm-card-g">{grupo}</span>}</div>
-      <p className="perm-card-desc">{info.desc}</p>
-      <ListaCapacidades caps={caps} />
-      {sin.length > 0 && <p className="perm-sin"><b>Sin acceso a:</b> {sin.map((c) => c.l).join(' · ')}</p>}
+    <div className={'perm-card r-' + rol}>
+      <div className="perm-card-top">
+        {grupo && <span className="perm-card-g">{grupo}</span>}
+        <RolChip rol={rol} />
+        <p className="perm-card-desc">{info.desc}</p>
+      </div>
+      {/* Resumen de un vistazo: cuántas funciones de cada tipo permite el rol (se calcula con las mismas funciones de permisos del sistema). */}
+      <div className="perm-meters" aria-label={`Funciones permitidas: ${permitidas} de ${caps.length}`}>
+        {TIPOS_CAP.map(({ t, l }) => {
+          const total = caps.filter((c) => c.t === t).length;
+          const ok = caps.filter((c) => c.t === t && c.ok).length;
+          return (
+            <div className={'perm-meter t-' + t + (ok === 0 ? ' vacio0' : '')} key={t}>
+              <div className="perm-meter-l"><span>{l}</span><b>{ok} de {total}</b></div>
+              <div className="perm-meter-bar"><span style={{ width: (total ? ok / total * 100 : 0) + '%' }} /></div>
+            </div>
+          );
+        })}
+      </div>
+      <details className="perm-det">
+        <summary>Ver las {permitidas} funciones</summary>
+        <ListaCapacidades caps={caps} />
+        {sin.length > 0 && (
+          <div className="perm-sin2">
+            <span className="perm-sin2-t">No puede</span>
+            <span className="perm-sin2-l">{sin.map((c) => <span key={c.k} className="cap-no">{c.l}</span>)}</span>
+          </div>
+        )}
+      </details>
     </div>
   );
 }

@@ -420,8 +420,8 @@ function EditorActividad({ usuario, base, showToast, onGuardado, onCancelar, otr
           </label>
           <p className="muted" style={{ fontSize: letra(13), marginTop: 6, marginLeft: 26 }}>El estudiante responde una pregunta por pantalla y, apenas la contesta, ve si acertó y cuál era la correcta. Usalo para prácticas, no para evaluaciones con nota: en este modo la página le entrega las respuestas correctas al navegador.</p>
           <details className="wiz-avanzado">
-            <summary> Próximamente</summary>
-            <p className="muted" style={{ fontSize: letra(13.5) }}>Límite de intentos y tiempo límite por actividad quedan para una próxima etapa: necesitan su propia lógica de control (contar intentos previos, cronómetro con envío automático) para no arriesgar respuestas de estudiantes ya en curso.</p>
+            <summary> Intentos y tiempo límite</summary>
+            <p className="muted" style={{ fontSize: letra(13.5) }}>Las actividades no limitan los intentos ni el tiempo. Si necesitás un examen con tiempo límite e intentos, usá una evaluación final.</p>
           </details>
           </div>
 

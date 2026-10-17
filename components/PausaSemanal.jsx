@@ -31,11 +31,11 @@ export default function PausaSemanal() {
   // línea, discreta, con el mensaje del día abreviado.
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: 8, borderRadius: 9, padding: '5px 12px', margin: '0 0 12px',
-      background: 'rgb(var(--surface2))', opacity: 0.75, border: '1px solid rgb(var(--border))'
+      display: 'flex', alignItems: 'center', gap: 10, borderRadius: 10, padding: '8px 14px', margin: '14px 0 18px',
+      background: 'rgb(var(--surface2))', border: '1px solid rgb(var(--border))', borderLeft: '3px solid rgb(var(--accentTeal))', flexWrap: 'wrap'
     }}>
-      <span style={{ fontSize: 12, fontWeight: 600, color: 'rgb(var(--textMuted))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.titulo}</span>
-      <a href={LINK_BLOG} target="_blank" rel="noopener noreferrer" style={{ marginLeft: 'auto', flex: 'none', color: 'rgb(var(--accentTeal))', fontWeight: 500, fontSize: 12, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+      <span style={{ fontSize: 13, fontWeight: 600, color: 'rgb(var(--textSec))', minWidth: 0, flex: '1 1 220px' }}>{m.titulo}</span>
+      <a href={LINK_BLOG} target="_blank" rel="noopener noreferrer" style={{ marginLeft: 'auto', flex: 'none', color: 'rgb(var(--accentTeal))', fontWeight: 600, fontSize: 13, textDecoration: 'none', whiteSpace: 'nowrap' }}>
         Leer una nota →
       </a>
     </div>
