@@ -35,9 +35,7 @@ const CAMPOS_LIB = [
 ];
 const GRUPOS = ['Datos personales', 'Contacto', 'Cursada'];
 
-// Navegación interna del editor (pedido de Diego: "Campos" y "Configuración" quedaban
-// escondidas dentro de <details> y pasaban desapercibidas — ahora son secciones siempre
-// visibles del mismo editor, con un link arriba que hace scroll directo a cada una).
+// Pestañas del editor (siempre visibles; la activa muestra su contenido).
 const SECCIONES = [
   { id: 'info', label: 'Información' },
   { id: 'ediciones', label: 'Ediciones' },
@@ -101,17 +99,11 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
   const [campoNuevo, setCampoNuevo] = useState({ nombre: '', tipo: 'Texto' });
   const [agregandoCampo, setAgregandoCampo] = useState(false);
   const [destNuevo, setDestNuevo] = useState('');
-  const [camposAbierto, setCamposAbierto] = useState(false);
-  const [configAbierto, setConfigAbierto] = useState(false);
+  const [tab, setTab] = useState('info'); // pestaña activa del editor: info | ediciones | campos | config
   const [vistaPreview, setVistaPreview] = useState('desktop'); // 'desktop' | 'mobile'
   const [buscarFicha, setBuscarFicha] = useState('');
   const dragIdx = useRef(null);
   const saveTimer = useRef(null);
-  const refInfo = useRef(null);
-  const refEdiciones = useRef(null);
-  const refCampos = useRef(null);
-  const refConfig = useRef(null);
-  const REFS = { info: refInfo, ediciones: refEdiciones, campos: refCampos, config: refConfig };
 
   useEffect(() => { (async () => {
     try {
@@ -183,9 +175,6 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
   async function volver() {
     if (dirty && !(await confirmar({ titulo: 'Cambios sin guardar', textoConfirmar: 'Volver sin guardar', peligro: true, mensaje: 'Tenés cambios sin guardar. ¿Volver sin guardar?'}))) return;
     if (onVolver) onVolver();
-  }
-  function irASeccion(id) {
-    REFS[id]?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   const d = defs[sel] || defs[0];
@@ -277,13 +266,13 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
     setGuardando(false);
   }
 
+  // Estados del guardado: sin cambios · cambios pendientes · guardando · guardado · error (cls = clase visual de .ctr-save).
   const estadoGuardado = guardando
-    ? { txt: 'Guardando…', cls: 'bor', dot: '🟡' }
-    : errorGuardado ? { txt: 'Error al guardar', cls: 'cer', dot: '🔴' }
-      : dirty ? { txt: 'Cambios sin guardar', cls: 'prog', dot: '🟠' }
-        : guardadoAt ? { txt: 'Guardado ' + relativo(guardadoAt, tick), cls: 'pub', dot: '🟢' }
-          : d.actualizado ? { txt: 'Guardado ' + relativo(new Date(d.actualizado).getTime(), tick), cls: 'pub', dot: '🟢' }
-            : { txt: 'Sin cambios', cls: 'pub', dot: '🟢' };
+    ? { txt: 'Guardando…', cls: 'guard' }
+    : errorGuardado ? { txt: 'Error al guardar', cls: 'err' }
+      : dirty ? { txt: 'Cambios pendientes', cls: 'pend' }
+        : guardadoAt ? { txt: 'Guardado ' + relativo(guardadoAt, tick), cls: 'ok' }
+          : { txt: 'Sin cambios', cls: 'sin' };
 
   const ultimaModTexto = (() => {
     const ts = guardadoAt || (d.actualizado ? new Date(d.actualizado).getTime() : null);
@@ -311,344 +300,473 @@ export default function Constructor({ usuario, initialSlug, showToast, onVolver,
     ? defs.map((x, i) => ({ x, i })).filter(({ x }) => x.curso.toLowerCase().includes(buscarFicha.trim().toLowerCase()))
     : defs.map((x, i) => ({ x, i }));
 
+
+  // ---- lecturas visuales (no cambian ningún dato) ----
+  const nombreDia = (iso) => {
+    if (!iso) return '';
+    const dt = new Date(iso + 'T00:00:00');
+    if (isNaN(dt)) return '';
+    const t = dt.toLocaleDateString('es-AR', { weekday: 'long' });
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  };
+  const horarioAR = (e) => (e.horaIni || e.horaFin) ? `${e.horaIni || '—'}–${e.horaFin || '—'} (hora AR)` : '';
+  // Qué le falta a una edición para quedar completa (solo avisa: no cambia ni completa nada solo).
+  const faltantesEd = (e) => {
+    if (esAsincronica(e.label)) return [];
+    const f = [];
+    if (!e.fecha) f.push('fecha de inicio');
+    if (!(e.horaIni && e.horaFin) && !e.horarios) f.push('horario');
+    if (!e.cantidadClases && !cantidadClasesFija(d.curso)) f.push('cantidad de clases');
+    return f;
+  };
+  const edsIncompletas = eds.filter((e) => faltantesEd(e).length > 0).length;
+  const nDest = (cfg.destinatarios || []).length;
+  const publicada = (d.estado || 'Publicada') === 'Publicada';
+  const TABS = [
+    { id: 'info', label: 'Información', n: null },
+    { id: 'ediciones', label: 'Ediciones', n: eds.length, alerta: edsIncompletas > 0 },
+    { id: 'campos', label: 'Campos', n: activos.length },
+    { id: 'config', label: 'Configuración', n: null }
+  ];
+  function teclasTabs(ev) {
+    const i = TABS.findIndex((t) => t.id === tab);
+    let j = null;
+    if (ev.key === 'ArrowRight') j = (i + 1) % TABS.length;
+    else if (ev.key === 'ArrowLeft') j = (i - 1 + TABS.length) % TABS.length;
+    if (j === null) return;
+    ev.preventDefault(); setTab(TABS[j].id);
+    setTimeout(() => document.getElementById('ctr-tab-' + TABS[j].id)?.focus(), 0);
+  }
+
+  // Ediciones que ve la persona en la vista previa: lo que hay cargado, tal cual (nada inventado).
+  const edsPrevia = eds.slice(0, 4);
+  const camposPrevia = activos.slice(0, 6);
+
   return (
-    <div className="ctor3" onClick={() => edMenu !== null && setEdMenu(null)}>
-      {/* IZQUIERDA — lista compacta de fichas */}
-      <div className="ctor-list">
-        <div className="ctor-list-head">
-          <button className="linklike" onClick={volver}>{volverLabel || ' Volver'}</button>
-          <div className="ctor-list-title">Fichas</div>
+    <div className="ctor3 ctr-root" onClick={() => edMenu !== null && setEdMenu(null)}>
+      {/* IZQUIERDA — navegación del constructor + lista de fichas */}
+      <aside className="ctr-list" aria-label="Fichas de inscripción">
+        <div className="ctr-list-nav">
+          <button className="ctr-volver" onClick={volver}>{volverLabel || ' Volver'}</button>
         </div>
-        {defs.length > 5 && (
-          <input className="ctrl ctor-list-buscar" placeholder="Buscar ficha…" value={buscarFicha} onChange={(e) => setBuscarFicha(e.target.value)} />
-        )}
-        {defsFiltrados.map(({ x, i }) => {
-          const em = ESTADOS_FICHA.find((s) => s.v === (x.estado || 'Publicada')) || ESTADOS_FICHA[1];
-          const activa = i === sel;
-          return (
-            <button key={x.slug} className={'ctor-list-item' + (activa ? ' on' : '')} onClick={() => cambiarFicha(i)}>
-              <span className={'ctor-list-dot ' + em.cls} />
-              {/* Pedido de Diego: los nombres de curso acá tienen que usar el mismo color por
-                  curso (colorCurso) que ya se usa en toda la app (Fichas, Actividades, etc.),
-                  en vez de un color genérico parejo para todos. */}
-              <span className="ctor-list-nm" style={{ color: colorCurso(x.curso) }}>{x.curso}</span>
-              {activa && dirty && <span className="ctor-list-dirty" title="Cambios sin guardar">●</span>}
-            </button>
-          );
-        })}
-        {defsFiltrados.length === 0 && <p className="vacio vacio-chico">Sin resultados.</p>}
-        <p className="muted" style={{ fontSize: letra(13), marginTop: 10, padding: '0 4px' }}>Agregar formaciones nuevas llega en el próximo lote.</p>
-      </div>
+        <div className="ctr-list-card">
+          <div className="ctr-list-title">Fichas <span className="ctr-list-count">{defs.length}</span></div>
+          {defs.length > 5 && (
+            <input className="ctrl ctr-list-buscar" placeholder="Buscar ficha…" aria-label="Buscar ficha" value={buscarFicha} onChange={(e) => setBuscarFicha(e.target.value)} />
+          )}
+          <div className="ctr-list-items">
+            {defsFiltrados.map(({ x, i }) => {
+              const em = ESTADOS_FICHA.find((s) => s.v === (x.estado || 'Publicada')) || ESTADOS_FICHA[1];
+              const activa = i === sel;
+              return (
+                <button key={x.slug} className={'ctr-list-item' + (activa ? ' on' : '')} onClick={() => cambiarFicha(i)} aria-current={activa ? 'true' : undefined}>
+                  <span className={'ctor-list-dot ' + em.cls} />
+                  <span className="ctr-list-txt">
+                    {/* Mismo color por curso (colorCurso) que en el resto de la app. */}
+                    <span className="ctr-list-nm" style={{ color: colorCurso(x.curso) }}>{x.curso}</span>
+                    <span className="ctr-list-st">{em.v}</span>
+                  </span>
+                  {activa && dirty && <span className="ctr-list-dirty" title="Cambios sin guardar">●<span className="sr-only"> Cambios sin guardar</span></span>}
+                </button>
+              );
+            })}
+          </div>
+          {defsFiltrados.length === 0 && <p className="vacio vacio-chico">Sin resultados.</p>}
+          <p className="ctr-list-nota">Agregar formaciones nuevas llega en el próximo lote.</p>
+        </div>
+      </aside>
 
       {/* CENTRO — editor */}
-      <div className="ctor-editor">
-        <div className="ctor-head">
-          <div className="ctor-head-main">
-            <div className="ctor-head-eyebrow">Constructor</div>
-            <div className="ctor-head-title">{d.curso}</div>
-            <div className="muted ctor-head-sub">Ficha de inscripción{ultimaModTexto && ` · Última modificación ${ultimaModTexto}`}</div>
+      <div className="ctor-editor ctr-editor">
+        <header className="ctr-head">
+          <div className="ctr-head-top">
+            <div className="ctr-head-main">
+              <div className="ctr-head-eyebrow">Constructor · Ficha de inscripción</div>
+              <h2 className="ctr-head-title">{d.curso}</h2>
+              <div className="ctr-head-sub">
+                <span className={'fstate ' + estadoActual.cls}><span className="d" />{estadoActual.v}</span>
+                {ultimaModTexto && <span className="ctr-head-mod">Última modificación {ultimaModTexto}</span>}
+              </div>
+            </div>
+            <div className="ctr-head-actions">
+              <span className={'ctr-save ' + estadoGuardado.cls} role="status" aria-live="polite"><span className="d" />{estadoGuardado.txt}</span>
+              {errorGuardado && <button className="btn-sm" onClick={() => guardar()}>Reintentar</button>}
+              <a className="btn-sm" href={`${APP_URL}/inscripcion/${d.slug}`} target="_blank" rel="noreferrer">Ver ficha pública ↗</a>
+              <button className="btn-sm solid" onClick={() => guardar()} disabled={guardando || !dirty}>Guardar</button>
+            </div>
           </div>
-          <div className="ctor-head-actions">
-            <span className={'fstate ' + estadoGuardado.cls}><span className="d" />{estadoGuardado.txt}</span>
-            {errorGuardado && <button className="btn-sm" onClick={() => guardar()}>Reintentar</button>}
-            <a className="btn-sm" href={`${APP_URL}/inscripcion/${d.slug}`} target="_blank" rel="noreferrer">Ver ficha pública ↗</a>
-            <button className="btn-sm solid" onClick={() => guardar()} disabled={guardando || !dirty}>Guardar</button>
-          </div>
-        </div>
+          {errorGuardado && <div className="ctr-err" role="alert"> No se pudieron guardar los cambios: {errorGuardado}. Tus cambios siguen acá; probá de nuevo con “Reintentar”.</div>}
+        </header>
 
-        <div className="ctor-secnav">
-          {SECCIONES.map((s) => (
-            <button key={s.id} className="ctor-secnav-item" onClick={() => irASeccion(s.id)}>{s.label}</button>
+        <div className="ctr-tabs" role="tablist" aria-label="Secciones de la ficha" onKeyDown={teclasTabs}>
+          {TABS.map((t) => (
+            <button key={t.id} id={'ctr-tab-' + t.id} role="tab" aria-selected={tab === t.id} aria-controls={'ctr-panel-' + t.id} tabIndex={tab === t.id ? 0 : -1}
+              className={'ctr-tab' + (tab === t.id ? ' on' : '')} onClick={() => setTab(t.id)}>
+              {t.label}
+              {t.n !== null && <span className="ctr-tab-n">{t.n}</span>}
+              {t.alerta && <span className="ctr-tab-alerta" title="Hay ediciones con datos sin completar">!</span>}
+            </button>
           ))}
         </div>
 
-        <div className="ctor-section" ref={refInfo} id="info">
-          <div className="ctor-section-lbl">Información de la ficha</div>
-          <label style={lbl}>Título</label>
-          <input className="ctrl" value={d.titulo || ''} onChange={(e) => upd({ titulo: e.target.value })} placeholder={`Ficha de inscripción — ${d.curso}`} />
-          <label style={{ ...lbl, marginTop: 12 }}>Mensaje de bienvenida</label>
-          <textarea className="ctrl" value={d.bienvenida || ''} onChange={(e) => upd({ bienvenida: e.target.value })} placeholder="¡Nos alegra tenerte acá! Completá tu ficha, se guarda sola." />
-          <label style={{ ...lbl, marginTop: 12 }}>Estado de publicación</label>
-          <div className="ctor-estado-sel">
-            {ESTADOS_FICHA.map((op) => (
-              <button key={op.v} type="button" className={'ctor-estado-opt ' + op.cls + (estadoActual.v === op.v ? ' on' : '')} onClick={() => upd({ estado: op.v })}>
-                <span className="d" />{op.v}
-              </button>
-            ))}
-          </div>
-          <p className="muted" style={{ fontSize: letra(13), marginTop: 8 }}>{estadoActual.explicacion}</p>
-        </div>
-
-        <div className="ctor-section" ref={refEdiciones} id="ediciones">
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
-            <div className="ctor-section-lbl" style={{ margin: 0 }}>Ediciones</div>
-            <button className="btn-sm" style={{ marginLeft: 'auto' }} onClick={addEd}>+ Agregar edición</button>
-          </div>
-          {eds.length === 0 ? (
-            <div className="wiz-empty">
-              Todavía no hay ediciones.<br />Agregá una edición para que las personas puedan elegir una fecha de cursada.
+        {tab === 'info' && (
+          <section className="ctr-panel" role="tabpanel" id="ctr-panel-info" aria-labelledby="ctr-tab-info">
+            <h3 className="ctr-panel-title">Información de la ficha</h3>
+            <p className="ctr-panel-sub">Lo primero que ve la persona al abrir la ficha pública.</p>
+            <div className="ctr-campo">
+              <label className="ctr-lbl" htmlFor="ctr-titulo">Título</label>
+              <input id="ctr-titulo" className="ctrl" value={d.titulo || ''} onChange={(e) => upd({ titulo: e.target.value })} placeholder={`Ficha de inscripción — ${d.curso}`} />
             </div>
-          ) : (
-            <div className="ctor-ed-list">
-              {eds.map((e, i) => {
-                const abierta = edAbierta === e.id;
-                const asincronica = esAsincronica(e.label);
-                const fija = cantidadClasesFija(d.curso);
-                const est = estadoEdicion(e, asincronica);
-                return (
-                  <div className="ctor-ed-card" key={e.id || i}>
-                    <div className="ctor-ed-head">
-                      <div className="ctor-ed-titulo">
-                        <div className="ctor-ed-titulo-top">
-                          <span className="ctor-ed-nombre">{e.label || `Edición ${i + 1}`}</span>
+            <div className="ctr-campo">
+              <label className="ctr-lbl" htmlFor="ctr-bienvenida">Mensaje de bienvenida</label>
+              <textarea id="ctr-bienvenida" className="ctrl ctr-textarea" rows={6} value={d.bienvenida || ''} onChange={(e) => upd({ bienvenida: e.target.value })} placeholder="¡Nos alegra tenerte acá! Completá tu ficha, se guarda sola." />
+            </div>
+            <div className="ctr-campo">
+              <div className="ctr-lbl" id="ctr-estado-lbl">Estado de publicación</div>
+              <div className="ctor-estado-sel ctr-estado" role="group" aria-labelledby="ctr-estado-lbl">
+                {ESTADOS_FICHA.map((op) => {
+                  const on = estadoActual.v === op.v;
+                  return (
+                    <button key={op.v} type="button" aria-pressed={on} className={'ctor-estado-opt ctr-estado-opt ' + op.cls + (on ? ' on' : '')} onClick={() => upd({ estado: op.v })}>
+                      <span className="d" />{op.v}{on && <span className="ctr-estado-check" aria-hidden="true"></span>}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className={'ctr-estado-exp ' + estadoActual.cls}><strong>{estadoActual.v}:</strong> {estadoActual.explicacion}</p>
+            </div>
+          </section>
+        )}
+
+        {tab === 'ediciones' && (
+          <section className="ctr-panel" role="tabpanel" id="ctr-panel-ediciones" aria-labelledby="ctr-tab-ediciones">
+            <div className="ctr-panel-head">
+              <div>
+                <h3 className="ctr-panel-title">Ediciones</h3>
+                <p className="ctr-panel-sub">{eds.length === 0 ? 'Las fechas de cursada que la persona puede elegir.' : `${eds.length} edición${eds.length === 1 ? '' : 'es'} cargada${eds.length === 1 ? '' : 's'}${edsIncompletas ? ` · ${edsIncompletas} con datos por completar` : ''}`}</p>
+              </div>
+              <button className="btn-sm solid" onClick={addEd}>+ Agregar edición</button>
+            </div>
+            {eds.length === 0 ? (
+              <div className="ctr-vacio">
+                <strong>Todavía no hay ediciones.</strong>
+                <span>Agregá una edición para que las personas puedan elegir una fecha de cursada.</span>
+                <button className="btn-sm solid" onClick={addEd}>+ Agregar edición</button>
+              </div>
+            ) : (
+              <div className="ctr-ed-list">
+                {eds.map((e, i) => {
+                  const abierta = edAbierta === e.id;
+                  const asincronica = esAsincronica(e.label);
+                  const fija = cantidadClasesFija(d.curso);
+                  const est = estadoEdicion(e, asincronica);
+                  const falt = faltantesEd(e);
+                  const dia = nombreDia(e.fecha);
+                  const hor = horarioAR(e);
+                  const nClases = e.cantidadClases || fija;
+                  return (
+                    <div className={'ctr-ed' + (abierta ? ' abierta' : '') + (falt.length ? ' incompleta' : '')} key={e.id || i}>
+                      <div className="ctr-ed-top">
+                        <span className="ctr-ed-num" aria-hidden="true">{i + 1}</span>
+                        <div className="ctr-ed-id">
+                          <span className="ctr-ed-nombre">{e.label || `Edición ${i + 1}`}</span>
                           {est && <span className={'fstate ' + est.cls}><span className="d" />{est.txt}</span>}
                         </div>
-                        <div className="ctor-ed-meta">
-                          {asincronica ? (
-                            <span>🔵 Cursada asincrónica</span>
-                          ) : e.fecha ? (
-                            <>
-                              {/* Pedido de Diego: que se entienda cuál fecha es el inicio y cuál
-                                  el fin — antes era "fecha → fecha" sin aclarar cuál era cuál. */}
-                              <span> Inicio: {fechaLegible(e.fecha)}</span>
-                              {e.cantidadClases && <span> Fin: {fechaLegible(calcularFechaFin(e.fecha, e.cantidadClases))}</span>}
-                            </>
-                          ) : (
-                            <span className="muted">Sin fecha cargada</span>
-                          )}
-                          {!asincronica && (e.horaIni || e.horaFin) && <span> {e.horaIni || '—'}–{e.horaFin || '—'}</span>}
-                          {e.docente && <span> Docente: {e.docente}</span>}
-                          {(e.cantidadClases || fija) && <span>{e.cantidadClases || fija} clases</span>}
+                        <div className="ctr-ed-acc">
+                          <button className={'btn-sm' + (abierta ? ' ctr-activo' : '')} aria-expanded={abierta} onClick={() => setEdAbierta(abierta ? null : e.id)}>{abierta ? 'Cerrar' : 'Editar'}</button>
+                          <div className="ctor-ed-menu-wrap">
+                            <button className="btn-sm fmenu-btn" aria-label="Más acciones de la edición" aria-haspopup="menu" aria-expanded={edMenu === i} onClick={(ev) => { ev.stopPropagation(); setEdMenu(edMenu === i ? null : i); }}>⋮</button>
+                            {edMenu === i && (
+                              <div className="fmenu-pop ctr-ed-pop" role="menu" onClick={(ev) => ev.stopPropagation()}>
+                                <button role="menuitem" onClick={() => moveEd(i, -1)} disabled={i === 0}>↑ Subir</button>
+                                <button role="menuitem" onClick={() => moveEd(i, 1)} disabled={i === eds.length - 1}>↓ Bajar</button>
+                                <div className="sep" />
+                                <button role="menuitem" className="danger" onClick={() => delEd(i)}> Eliminar</button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      <button className="linklike ctor-ed-editar" onClick={() => setEdAbierta(abierta ? null : e.id)}>{abierta ? 'cerrar' : 'editar'}</button>
-                      <div className="ctor-ed-menu-wrap">
-                        <button className="btn-sm fmenu-btn" onClick={(ev) => { ev.stopPropagation(); setEdMenu(edMenu === i ? null : i); }}>⋮</button>
-                        {edMenu === i && (
-                          <div className="fmenu-pop" onClick={(ev) => ev.stopPropagation()}>
-                            <button onClick={() => moveEd(i, -1)} disabled={i === 0}>↑ Subir</button>
-                            <button onClick={() => moveEd(i, 1)} disabled={i === eds.length - 1}>↓ Bajar</button>
-                            <div className="sep" />
-                            <button className="danger" onClick={() => delEd(i)}> Eliminar</button>
+                      {asincronica ? (
+                        <div className="ctr-ed-asinc">🔵 Cursada asincrónica · sin día ni horario fijo</div>
+                      ) : (
+                        <dl className="ctr-ed-datos">
+                          <div><dt>Inicio</dt><dd>{e.fecha ? fechaLegible(e.fecha) : <span className="ctr-falta">Sin cargar</span>}</dd></div>
+                          <div><dt>Fin</dt><dd>{e.fecha && e.cantidadClases ? fechaLegible(calcularFechaFin(e.fecha, e.cantidadClases)) : <span className="ctr-falta">Sin calcular</span>}</dd></div>
+                          <div><dt>Días y horarios</dt><dd>{dia || hor ? <>{dia}{dia && hor ? ' · ' : ''}{hor}</> : <span className="ctr-falta">Sin cargar</span>}</dd></div>
+                          <div><dt>Clases</dt><dd>{nClases ? `${nClases} clases` : <span className="ctr-falta">Sin cargar</span>}</dd></div>
+                        </dl>
+                      )}
+                      {e.docente && <div className="ctr-ed-doc"> Docente: {e.docente}</div>}
+                      {falt.length > 0 && (
+                        <div className="ctr-ed-aviso" role="note">
+                          <span> Falta completar: {falt.join(', ')}.</span>
+                          {!abierta && <button className="linklike" onClick={() => setEdAbierta(e.id)}>Completar ahora</button>}
+                        </div>
+                      )}
+                      {abierta && (
+                        <div className="ctr-ed-body">
+                          <div className="ctr-grid2">
+                            <div className="ctr-campo">
+                              <label className="ctr-lbl" htmlFor={'ed-nom-' + i}>Nombre de la edición</label>
+                              <input id={'ed-nom-' + i} className="ctrl" value={e.label} onChange={(ev) => updEd(i, { label: ev.target.value })} placeholder="Ej: Edición 17 — Lunes 5 de mayo (o 'Cursada Asincrónica')" />
+                            </div>
+                            <div className="ctr-campo">
+                              <label className="ctr-lbl" htmlFor={'ed-doc-' + i}>Docente</label>
+                              <input id={'ed-doc-' + i} className="ctrl" value={e.docente || ''} onChange={(ev) => updEd(i, { docente: ev.target.value })} placeholder="Docente (texto libre)" />
+                            </div>
                           </div>
-                        )}
-                      </div>
+                          {asincronica ? (
+                            <p className="ctr-nota">Es una cursada asincrónica: no tiene día ni horario fijo, así que esos campos no aplican acá.</p>
+                          ) : (
+                            <>
+                              <div className="ctr-grid3">
+                                <div className="ctr-campo">
+                                  <label className="ctr-lbl" htmlFor={'ed-fec-' + i}>Primera clase</label>
+                                  <input id={'ed-fec-' + i} className="ctrl" type="date" value={e.fecha || ''} onChange={(ev) => updEd(i, { fecha: ev.target.value })} title="Fecha de la primera clase (hora de Argentina)" />
+                                </div>
+                                <div className="ctr-campo">
+                                  <label className="ctr-lbl" htmlFor={'ed-hi-' + i}>Desde (hora AR)</label>
+                                  <input id={'ed-hi-' + i} className="ctrl" type="time" value={e.horaIni || ''} onChange={(ev) => updEd(i, { horaIni: ev.target.value })} title="Desde (hora AR)" />
+                                </div>
+                                <div className="ctr-campo">
+                                  <label className="ctr-lbl" htmlFor={'ed-hf-' + i}>Hasta (hora AR)</label>
+                                  <input id={'ed-hf-' + i} className="ctrl" type="time" value={e.horaFin || ''} onChange={(ev) => updEd(i, { horaFin: ev.target.value })} title="Hasta (hora AR)" />
+                                </div>
+                              </div>
+                              <div className="ctr-grid2">
+                                <div className="ctr-campo">
+                                  <label className="ctr-lbl" htmlFor={'ed-cl-' + i}>Cantidad de clases</label>
+                                  {fija ? (
+                                    <input id={'ed-cl-' + i} className="ctrl" disabled value={`${e.cantidadClases || fija} clases (fijo para este curso)`} title="Este curso siempre tiene la misma cantidad de clases — se completa solo." />
+                                  ) : (
+                                    <input id={'ed-cl-' + i} className="ctrl" type="number" min="1" value={e.cantidadClases || ''}
+                                      onChange={(ev) => { const cantidadClases = ev.target.value; updEd(i, { cantidadClases, fechaFin: calcularFechaFin(e.fecha, cantidadClases) }); }}
+                                      placeholder="Cant. de clases" title="Cantidad de encuentros de esta edición" />
+                                  )}
+                                </div>
+                                {e.fecha && e.cantidadClases && (
+                                  <div className="ctr-campo">
+                                    <div className="ctr-lbl">Fin calculado</div>
+                                    <div className="ctor-fin-destacado ctr-fin"> Finaliza el {fechaLegible(calcularFechaFin(e.fecha, e.cantidadClases))}</div>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="ctr-campo">
+                                <div className="ctr-lbl-fila">
+                                  <label className="ctr-lbl" htmlFor={'ed-hor-' + i}>Horarios internacionales</label>
+                                  <button className="btn-sm solid" onClick={() => updEd(i, { horarios: generarHorarios(e.fecha, e.horaIni, e.horaFin) })} disabled={!e.fecha || !e.horaIni || !e.horaFin}> Calcular horarios</button>
+                                </div>
+                                <input id={'ed-hor-' + i} className="ctrl" value={e.horarios || ''} onChange={(ev) => updEd(i, { horarios: ev.target.value })} placeholder="Horarios por país (se completan al calcular, o escribilos a mano)" />
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    {abierta && (
-                      <div className="ctor-ed-body">
-                        <div className="ctor-ed-sub-lbl">Identificación</div>
-                        <input className="ctrl" value={e.label} onChange={(ev) => updEd(i, { label: ev.target.value })} placeholder="Ej: Edición 17 — Lunes 5 de mayo (o 'Cursada Asincrónica')" />
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        )}
 
-                        <div className="ctor-ed-sub-lbl">Docencia</div>
-                        <input className="ctrl" value={e.docente || ''} onChange={(ev) => updEd(i, { docente: ev.target.value })} placeholder="Docente (texto libre)" />
+        {tab === 'campos' && (
+          <section className="ctr-panel" role="tabpanel" id="ctr-panel-campos" aria-labelledby="ctr-tab-campos">
+            <div className="ctr-panel-head">
+              <div>
+                <h3 className="ctr-panel-title">Campos del formulario</h3>
+                <p className="ctr-panel-sub">{activos.length} activos · {campos.filter((c) => c.personalizado).length} personalizados. Elegí qué campos van a aparecer en el formulario y en qué orden.</p>
+              </div>
+              {!agregandoCampo && <button className="btn-sm" onClick={() => setAgregandoCampo(true)}>+ Nuevo campo personalizado</button>}
+            </div>
 
-                        <div className="ctor-ed-sub-lbl">Cursada</div>
-                        {asincronica ? (
-                          <p className="muted" style={{ fontSize: letra(13), marginTop: -4 }}>Es una cursada asincrónica: no tiene día ni horario fijo, así que esos campos no aplican acá.</p>
-                        ) : (
-                          <>
-                            <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                              <input className="ctrl" type="date" style={{ maxWidth: 160 }} value={e.fecha || ''} onChange={(ev) => updEd(i, { fecha: ev.target.value })} title="Fecha de la primera clase (hora de Argentina)" />
-                              <input className="ctrl" type="time" style={{ maxWidth: 120 }} value={e.horaIni || ''} onChange={(ev) => updEd(i, { horaIni: ev.target.value })} title="Desde (hora AR)" />
-                              <input className="ctrl" type="time" style={{ maxWidth: 120 }} value={e.horaFin || ''} onChange={(ev) => updEd(i, { horaFin: ev.target.value })} title="Hasta (hora AR)" />
-                            </div>
-                            {fija ? (
-                              <input className="ctrl" disabled style={{ maxWidth: 260, marginTop: 8 }} value={`${e.cantidadClases || fija} clases (fijo para este curso)`} title="Este curso siempre tiene la misma cantidad de clases — se completa solo." />
-                            ) : (
-                              <input className="ctrl" type="number" min="1" style={{ maxWidth: 160, marginTop: 8 }} value={e.cantidadClases || ''}
-                                onChange={(ev) => { const cantidadClases = ev.target.value; updEd(i, { cantidadClases, fechaFin: calcularFechaFin(e.fecha, cantidadClases) }); }}
-                                placeholder="Cant. de clases" title="Cantidad de encuentros de esta edición" />
-                            )}
-                            {e.fecha && e.cantidadClases && (
-                              <div className="ctor-fin-destacado"> Finaliza el {fechaLegible(calcularFechaFin(e.fecha, e.cantidadClases))}</div>
-                            )}
-
-                            <div className="ctor-ed-sub-lbl">Horarios internacionales</div>
-                            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                              <button className="btn-sm solid" onClick={() => updEd(i, { horarios: generarHorarios(e.fecha, e.horaIni, e.horaFin) })} disabled={!e.fecha || !e.horaIni || !e.horaFin}> Calcular horarios</button>
-                            </div>
-                            <input className="ctrl" style={{ marginTop: 8 }} value={e.horarios || ''} onChange={(ev) => updEd(i, { horarios: ev.target.value })} placeholder="Horarios por país (se completan al calcular, o escribilos a mano)" />
-                          </>
-                        )}
-                      </div>
-                    )}
+            {agregandoCampo && (
+              <div className="ctr-nuevo-campo">
+                <div className="ctr-grid2">
+                  <div className="ctr-campo">
+                    <label className="ctr-lbl" htmlFor="ctr-nc-nombre">Nombre del campo</label>
+                    <input id="ctr-nc-nombre" className="ctrl" placeholder="Ej: Empresa donde trabajás" value={campoNuevo.nombre} onChange={(e) => setCampoNuevo({ ...campoNuevo, nombre: e.target.value })} autoFocus />
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div className="ctor-section" ref={refCampos} id="campos">
-          <div className="ctor-resumen-row">
-            <div>
-              <div className="ctor-section-lbl" style={{ margin: 0 }}>Campos del formulario</div>
-              <p className="muted" style={{ fontSize: letra(13.5), marginTop: 4 }}>{activos.length} activos · {campos.filter((c) => c.personalizado).length} personalizados</p>
-            </div>
-            <button className="btn-sm" onClick={() => setCamposAbierto((v) => !v)}>{camposAbierto ? 'Ocultar campos' : 'Editar campos'}</button>
-          </div>
-
-          {camposAbierto && (
-            <div style={{ marginTop: 16 }}>
-              <p className="muted" style={{ fontSize: letra(13.5), marginBottom: 10 }}>Elegí qué campos van a aparecer en el formulario y en qué orden (arrastrando).</p>
-              {GRUPOS.map((g) => (
-                <div key={g} style={{ marginBottom: 14 }}>
-                  <div className="wiz-grupo-lbl">{g}</div>
-                  {campos.filter((c) => c.grupo === g).map((c) => (
-                    <label className="wiz-campo-check" key={c.id}>
-                      <input type="checkbox" checked={c.activo} onChange={() => toggleCampo(c.id)} />
-                      <div><div className="nm">{c.nombre}</div><div className="tp">{c.tipo}</div></div>
-                      {c.requerido && <span className="req">Obligatorio</span>}
-                    </label>
-                  ))}
-                </div>
-              ))}
-              {campos.some((c) => c.personalizado) && (
-                <div style={{ marginBottom: 14 }}>
-                  <div className="wiz-grupo-lbl">Personalizados</div>
-                  {campos.filter((c) => c.personalizado).map((c) => (
-                    <label className="wiz-campo-check" key={c.id}>
-                      <input type="checkbox" checked={c.activo} onChange={() => toggleCampo(c.id)} />
-                      <div><div className="nm">{c.nombre}</div><div className="tp">{c.tipo}</div></div>
-                      <button className="btn-sm" style={{ color: 'rgb(248 113 113)' }} onClick={(e) => { e.preventDefault(); eliminarCampoPersonalizado(c.id); }} title="Eliminar campo"></button>
-                    </label>
-                  ))}
-                </div>
-              )}
-
-              {!agregandoCampo ? (
-                <button className="btn-sm" style={{ marginTop: 4 }} onClick={() => setAgregandoCampo(true)}>+ Nuevo campo personalizado</button>
-              ) : (
-                <div className="ctor-campo-nuevo-box">
-                  <label style={lbl}>Nombre del campo</label>
-                  <input className="ctrl" placeholder="Ej: Empresa donde trabajás" value={campoNuevo.nombre} onChange={(e) => setCampoNuevo({ ...campoNuevo, nombre: e.target.value })} autoFocus />
-                  <label style={{ ...lbl, marginTop: 10 }}>Tipo de campo</label>
-                  <select className="fsel" style={{ width: '100%' }} value={campoNuevo.tipo} onChange={(e) => setCampoNuevo({ ...campoNuevo, tipo: e.target.value })}>
-                    <option>Texto</option><option>Texto largo</option><option>Selección única</option><option>Fecha</option>
-                  </select>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                    <button className="btn-sm solid" onClick={agregarCampoPersonalizado} disabled={!campoNuevo.nombre.trim()}>Agregar campo</button>
-                    <button className="btn-sm" onClick={() => { setAgregandoCampo(false); setCampoNuevo({ nombre: '', tipo: 'Texto' }); }}>Cancelar</button>
+                  <div className="ctr-campo">
+                    <label className="ctr-lbl" htmlFor="ctr-nc-tipo">Tipo de campo</label>
+                    <select id="ctr-nc-tipo" className="fsel ctr-select" value={campoNuevo.tipo} onChange={(e) => setCampoNuevo({ ...campoNuevo, tipo: e.target.value })}>
+                      <option>Texto</option><option>Texto largo</option><option>Selección única</option><option>Fecha</option>
+                    </select>
                   </div>
                 </div>
-              )}
+                <div className="ctr-fila-btns">
+                  <button className="btn-sm solid" onClick={agregarCampoPersonalizado} disabled={!campoNuevo.nombre.trim()}>Agregar campo</button>
+                  <button className="btn-sm" onClick={() => { setAgregandoCampo(false); setCampoNuevo({ nombre: '', tipo: 'Texto' }); }}>Cancelar</button>
+                </div>
+              </div>
+            )}
 
-              {activos.length > 0 && (
-                <>
-                  <div className="wiz-grupo-lbl" style={{ marginTop: 18 }}>Orden</div>
-                  <p className="muted" style={{ fontSize: letra(13), marginTop: -4, marginBottom: 8 }}>Arrastrá los campos para cambiar el orden en que aparecerán en la ficha.</p>
-                  <div className="wiz-orden-list">
-                    {activos.map((c, i) => (
-                      <div
-                        key={c.id}
-                        className="wiz-orden-card"
-                        draggable
-                        onDragStart={() => { dragIdx.current = i; }}
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={() => { if (dragIdx.current !== null) reordenar(dragIdx.current, i); dragIdx.current = null; }}
-                      >
-                        <span className="wiz-orden-handle"></span>
-                        <div style={{ flex: 1 }}><div className="nm">{c.nombre}</div><div className="tp">{c.grupo} · {c.tipo}</div></div>
-                        <button className="btn-sm" onClick={() => moverCampo(i, -1)} title="Subir" disabled={i === 0}>↑</button>
-                        <button className="btn-sm" onClick={() => moverCampo(i, 1)} title="Bajar" disabled={i === activos.length - 1}>↓</button>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="ctor-section" ref={refConfig} id="config">
-          <div className="ctor-resumen-row">
-            <div>
-              <div className="ctor-section-lbl" style={{ margin: 0 }}>Configuración</div>
-              <p className="muted" style={{ fontSize: letra(13.5), marginTop: 4 }}>
-                {(cfg.destinatarios || []).length} destinatario{(cfg.destinatarios || []).length === 1 ? '' : 's'} · Notificaciones {cfg.notificar ? 'activadas' : 'desactivadas'} · Mensaje de confirmación {cfg.mensajePost ? 'configurado' : 'sin configurar'}
-              </p>
-            </div>
-            <button className="btn-sm" onClick={() => setConfigAbierto((v) => !v)}>{configAbierto ? 'Ocultar' : 'Editar configuración'}</button>
-          </div>
-
-          {configAbierto && (
-            <div style={{ marginTop: 16 }}>
-              <div className="wiz-grupo-lbl">Notificaciones</div>
-              <label style={lbl}>Destinatarios de las respuestas</label>
-              <div className="wiz-dest-list">
-                {(cfg.destinatarios || []).length === 0 && <p className="muted" style={{ fontSize: letra(13.5) }}>Sin destinatarios cargados todavía.</p>}
-                {(cfg.destinatarios || []).map((e) => (
-                  <span className="tagchip" key={e}>{e} <button onClick={() => quitarDest(e)} title="Quitar"></button></span>
+            {GRUPOS.map((g) => (
+              <div className="ctr-bloque" key={g}>
+                <div className="ctr-bloque-t">{g}</div>
+                {campos.filter((c) => c.grupo === g).map((c) => (
+                  <label className={'ctr-check' + (c.activo ? ' on' : '')} key={c.id}>
+                    <input type="checkbox" checked={c.activo} onChange={() => toggleCampo(c.id)} />
+                    <div className="ctr-check-txt"><div className="nm">{c.nombre}</div><div className="tp">{c.tipo}</div></div>
+                    {c.requerido && <span className="req">Obligatorio</span>}
+                  </label>
                 ))}
               </div>
-              <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-                <input className="ctrl" placeholder="correo@equipo.com" value={destNuevo} onChange={(e) => setDestNuevo(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && agregarDest()} />
+            ))}
+            {campos.some((c) => c.personalizado) && (
+              <div className="ctr-bloque">
+                <div className="ctr-bloque-t">Personalizados</div>
+                {campos.filter((c) => c.personalizado).map((c) => (
+                  <label className={'ctr-check' + (c.activo ? ' on' : '')} key={c.id}>
+                    <input type="checkbox" checked={c.activo} onChange={() => toggleCampo(c.id)} />
+                    <div className="ctr-check-txt"><div className="nm">{c.nombre}</div><div className="tp">{c.tipo}</div></div>
+                    <button className="btn-sm peligro" onClick={(e) => { e.preventDefault(); eliminarCampoPersonalizado(c.id); }} title="Eliminar campo" aria-label={'Eliminar campo ' + c.nombre}></button>
+                  </label>
+                ))}
+              </div>
+            )}
+
+            {activos.length > 0 && (
+              <div className="ctr-bloque">
+                <div className="ctr-bloque-t">Orden en la ficha</div>
+                <p className="ctr-nota">Arrastrá los campos (o usá las flechas) para cambiar el orden en que aparecerán en la ficha.</p>
+                <div className="wiz-orden-list ctr-orden">
+                  {activos.map((c, i) => (
+                    <div
+                      key={c.id}
+                      className="wiz-orden-card ctr-orden-card"
+                      draggable
+                      onDragStart={() => { dragIdx.current = i; }}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={() => { if (dragIdx.current !== null) reordenar(dragIdx.current, i); dragIdx.current = null; }}
+                    >
+                      <span className="ctr-orden-n">{i + 1}</span>
+                      <span className="wiz-orden-handle"></span>
+                      <div style={{ flex: 1, minWidth: 0 }}><div className="nm">{c.nombre}</div><div className="tp">{c.grupo} · {c.tipo}</div></div>
+                      <button className="btn-sm" onClick={() => moverCampo(i, -1)} title="Subir" aria-label={'Subir ' + c.nombre} disabled={i === 0}>↑</button>
+                      <button className="btn-sm" onClick={() => moverCampo(i, 1)} title="Bajar" aria-label={'Bajar ' + c.nombre} disabled={i === activos.length - 1}>↓</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {tab === 'config' && (
+          <section className="ctr-panel" role="tabpanel" id="ctr-panel-config" aria-labelledby="ctr-tab-config">
+            <h3 className="ctr-panel-title">Configuración</h3>
+            <p className="ctr-panel-sub">
+              {nDest} destinatario{nDest === 1 ? '' : 's'} · Notificaciones {cfg.notificar ? 'activadas' : 'desactivadas'} · Mensaje de confirmación {cfg.mensajePost ? 'configurado' : 'sin configurar'}
+            </p>
+
+            <div className="ctr-bloque">
+              <div className="ctr-bloque-t">Notificaciones</div>
+              <label className="ctr-lbl" htmlFor="ctr-dest">Destinatarios de las respuestas</label>
+              <div className="wiz-dest-list ctr-dest">
+                {nDest === 0 && <p className="ctr-nota" style={{ margin: 0 }}>Sin destinatarios cargados todavía.</p>}
+                {(cfg.destinatarios || []).map((e) => (
+                  <span className="tagchip" key={e}>{e} <button onClick={() => quitarDest(e)} title="Quitar" aria-label={'Quitar ' + e}></button></span>
+                ))}
+              </div>
+              <div className="ctr-fila-input">
+                <input id="ctr-dest" className="ctrl" placeholder="correo@equipo.com" value={destNuevo} onChange={(e) => setDestNuevo(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && agregarDest()} />
                 <button className="btn-sm solid" onClick={agregarDest} disabled={!destNuevo.trim()}>+ Agregar</button>
               </div>
-              <label className="wiz-check-inline" style={{ marginTop: 16 }}>
+              <label className="ctr-check ctr-check-simple">
                 <input type="checkbox" checked={!!cfg.notificar} onChange={(e) => updCfg({ notificar: e.target.checked })} />
-                ¿Notificar por correo al completar la ficha?
+                <div className="ctr-check-txt"><div className="nm">¿Notificar por correo al completar la ficha?</div></div>
               </label>
-
-              <div className="wiz-grupo-lbl" style={{ marginTop: 18 }}>Confirmación</div>
-              <label style={lbl}>Mensaje que verá la persona después de completar</label>
-              <textarea className="ctrl" value={cfg.mensajePost || ''} onChange={(e) => updCfg({ mensajePost: e.target.value })} placeholder="¡Listo! Ya tenemos tu ficha, en breve te contactamos." />
-
-              <details className="wiz-avanzado">
-                <summary> Avanzado</summary>
-                <label style={lbl}>URL de redirección tras completar (opcional)</label>
-                <input className="ctrl" value={cfg.avanzado?.redireccion || ''} onChange={(e) => updCfg({ avanzado: { ...cfg.avanzado, redireccion: e.target.value } })} placeholder="https://..." />
-              </details>
             </div>
-          )}
-        </div>
+
+            <div className="ctr-bloque">
+              <div className="ctr-bloque-t">Confirmación</div>
+              <label className="ctr-lbl" htmlFor="ctr-post">Mensaje que verá la persona después de completar</label>
+              <textarea id="ctr-post" className="ctrl ctr-textarea" rows={4} value={cfg.mensajePost || ''} onChange={(e) => updCfg({ mensajePost: e.target.value })} placeholder="¡Listo! Ya tenemos tu ficha, en breve te contactamos." />
+            </div>
+
+            <details className="wiz-avanzado ctr-avanzado">
+              <summary> Avanzado</summary>
+              <label className="ctr-lbl" htmlFor="ctr-redir">URL de redirección tras completar (opcional)</label>
+              <input id="ctr-redir" className="ctrl" value={cfg.avanzado?.redireccion || ''} onChange={(e) => updCfg({ avanzado: { ...cfg.avanzado, redireccion: e.target.value } })} placeholder="https://..." />
+            </details>
+          </section>
+        )}
       </div>
 
-      {/* DERECHA — vista previa en vivo */}
-      <div className="ctor-preview-col">
-        <div className="ctor-preview-head">
+      {/* DERECHA — vista previa independiente */}
+      <aside className="ctor-preview-col ctr-prev" aria-label="Vista previa de la ficha">
+        <div className="ctr-prev-head">
           <div>
-            <div className="wiz-grupo-lbl" style={{ marginBottom: 2 }}>Vista previa de la ficha</div>
-            <span className="ctor-preview-live">● Vista previa en vivo</span>
+            <div className="ctr-prev-title">Vista previa</div>
+            <span className="ctr-prev-live"><span className="d" />En vivo · con los datos de esta ficha</span>
           </div>
-          <div className="ctor-preview-toggle">
-            <button className={vistaPreview === 'desktop' ? 'on' : ''} onClick={() => setVistaPreview('desktop')}>Desktop</button>
-            <button className={vistaPreview === 'mobile' ? 'on' : ''} onClick={() => setVistaPreview('mobile')}>Mobile</button>
+          <div className="ctr-prev-toggle" role="group" aria-label="Tamaño de la vista previa">
+            <button className={vistaPreview === 'desktop' ? 'on' : ''} aria-pressed={vistaPreview === 'desktop'} onClick={() => setVistaPreview('desktop')}>Desktop</button>
+            <button className={vistaPreview === 'mobile' ? 'on' : ''} aria-pressed={vistaPreview === 'mobile'} onClick={() => setVistaPreview('mobile')}>Mobile</button>
           </div>
         </div>
-        <div className={vistaPreview === 'mobile' ? 'ctor-phone-frame' : ''}>
-          <div className="wiz-preview-shell">
-            <div className="wiz-preview-hero">
-              <div className="wiz-preview-eyebrow">FORMACIÓN EN</div>
-              <div className="wiz-preview-title">{d.curso}</div>
-            </div>
-            <div className="wiz-preview-body">
-              {d.estado !== 'Publicada' ? (
-                <div style={{ textAlign: 'center', padding: '20px 6px', color: 'rgb(var(--textSec))', fontSize: 13.5 }}>
-                  {d.estado === 'Cerrada' ? ' Inscripciones cerradas' : ' Ficha en borrador (no visible al público)'}
-                </div>
-              ) : (<>
-                <div style={{ fontFamily: 'Jost', fontWeight: 500, fontSize: 15, marginBottom: 4 }}>{d.titulo || 'Ficha de inscripción'}</div>
-                <div style={{ fontSize: 12.5, color: 'rgb(var(--textSec))', marginBottom: 12 }}>{d.bienvenida || '¡Nos alegra tenerte acá!'}</div>
-                {eds.length > 0 && (
-                  <div style={{ marginBottom: 10 }}>
-                    <div style={{ fontSize: 12, fontWeight: 500, marginBottom: 5 }}>Elegí día de cursada</div>
-                    {eds.slice(0, 3).map((e, i) => (
-                      <div key={i} className="wiz-preview-ed">
-                        <div style={{ fontWeight: 500 }}>{e.label || 'Edición'}</div>
-                        {horariosDeEdicion(e) && <div style={{ fontSize: 12, color: 'rgb(var(--textMuted))' }}>{horariosDeEdicion(e)}</div>}
-                      </div>
-                    ))}
+        {!publicada && (
+          <div className={'ctr-prev-aviso ' + estadoActual.cls}>
+            {d.estado === 'Cerrada' ? ' Cerrada: la ficha se ve, pero no permite nuevas inscripciones.' : ' Borrador: la ficha no es visible al público todavía.'}
+          </div>
+        )}
+        <div className="ctr-prev-stage">
+          <div className={'ctr-prev-device ' + (vistaPreview === 'mobile' ? 'mobile' : 'desktop')} data-vista={vistaPreview}>
+            {vistaPreview === 'desktop' && (
+              <div className="ctr-prev-bar"><i /><i /><i /><span>{`inscripcion/${d.slug}`}</span></div>
+            )}
+            <div className="ctr-pv">
+              <div className="ctr-pv-hero">
+                <div className="ctr-pv-eyebrow">FORMACIÓN EN</div>
+                <div className="ctr-pv-curso">{d.curso}</div>
+              </div>
+              <div className="ctr-pv-body">
+                <div className="ctr-pv-titulo">{d.titulo || 'Ficha de inscripción'}</div>
+                <div className="ctr-pv-bienv">{d.bienvenida || '¡Nos alegra tenerte acá!'}</div>
+
+                <div className="ctr-pv-h">Ediciones disponibles</div>
+                {eds.length === 0 ? (
+                  <div className="ctr-pv-vacio">Todavía no hay ediciones cargadas.</div>
+                ) : (
+                  <div className="ctr-pv-eds">
+                    {edsPrevia.map((e, i) => {
+                      const hs = (horariosDeEdicion(e) || '').split(' | ').filter(Boolean);
+                      return (
+                        <div key={e.id || i} className="ctr-pv-ed">
+                          <div className="ctr-pv-ed-nm">{e.label || 'Edición'}</div>
+                          {hs.length > 0 && (
+                            <ul className="ctr-pv-hs">{hs.map((h, k) => <li key={k}>{h}</li>)}</ul>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {eds.length > edsPrevia.length && <div className="ctr-pv-mas">+ {eds.length - edsPrevia.length} edición{eds.length - edsPrevia.length === 1 ? '' : 'es'} más</div>}
                   </div>
                 )}
-                <div style={{ fontSize: 12, fontWeight: 500, marginBottom: 5 }}>Correo *</div>
-                <div className="wiz-preview-input">tunombre@correo.com</div>
-                <div className="wiz-preview-cta">Comenzar</div>
-              </>)}
+
+                <div className="ctr-pv-h">Campos del formulario</div>
+                {activos.length === 0 ? (
+                  <div className="ctr-pv-vacio">No hay campos activos.</div>
+                ) : (
+                  <div className="ctr-pv-campos">
+                    {camposPrevia.map((c) => (
+                      <div key={c.id} className="ctr-pv-campo">
+                        <div className="ctr-pv-lbl">{c.nombre}{c.requerido ? ' *' : ''}</div>
+                        <div className="ctr-pv-input" />
+                      </div>
+                    ))}
+                    {activos.length > camposPrevia.length && <div className="ctr-pv-mas">+ {activos.length - camposPrevia.length} campo{activos.length - camposPrevia.length === 1 ? '' : 's'} más</div>}
+                  </div>
+                )}
+
+                <div className="ctr-pv-cta">Comenzar</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </aside>
     </div>
   );
 }

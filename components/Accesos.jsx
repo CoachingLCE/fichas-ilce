@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { ROLES } from '../lib/constants';
 import { TIPOS_CAP, GRUPOS_ROLES, INFO_ROL, capacidadesDe, nombreRol } from '../lib/rolesInfo';
 import { RolChip, RolesChips } from './RolChip';
@@ -29,13 +29,13 @@ function ListaCapacidades({ caps }) {
   );
 }
 
-function TarjetaRol({ rol }) {
+function TarjetaRol({ rol, grupo }) {
   const caps = useMemo(() => capacidadesDe([rol]), [rol]);
   const sin = caps.filter((c) => c.clave && !c.ok);
   const info = INFO_ROL[rol];
   return (
     <div className="perm-card">
-      <div className="perm-card-h"><RolChip rol={rol} /></div>
+      <div className="perm-card-h"><RolChip rol={rol} />{grupo && <span className="perm-card-g">{grupo}</span>}</div>
       <p className="perm-card-desc">{info.desc}</p>
       <ListaCapacidades caps={caps} />
       {sin.length > 0 && <p className="perm-sin"><b>Sin acceso a:</b> {sin.map((c) => c.l).join(' · ')}</p>}
@@ -60,6 +60,41 @@ function selectorRoles(valor, onChange) {
   );
 }
 
+// Comparación de roles en una sola tabla: cada función en una fila, cada rol en una columna (se calcula con las mismas funciones de permisos).
+function MatrizPermisos() {
+  const roles = GRUPOS_ROLES.flatMap((g) => g.roles);
+  const porRol = useMemo(() => Object.fromEntries(roles.map((r) => [r, capacidadesDe([r])])), []);
+  const filas = capacidadesDe(['Admin']); // solo para el orden y los nombres de las funciones
+  return (
+    <div className="pm-wrap">
+      <table className="pm-tabla">
+        <thead>
+          <tr>
+            <th scope="col" className="pm-fn">Función</th>
+            {roles.map((r) => <th scope="col" key={r}><RolChip rol={r} chico /></th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {TIPOS_CAP.map(({ t, l }) => (
+            <Fragment key={t}>
+              <tr className="pm-grupo"><th scope="rowgroup" colSpan={roles.length + 1}>{l}</th></tr>
+              {filas.filter((f) => f.t === t).map((f) => (
+                <tr key={f.k}>
+                  <th scope="row" className="pm-fn">{f.l}</th>
+                  {roles.map((r) => {
+                    const ok = porRol[r].find((c) => c.k === f.k)?.ok;
+                    return <td key={r} className={ok ? 'pm-si t-' + t : 'pm-no'}>{ok ? <><i aria-hidden="true">{IC.ok}</i><span className="sr-only">Sí</span></> : <><span aria-hidden="true">–</span><span className="sr-only">No</span></>}</td>;
+                  })}
+                </tr>
+              ))}
+            </Fragment>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default function Accesos({ usuario }) {
   const [usuarios, setUsuarios] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -76,6 +111,7 @@ export default function Accesos({ usuario }) {
   const [filtroRol, setFiltroRol] = useState('');   // '' = todos · 'varios' = más de un rol · o un rol
   const [busqueda, setBusqueda] = useState('');
   const [verPermisos, setVerPermisos] = useState({});
+  const [vistaPerm, setVistaPerm] = useState('tarjetas'); // 'tarjetas' | 'comparar'
 
   useEffect(() => { cargarUsuarios(); }, []);
 
@@ -156,12 +192,16 @@ export default function Accesos({ usuario }) {
           <h3><span className="acc-ico" aria-hidden="true">{IC.permisos}</span> Permisos por rol</h3>
           <p className="acc-lead">Qué puede hacer cada rol. Se calcula con los mismos permisos que usa el sistema, así que siempre coincide con lo que la persona puede hacer de verdad.</p>
         </div>
-        {GRUPOS_ROLES.map((g) => (
-          <section className="perm-grupo" key={g.id}>
-            <h4 className="perm-grupo-t">{g.titulo}</h4>
-            <div className="perm-grid">{g.roles.map((r) => <TarjetaRol key={r} rol={r} />)}</div>
-          </section>
-        ))}
+        <div className="pm-toggle" role="group" aria-label="Forma de ver los permisos">
+          <button className={vistaPerm === 'tarjetas' ? 'on' : ''} aria-pressed={vistaPerm === 'tarjetas'} onClick={() => setVistaPerm('tarjetas')}>Tarjetas</button>
+          <button className={vistaPerm === 'comparar' ? 'on' : ''} aria-pressed={vistaPerm === 'comparar'} onClick={() => setVistaPerm('comparar')}>Comparar roles</button>
+        </div>
+        {vistaPerm === 'comparar' ? <MatrizPermisos /> : (
+          /* Todas las tarjetas en una sola grilla (una al lado de la otra) para no tener que scrollear; el grupo se lee en la cabecera de cada tarjeta. */
+          <div className="perm-grid perm-grid-todas">
+            {GRUPOS_ROLES.flatMap((g) => g.roles.map((r) => <TarjetaRol key={r} rol={r} grupo={g.titulo} />))}
+          </div>
+        )}
         <div className="acc-nota">
           <b>Roles combinados.</b> Una persona puede tener más de un rol. El sistema permite una función si <b>alguno</b> de sus roles la permite, así que combinar roles puede ampliar lo que puede hacer, nunca reducirlo. Ver las respuestas de actividades y formularios está disponible para todos los roles.
         </div>
