@@ -21,7 +21,7 @@ export default function LoginRoot() {
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password, mantenerSesion })
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'No se pudo iniciar sesión'); return; }

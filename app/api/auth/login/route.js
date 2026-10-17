@@ -70,6 +70,6 @@ export async function POST(request) {
   }
 
   // Token firmado de la sesión (null si no hay clave de firma configurada: en ese caso la app sigue como antes).
-  const token = crearToken(usuario.email, (usuario.roles || []).includes('Admin'), Date.now(), { cp: debeCambiar });
+  const token = crearToken(usuario.email, (usuario.roles || []).includes('Admin'), Date.now(), { cp: debeCambiar, larga: body.mantenerSesion === true });
   return NextResponse.json({ usuario: { email: usuario.email, nombre: usuario.nombre, roles: usuario.roles, debeCambiar }, token });
 }
