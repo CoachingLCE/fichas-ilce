@@ -2952,3 +2952,17 @@ img{image-rendering:auto}
 .tabla-em tbody td:nth-child(4){min-width:115px}
 .tabla-em tbody td:last-child{white-space:normal}
 .tabla-em tbody td:last-child .tagchip{display:inline-block;margin:1px 6px 1px 0}
+
+/* ── Barra de herramientas arriba a la derecha (v1.80.0) ──
+   Pedido de Diego (17/10/2026): que las apps parezcan similares. En Gestión, Cronograma, Presentismo y Tuesday el buscador, las herramientas y el selector de modo claro/oscuro
+   están arriba a la derecha, y el selector es lo último. En escritorio Fichas los tenía al fondo del menú lateral; ahora van en una franja arriba a la derecha (se reserva el espacio
+   para que no tape el contenido). En celular no cambia (siguen dentro de la barra de pestañas). */
+@media (min-width:1024px){
+  body.con-menu-lateral{padding-top:58px}
+  .navtools{position:fixed;top:13px;right:24px;z-index:60;padding:0;gap:8px;display:flex;align-items:center}
+}
+/* En celular las herramientas van dentro de la barra de pestañas, que se desplaza: el selector de tema se queda fijo en el borde derecho para que siempre se vea
+   (antes quedaba al final de la barra, fuera de la pantalla). */
+@media (max-width:1023px){
+  .navtema{position:sticky;right:0;z-index:5;display:inline-flex;align-items:center;flex:0 0 auto;margin-left:auto;padding-left:10px;background:linear-gradient(to left,rgb(var(--bg)) 78%,transparent)}
+}

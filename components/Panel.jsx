@@ -505,8 +505,8 @@ export default function Panel() {
             <div className="navtools">
             <button data-tour="nav-buscador" className={'iconbtn' + (tab === 'buscador' ? ' on' : '')} title="Buscar en fichas, inscripciones, actividades y formularios" aria-label="Buscar" onClick={() => setTab('buscador')}></button>
             <button className={'iconbtn' + (tab === 'herramientas' ? ' on' : '')} title="Herramientas: accesos rápidos y recursos del instituto" aria-label="Herramientas" data-accion="nav-herramientas" onClick={() => setTab('herramientas')}>🔧</button>
-            <ThemeSelector />
             {enZonaLectura && <TamanoLetra nivel={nivelLetra} onCambiar={cambiarLetra} />}
+            <span className="navtema"><ThemeSelector /></span>
             </div>
           </div>
         </nav>
