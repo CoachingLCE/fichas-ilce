@@ -2256,3 +2256,6 @@ button,input,select,textarea{font-family:inherit}
 .wa-op.sel{font-weight:600}
 .wa-sep{padding:8px 14px 4px;font-size:calc(11.5px * var(--escala-letra, 1));letter-spacing:1.5px;text-transform:uppercase;color:rgb(var(--textMuted));border-top:1px solid rgb(var(--border));margin-top:4px}
 .wa-vacio{padding:18px 14px;color:rgb(var(--textMuted));font-size:calc(14px * var(--escala-letra, 1))}
+
+/* Aviso chico debajo de los botones de pago de la pantalla final de la ficha. */
+.pago-aviso{margin:10px 2px 0;font-size:calc(12.5px * var(--escala-letra, 1));line-height:1.4;opacity:.75;text-align:center}

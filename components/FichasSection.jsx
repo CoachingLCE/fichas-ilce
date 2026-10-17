@@ -13,7 +13,7 @@ const ESTADO_META = {
 };
 const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerInscripciones, showToast, puedeEditar, irABuscador }, ref) {
+const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerInscripciones, showToast, puedeEditar, irABuscador, irAInscripciones }, ref) {
   // El Constructor de fichas vive DENTRO de "Fichas de inscripción": editar o cargar una
   // edición abre el wizard acá mismo (no navega a una pestaña aparte).
   const [construyendo, setConstruyendo] = useState(null); // slug de la ficha que se está armando, o null
@@ -165,6 +165,8 @@ const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerIn
         {/* El buscador de texto libre queda solo en la pestaña "Buscador" (busca en toda la
             app), igual que en Actividades — acá ya quedan los chips de estado de arriba. */}
         <span style={{ flex: 1 }} />
+        {/* Acceso directo a las fichas ya completadas (pestaña Inscripciones / "Respuestas fichas"). */}
+        {irAInscripciones && <button className="btn-sm" onClick={irAInscripciones} title="Ver las inscripciones (fichas completadas)">Ver inscripciones →</button>}
         <div className="vista-toggle">
           <button className={vista === 'cards' ? 'on' : ''} onClick={() => cambiarVista('cards')} title="Ver en tarjetas">▦</button>
           <button className={vista === 'lista' ? 'on' : ''} onClick={() => cambiarVista('lista')} title="Ver en lista"></button>

@@ -269,7 +269,7 @@ export default function Panel() {
     if (campo === 'estado') setFEstado(valor || '');
     else if (campo === 'curso') setFCurso(valor || '');
     else if (campo === 'ed') setFEd(valor || '');
-    else if (campo === 'pais') setFPais(valor || '');
+    else if (campo === 'pais') { setFPais(valor || ''); if (valor) setFExterior(false); } // país puntual y "Exterior" se excluyen entre sí
     else if (campo === 'loc') setFLoc(valor || null);
     else if (campo === 'prov') setFProv(valor || null);
     setTab('inscripciones');
@@ -528,7 +528,7 @@ export default function Panel() {
         <PausaSemanal />
 
         {tab === 'buscador' && <Buscador usuario={usuario} irA={(t) => setTab(t)} setQInscripciones={setQ} />}
-        {tab === 'fichas' && <FichasSection ref={fichasRef} usuario={usuario} rows={rows} onEditar={editarFicha} onVerInscripciones={verInscripcionesDe} showToast={showToast} puedeEditar={tienePermisoConstructor(usuario)} irABuscador={() => setTab('buscador')} />}
+        {tab === 'fichas' && <FichasSection ref={fichasRef} usuario={usuario} rows={rows} onEditar={editarFicha} onVerInscripciones={verInscripcionesDe} irAInscripciones={() => setTab('inscripciones')} showToast={showToast} puedeEditar={tienePermisoConstructor(usuario)} irABuscador={() => setTab('buscador')} />}
         {tab === 'herramientas' && <Herramientas />}
         {error && <div className="note" style={{ borderLeftColor: 'rgb(248 113 113)' }}>{error}</div>}
         {rows === null && !error && tab !== 'herramientas' && <div className="spin" />}
@@ -551,11 +551,15 @@ export default function Panel() {
             {/* Los números/KPIs (Total, últimos 7 días, pendientes, etc.) se movieron a la
                 pestaña "Reportes" — acá solo quedan los filtros rápidos para trabajar el día a día. */}
             {(() => {
-              const iso = (d) => d.toISOString().slice(0, 10);
+              // Fecha LOCAL (no UTC): con toISOString, desde las 21:00 en Argentina (UTC-3) "Hoy" ya apuntaba a mañana y la lista quedaba vacía.
+              const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
               const hace = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return iso(d); };
               const hoy = iso(new Date());
+              // "Fin de semana" solo aparece los lunes (cuando se repasa lo que entró el viernes, sábado y domingo, más lo de hoy): el resto de la semana no es relevante y sobra un botón.
+              const esLunes = new Date().getDay() === 1;
               const setPeriodo = (t) => {
                 if (t === 'hoy') { setFDesde(hoy); setFHasta(hoy); }
+                else if (t === 'finde') { setFDesde(hace(3)); setFHasta(hoy); }
                 else if (t === 'sem') { setFDesde(hace(7)); setFHasta(hoy); }
                 else if (t === 'mes') { const d = new Date(); setFDesde(iso(new Date(d.getFullYear(), d.getMonth(), 1))); setFHasta(hoy); }
                 setMasFiltros(true);
@@ -569,10 +573,11 @@ export default function Panel() {
                     <div className="fgroup-label">Filtros rápidos</div>
                     <div className="fchips fchips-sm">
                       <button className="pill" onClick={() => setPeriodo('hoy')}>Hoy</button>
+                      {esLunes && <button className="pill" onClick={() => setPeriodo('finde')} title="Desde el viernes hasta hoy (lunes): para repasar el fin de semana">Fin de semana</button>}
                       <button className="pill" onClick={() => setPeriodo('sem')}>Esta semana</button>
                       <button className="pill" onClick={() => setPeriodo('mes')}>Este mes</button>
-                      <button className={'pill' + (fPais === 'Argentina' ? ' on-teal' : '')} onClick={() => setFPais(fPais === 'Argentina' ? '' : 'Argentina')}>Argentina</button>
-                      <button className={'pill' + (fExterior ? ' on-teal' : '')} onClick={() => { setFExterior(!fExterior); setFPais(''); }}>Exterior</button>
+                      <button className={'pill' + (fPais === 'Argentina' ? ' on-teal' : '')} onClick={() => { setFExterior(false); setFPais(fPais === 'Argentina' ? '' : 'Argentina'); }}>Argentina</button>
+                      <button className={'pill' + (fExterior ? ' on-teal' : '')} onClick={() => { setFPais(''); setFExterior(!fExterior); }}>Exterior</button>
                     </div>
                   </div>
                   <div className="fgroup-col">
@@ -606,14 +611,15 @@ export default function Panel() {
               <button className="btn-sm" onClick={() => setColModal(true)}>▦ Columnas</button>
               {puedeExportar && <><button className="btn-sm" onClick={exportCSV}> CSV</button><button className="btn-sm solid" onClick={exportXLSX}> Excel</button></>}
             </div>
-            {(q || fCurso || fEd || fPais || fLoc || fProv || fEstado || fDesde || fHasta) && (
+            {(q || fCurso || fEd || fPais || fExterior || fLoc || fProv || fEstado || fDesde || fHasta) && (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
-                {(() => { const n = [q, fEstado, fCurso, fEd, fPais, fLoc, fProv, (fDesde || fHasta)].filter(Boolean).length; return <span style={{ fontSize: letra(13.5), color: 'rgb(var(--textMuted))', fontWeight: 500 }}>{n} {n === 1 ? 'filtro activo' : 'filtros activos'}</span>; })()}
+                {(() => { const n = [q, fEstado, fCurso, fEd, fPais, fExterior, fLoc, fProv, (fDesde || fHasta)].filter(Boolean).length; return <span style={{ fontSize: letra(13.5), color: 'rgb(var(--textMuted))', fontWeight: 500 }}>{n} {n === 1 ? 'filtro activo' : 'filtros activos'}</span>; })()}
                 {q && <FiltroChip label={`Buscando: "${q}"`} onClear={() => setQ('')} />}
                 {fEstado && <FiltroChip label={`Estado: ${fEstado}`} onClear={() => setFEstado('')} />}
                 {fCurso && <FiltroChip label={`Curso: ${fCurso}`} onClear={() => setFCurso('')} />}
                 {fEd && <FiltroChip label={`Edición: ${fEd}`} onClear={() => setFEd('')} />}
                 {fPais && <FiltroChip label={`País: ${fPais}`} onClear={() => setFPais('')} />}
+                {fExterior && <FiltroChip label="País: Exterior (no Argentina)" onClear={() => setFExterior(false)} />}
                 {fLoc && <FiltroChip label={`Localidad: ${fLoc.etiqueta}`} onClear={() => setFLoc(null)} />}
                 {fProv && <FiltroChip label={`Provincia: ${fProv.etiqueta}`} onClear={() => setFProv(null)} />}
                 {(fDesde || fHasta) && <FiltroChip label={`Fecha: ${fDesde || '…'} → ${fHasta || '…'}`} onClear={() => { setFDesde(''); setFHasta(''); }} />}
