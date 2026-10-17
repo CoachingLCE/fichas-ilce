@@ -128,7 +128,7 @@ export default function Panel() {
   const usuario = verComo || usuarioReal;
   // El tab activo se refleja en la URL (?tab=...) para que el link de cada página sea
   // compartible y funcione el botón "atrás" del navegador — antes quedaba siempre en /panel.
-  const TABS_VALIDOS = ['fichas', 'inscripciones', 'reportes', 'emails', 'actividadesyformularios', 'respuestas', 'equipo', 'accesos', 'auditoria', 'buscador'];
+  const TABS_VALIDOS = ['fichas', 'inscripciones', 'reportes', 'emails', 'actividadesyformularios', 'respuestas', 'equipo', 'accesos', 'auditoria', 'buscador', 'herramientas'];
   // El Dashboard se fusionó dentro de Reportes (v0.89.0) — un link viejo con ?tab=dashboard
   // manda directo a Reportes en vez de caer en "fichas" como si esa pestaña no existiera.
   // "Actividades" y "Formularios" se unificaron en una sola pestaña "Actividades y
@@ -504,6 +504,7 @@ export default function Panel() {
                 de acciones" — antes vivían sueltos en la esquina superior derecha (topnav-right). */}
             <div className="navtools">
             <button data-tour="nav-buscador" className={'iconbtn' + (tab === 'buscador' ? ' on' : '')} title="Buscar en fichas, inscripciones, actividades y formularios" aria-label="Buscar" onClick={() => setTab('buscador')}></button>
+            <button className={'iconbtn' + (tab === 'herramientas' ? ' on' : '')} title="Herramientas: accesos rápidos y recursos del instituto" aria-label="Herramientas" data-accion="nav-herramientas" onClick={() => setTab('herramientas')}>🔧</button>
             <ThemeSelector />
             {enZonaLectura && <TamanoLetra nivel={nivelLetra} onCambiar={cambiarLetra} />}
             </div>

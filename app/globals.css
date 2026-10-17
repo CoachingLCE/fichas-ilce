@@ -2939,3 +2939,16 @@ body{text-rendering:optimizeLegibility;-webkit-text-size-adjust:100%}
 svg{shape-rendering:geometricPrecision}
 img{image-rendering:auto}
 .repx-root .evol-paneles{margin-top:12px}
+
+/* ── Emails · "Mails automáticos" (v1.79.1) ──
+   La regla general de las tablas no parte línea (white-space:nowrap), así que las frases largas de "Cuándo se envía" estiraban la tabla a ~1750 px dentro de un módulo de ~940 px y
+   las columnas De / CC, Asunto y Tipo (con el ojito de la vista previa) quedaban fuera de la vista. Solo en esta tabla el texto pasa a partir línea y se alinea arriba. */
+.tabla-em table{width:100%;table-layout:auto}
+.tabla-em tbody td{white-space:normal;vertical-align:top;line-height:1.45}
+/* los anchos mínimos de cada encabezado (inline: 210 + 190 + 150 + 240 + …) sumaban ~1050 px; como el texto ya parte línea, pueden ser más chicos y la tabla entra en el módulo */
+.tabla-em thead th{min-width:0!important}
+.tabla-em tbody td:first-child{min-width:135px}
+.tabla-em tbody td:nth-child(2){min-width:120px}
+.tabla-em tbody td:nth-child(4){min-width:115px}
+.tabla-em tbody td:last-child{white-space:normal}
+.tabla-em tbody td:last-child .tagchip{display:inline-block;margin:1px 6px 1px 0}
