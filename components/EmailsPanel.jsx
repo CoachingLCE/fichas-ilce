@@ -17,11 +17,11 @@ const PERIODOS = [
 
 // Pantallas finales: lo que ve la persona al terminar cada espacio (página /vista-final/..., con datos de ejemplo).
 const PANTALLAS_FINALES = [
-  { tipo: 'ficha', titulo: 'Ficha de inscripción', desc: 'Al enviar la ficha: confirmación, aviso del correo y botones de pago.' },
-  { tipo: 'formulario', titulo: 'Formulario', desc: 'Al enviar un formulario o una actividad especial.' },
-  { tipo: 'actividad', titulo: 'Actividad', desc: 'Al terminar una actividad: puntaje y detalle por correo.' },
-  { tipo: 'evaluacion-aprobada', titulo: 'Evaluación final · aprobó', desc: 'Resultado, diploma y revisión de las respuestas.' },
-  { tipo: 'evaluacion-no-aprobada', titulo: 'Evaluación final · no aprobó', desc: 'Resultado, intentos que quedan y revisión.' }
+  { tipo: 'ficha', titulo: 'Ficha de inscripción', cuando: 'Al enviar la ficha', desc: 'Confirmación, aviso del correo y botones de pago.' },
+  { tipo: 'formulario', titulo: 'Formulario', cuando: 'Al enviar un formulario o una actividad especial', desc: 'Agradecimiento y registro de la respuesta.' },
+  { tipo: 'actividad', titulo: 'Actividad', cuando: 'Al terminar una actividad', desc: 'Puntaje y detalle por correo.' },
+  { tipo: 'evaluacion-aprobada', titulo: 'Evaluación final · aprobó', cuando: 'Al enviar la evaluación con puntaje suficiente', desc: 'Resultado, diploma y revisión de las respuestas.' },
+  { tipo: 'evaluacion-no-aprobada', titulo: 'Evaluación final · no aprobó', cuando: 'Al enviar la evaluación sin llegar al puntaje mínimo', desc: 'Resultado, intentos que quedan y revisión.' }
 ];
 
 // Correos que ya tienen vista previa (usan la misma plantilla que se envía).
@@ -213,15 +213,18 @@ export default function EmailsPanel({ usuario }) {
           <span className="htitle">Pantallas finales: lo que ve la persona al terminar</span>
           <span className="hcount">{PANTALLAS_FINALES.length} pantallas</span>
         </div>
-        <p className="muted" style={{ fontSize: 12.5, margin: '0 0 14px' }}>Así se ve la última pantalla de cada espacio (con datos de ejemplo). Tocá una para verla en grande.</p>
-        <div className="finales-grid">
-          {PANTALLAS_FINALES.map((p) => (
-            <button key={p.tipo} type="button" className="final-card" onClick={() => setPantalla(p)}>
-              <div className="final-thumb"><iframe title={p.titulo} src={`/vista-final/${p.tipo}`} loading="lazy" tabIndex={-1} /></div>
-              <div className="final-info"><b>{p.titulo}</b><span>{p.desc}</span></div>
-            </button>
-          ))}
-        </div>
+        <p className="muted" style={{ fontSize: 12.5, margin: '0 0 14px' }}>Estas son las últimas pantallas que ve la persona al terminar cada espacio. Hacé clic en una fila para verla en grande, con datos de ejemplo.</p>
+        <div className="tablewrap tabla-em tabla-finales"><table>
+          <thead><tr><th style={{ minWidth: 190 }}>Pantalla</th><th style={{ minWidth: 220 }}>Cuándo la ve la persona</th><th style={{ minWidth: 220 }}>Qué muestra</th><th style={{ width: 130 }}></th></tr></thead>
+          <tbody>{PANTALLAS_FINALES.map((p) => (
+            <tr key={p.tipo} className="clickable" style={{ cursor: 'pointer' }} tabIndex={0} onClick={() => setPantalla(p)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPantalla(p); } }}>
+              <td><b>{p.titulo}</b></td>
+              <td className="sec">{p.cuando}</td>
+              <td className="sec">{p.desc}</td>
+              <td><span style={{ fontSize: 12.5, fontWeight: 600, color: 'rgb(var(--accentTeal))' }}>Ver pantalla →</span></td>
+            </tr>
+          ))}</tbody>
+        </table></div>
       </div>
 
       {/* Registro en vivo */}

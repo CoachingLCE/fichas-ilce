@@ -115,7 +115,7 @@ export default function ConstructorEvaluacion({ usuario, slugInicial, onVolver, 
       const res = await fetch('/api/evaluaciones', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ solicitanteEmail: usuario.email, crear: !est.editando, ...payload }) });
       const d = await res.json();
       if (!d.ok) { setError(d.error || 'No se pudo guardar'); setGuardando(false); arriba.current && arriba.current.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
-      showToast && showToast(est.editando ? 'Evaluación guardada' : 'Evaluación creada');
+      showToast && showToast(est.editando ? ' Evaluación guardada' : ' Evaluación creada');
       onVolver(true);
     } catch { setError('Error de conexión'); setGuardando(false); }
   }
@@ -134,16 +134,27 @@ export default function ConstructorEvaluacion({ usuario, slugInicial, onVolver, 
         </div>
       </div>
       {error && <div className="cf-bad" role="alert">{error}</div>}
+      <div className="ev-resumen" aria-label="Resumen de la evaluación">
+        <div><b>{resumen.n}</b><span>pregunta{resumen.n === 1 ? '' : 's'}</span></div>
+        <div><b>{formatoPuntos(resumen.total)}</b><span>puntos en total</span></div>
+        <div><b>{formatoPuntos(resumen.min)}</b><span>para aprobar</span></div>
+        <div><b>{num(est.tiempoMin, 0) > 0 ? `${num(est.tiempoMin, 0)} min` : 'Sin límite'}</b><span>tiempo</span></div>
+        <div><b>{num(est.intentos, 1)}</b><span>intento{num(est.intentos, 1) === 1 ? '' : 's'}</span></div>
+      </div>
 
-      <div className="cf-card">
+      <div className="cf-card cf-card-eval">
         <div className="cf-sec">
           <p className="cf-sec-t">Información general</p>
+          <p className="cf-sec-d">Qué evaluación es y a qué curso pertenece.</p>
+          <div className="cf-g2">
           <Campo label="Título" req help={tituloCambio ? 'Ojo: los intentos ya guardados están asociados al título anterior.' : (conIntentos ? 'Esta evaluación ya tiene intentos guardados: el título no se puede cambiar.' : null)}>
             <input className="ctrl" value={est.titulo} disabled={conIntentos} onChange={(e) => setTitulo(e.target.value)} placeholder="Ej: Evaluación final · Coaching Deportivo" />
           </Campo>
           <Campo label="Enlace" req help={urlPublica ? `Link para los estudiantes: ${urlPublica}` : 'Se arma solo a partir del título.'}>
             <input className="ctrl" value={est.slug} disabled={est.editando} onChange={(e) => set({ slug: slugify(e.target.value), slugTocado: true })} placeholder="evaluacion-final-coaching-deportivo" />
           </Campo>
+          </div>
+          <div className="cf-g2">
           <Campo label="Curso" req>
             <div className="cf-curso">
               <span className="cf-dot" style={{ background: est.curso ? colorCurso(est.curso) : 'rgb(var(--textMuted))' }} />
@@ -156,6 +167,7 @@ export default function ConstructorEvaluacion({ usuario, slugInicial, onVolver, 
           <Campo label="Edición" help="Opcional. Si la dejás vacía, cada estudiante indica su número de edición al empezar.">
             <input className="ctrl" value={est.edicion} onChange={(e) => set({ edicion: e.target.value.replace(/[^0-9a-zA-Z ]/g, '') })} placeholder="Ej: 35" style={{ maxWidth: 160 }} />
           </Campo>
+          </div>
           <Campo label="Introducción" help="Se muestra antes de empezar (opcional).">
             <textarea className="ctrl" style={{ minHeight: 70, resize: 'vertical' }} value={est.intro} onChange={(e) => set({ intro: e.target.value })} placeholder="Instrucciones, qué evalúa, recomendaciones…" />
           </Campo>
@@ -170,6 +182,7 @@ export default function ConstructorEvaluacion({ usuario, slugInicial, onVolver, 
 
         <div className="cf-sec">
           <p className="cf-sec-t">Reglas del examen</p>
+          <p className="cf-sec-d">Cómo se rinde y cuánto hay que sacar para aprobar.</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 12 }}>
             <Campo label="Tiempo límite (minutos)" help="0 = sin límite. El cronómetro lo controla el servidor.">
               <input className="ctrl" inputMode="numeric" value={est.tiempoMin} onChange={(e) => set({ tiempoMin: e.target.value.replace(/\D/g, '') })} />
@@ -198,6 +211,7 @@ export default function ConstructorEvaluacion({ usuario, slugInicial, onVolver, 
 
         <div className="cf-sec">
           <p className="cf-sec-t">Disponibilidad</p>
+          <p className="cf-sec-d">Desde y hasta cuándo se puede rendir. Si no completás nada, está disponible mientras esté publicada.</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 12 }}>
             <Campo label="Abre el día"><input className="ctrl" type="date" value={est.fechaDisponible} onChange={(e) => set({ fechaDisponible: e.target.value })} /></Campo>
             <Campo label="A las (opcional)"><input className="ctrl" type="time" value={est.horaDisponible} disabled={!est.fechaDisponible} onChange={(e) => set({ horaDisponible: e.target.value })} /></Campo>
@@ -207,6 +221,7 @@ export default function ConstructorEvaluacion({ usuario, slugInicial, onVolver, 
 
         <div className="cf-sec">
           <p className="cf-sec-t">Comunicación</p>
+          <p className="cf-sec-d">A quién se avisa, qué ve quien aprueba y a quién escribe quien se queda sin intentos.</p>
           <Campo label="Mails del equipo a avisar" help="Reciben un aviso cada vez que alguien termina la evaluación. Uno por línea o separados por coma.">
             <textarea className="ctrl" style={{ minHeight: 60, resize: 'vertical' }} value={est.mailsStaff} onChange={(e) => set({ mailsStaff: e.target.value })} placeholder="coordinacion@institutoilce.com" />
           </Campo>
@@ -220,6 +235,7 @@ export default function ConstructorEvaluacion({ usuario, slugInicial, onVolver, 
 
         <div className="cf-sec">
           <p className="cf-sec-t">Preguntas ({est.preguntas.length})</p>
+          <p className="cf-sec-d">Opción múltiple: escribí cada pregunta, sus opciones y marcá la correcta.</p>
           {est.preguntas.map((q, i) => (
             <div key={q.id} className="cf-q">
               <div className="cf-q-h">
@@ -246,7 +262,7 @@ export default function ConstructorEvaluacion({ usuario, slugInicial, onVolver, 
           <button className="btn-sm" type="button" onClick={() => set({ preguntas: [...est.preguntas, preguntaVacia()] })}>+ Agregar pregunta</button>
         </div>
 
-        <div className="cf-sec" style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div className="cf-barra">
           <button className="btn btn-primary" style={{ flex: 'none', padding: '10px 22px' }} onClick={guardar} disabled={guardando}>{guardando ? 'Guardando…' : (est.editando ? 'Guardar cambios' : 'Crear evaluación')}</button>
           <button className="btn-sm" onClick={() => onVolver(false)} disabled={guardando}>Cancelar</button>
           <span className="cf-help" style={{ margin: 0 }}>Para probarla sin guardar nada ni mandar mails, entrá al enlace con el mail de pruebas.</span>

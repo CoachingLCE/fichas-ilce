@@ -135,6 +135,7 @@ export default function FormularioForm({ form, vistaPrevia = false, ejemploFinal
               <button key={n} type="button" className={'escala-b' + (Number(val[c.key]) === n ? ` on on-${n}` : '')} style={{ width: '100%', height: 50 }} onClick={() => set(c.key, n)}>{n}</button>
             ))}
           </div>
+          <div className="escala-ref" aria-hidden="true"><span>1 · Más bajo</span><span>5 · Más alto</span></div>
         </div>
       );
     }
@@ -248,6 +249,10 @@ export default function FormularioForm({ form, vistaPrevia = false, ejemploFinal
   }
 
   // La sección "Tu experiencia hasta ahora" agrupa varias escalas (feedback). Si el formulario tiene una sola, va en su lugar, sin título de sección.
+  // Avance (solo visual): cuántas preguntas tienen algo respondido. No cambia lo que se envía ni qué es obligatorio.
+  const conRespuesta = (v) => v !== undefined && v !== null && (typeof v === 'object' ? Object.keys(v).length > 0 : String(v).trim() !== '');
+  const totalPreguntas = form.campos.length + (form.anonimo ? 0 : 1);
+  const respondidas = form.campos.filter((c) => conRespuesta(val[c.key])).length + (!form.anonimo && conRespuesta(val.email) ? 1 : 0);
   const agrupar = form.campos.filter((c) => c.tipo === 'escala').length >= 2;
   const escalas = agrupar ? form.campos.filter((c) => c.tipo === 'escala') : [];
   const otros = agrupar ? form.campos.filter((c) => c.tipo !== 'escala') : form.campos;
@@ -261,6 +266,10 @@ export default function FormularioForm({ form, vistaPrevia = false, ejemploFinal
       </div>
       <div className="quiz-body">
         {form.intro && <Intro texto={form.intro} />}
+        <div className="qf-progreso" role="progressbar" aria-valuemin={0} aria-valuemax={totalPreguntas} aria-valuenow={respondidas} aria-label="Preguntas respondidas">
+          <div className="qf-progreso-barra"><span style={{ width: (totalPreguntas ? (respondidas / totalPreguntas) * 100 : 0) + '%' }} /></div>
+          <span className="qf-progreso-txt">{respondidas} de {totalPreguntas} respondidas</span>
+        </div>
         {/* Correo siempre primero (salvo en los formularios anónimos) */}
         {!form.anonimo && (
           <div className="quiz-field">

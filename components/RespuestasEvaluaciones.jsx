@@ -56,8 +56,8 @@ export default function RespuestasEvaluaciones({ usuario, showToast }) {
     try {
       const res = await fetch('/api/evaluaciones/habilitar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ solicitanteEmail: usuario.email, slug: p.slug, email: p.email }) });
       const j = await res.json();
-      if (!j.ok) { showToast && showToast(j.error || 'No se pudo habilitar'); } else { showToast && showToast('Intento habilitado'); await cargar(); }
-    } catch { showToast && showToast('Error de conexión'); } finally { setHabilitando(''); }
+      if (!j.ok) { showToast && showToast(' ' + (j.error || 'No se pudo habilitar')); } else { showToast && showToast(' Intento habilitado'); await cargar(); }
+    } catch { showToast && showToast(' Error de conexión'); } finally { setHabilitando(''); }
   }
 
   if (!d) return <div className="spin" />;
@@ -93,7 +93,7 @@ export default function RespuestasEvaluaciones({ usuario, showToast }) {
         <select className="ctrl" style={{ maxWidth: 170 }} value={fRes} onChange={(e) => setFRes(e.target.value)}><option value="">Todos los resultados</option><option value="aprobado">Aprobados</option><option value="no">No aprobados</option><option value="sin">Sin terminar</option></select>
       </div>
       {filas.length === 0 ? (
-        <div className="empty"><div className="ico"></div><h3>Todavía no hay intentos</h3><p>Cuando alguien rinda una evaluación final, va a aparecer acá.</p></div>
+        <div className="empty"><div className="ico"></div><h3>Todavía no hay intentos</h3><p>Cuando alguien rinda una evaluación final, va a aparecer acá.</p></div>
       ) : (
         <div className="tablewrap"><table>
           <thead><tr><th>Fecha</th><th>Nombre</th><th>Email</th><th>Evaluación</th><th>Ed.</th><th>Intento</th><th>Puntaje</th><th>Resultado</th><th>Tiempo</th></tr></thead>

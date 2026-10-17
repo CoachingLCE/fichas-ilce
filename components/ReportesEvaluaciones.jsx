@@ -60,7 +60,7 @@ export default function ReportesEvaluaciones({ usuario, fCurso, fEd, fDesde, fHa
 
   if (error) return <div className="empty"><h3>No se pudo cargar</h3><p>{error}</p></div>;
   if (!d) return <div className="spin" />;
-  if (porEval.length === 0) return <div className="empty"><div className="ico"></div><h3>Sin intentos para estos filtros</h3><p>Cuando alguien rinda una evaluación final, el resumen aparece acá.</p></div>;
+  if (porEval.length === 0) return <div className="empty"><div className="ico"></div><h3>Sin intentos para estos filtros</h3><p>Cuando alguien rinda una evaluación final, el resumen aparece acá.</p></div>;
 
   const fin = intentos.filter((x) => x.estado === 'Finalizado');
   const ap = fin.filter((x) => x.resultado === 'Aprobado');

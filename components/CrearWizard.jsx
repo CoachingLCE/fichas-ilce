@@ -8,12 +8,12 @@ import { ACTIVIDADES_ESPECIALES } from '../lib/formularioConstructor';
 // después los parámetros según el tipo (clase + cantidad de preguntas para actividades,
 // cantidad de preguntas para formularios), y recién ahí pasás al editor con todo pre-armado.
 const TIPOS = [
-  { key: 'inscripcion', icono: '', label: 'Ficha de inscripción', desc: 'La página pública donde se anotan los estudiantes de un curso.' },
-  { key: 'actividad', icono: '', label: 'Actividad', desc: 'Un postwork con preguntas (se autocorrige y da puntaje).' },
-  { key: 'formulario', icono: '', label: 'Formulario', desc: 'Una encuesta o formulario abierto (sin puntaje). Puede no tener curso.' },
+  { key: 'inscripcion', icono: '', label: 'Ficha de inscripción', desc: 'La página pública donde se anotan los estudiantes de un curso.', ayuda: "Elegís el curso y se abre el Constructor de su ficha. Si la dejás \"Publicada\", cualquiera con el enlace puede completarla." },
+  { key: 'actividad', icono: '', label: 'Actividad', desc: 'Un postwork con preguntas (se autocorrige y da puntaje).', ayuda: "Elegís el curso, la clase (opcional) y cuántas preguntas tendrá. Después la armás en el editor, con respuesta correcta en cada pregunta." },
+  { key: 'formulario', icono: '', label: 'Formulario', desc: 'Una encuesta o formulario abierto (sin puntaje). Puede no tener curso.', ayuda: "Sirve para encuestas y trámites. Puede tener un curso fijo, dejar que lo elija quien responde o no tener curso. El correo siempre se pide." },
   // v1.41.0: laboratorios, masterclasses, caja de ideas… independientes de las cursadas (son formularios con su tipo y una plantilla).
-  { key: 'evaluacion', icono: '', label: 'Evaluación final', desc: 'Un examen con tiempo límite, intentos, días de espera y puntaje mínimo.', nuevo: true },
-  { key: 'especial', icono: '', label: 'Actividades especiales', desc: 'Laboratorio, masterclass, caja de ideas, etc. Independientes de las cursadas.', nuevo: true }
+  { key: 'evaluacion', icono: '', label: 'Evaluación final', desc: 'Un examen con tiempo límite, intentos, días de espera y puntaje mínimo.', ayuda: "Examen final de un curso: definís tiempo límite, intentos, días de espera entre intentos, puntaje mínimo y, si querés, un diploma al aprobar.", nuevo: true },
+  { key: 'especial', icono: '', label: 'Actividades especiales', desc: 'Laboratorio, masterclass, caja de ideas, etc. Independientes de las cursadas.', ayuda: "Plantillas listas para laboratorios, masterclasses o cajas de ideas. En el siguiente paso elegís cuál.", nuevo: true }
 ];
 const CURSO_ELIGE = '__elige__';
 const CURSO_NINGUNO = '__ninguno__';
@@ -77,7 +77,7 @@ export default function CrearWizard({ onCerrar, onCrearActividad, onCrearFormula
         {paso === 0 && (
           <div className="cw-tipos">
             {tiposVisibles.map((t) => (
-              <button key={t.key} className="cw-tipo" onClick={() => elegirTipo(t.key)}>
+              <button key={t.key} className="cw-tipo" title={t.ayuda} onClick={() => elegirTipo(t.key)}>
                 <span className="cw-tipo-ico">{t.icono}</span>
                 <span className="cw-tipo-txt">
                   <b>{t.label}{t.nuevo && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: 'rgb(var(--accentPurple) / .2)', color: 'rgb(var(--accentPurpleTxt))' }}>NUEVO</span>}</b>

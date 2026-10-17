@@ -16,9 +16,9 @@ const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(
 // escribe una sola vez al crear el formulario, por eso sirve para esto y "Actualizado" no.
 function BadgeCreado({ iso, actualizado }) {
   // Si la fila no tiene "Creado" (se pegó a mano en la Sheet) se usa la fecha de carga, para que igual se note que es nueva.
-  const { tipo } = estadoFechaReciente(iso || actualizado, 10);
-  if (tipo === 'hoy') return <span className="badge-fecha-hoy" title={'Cargado el ' + iso}>{'\ud83d\udfe2'} Cargado hoy</span>;
-  if (tipo === 'nueva') return <span className="badge-fecha-nueva" title={'Cargado el ' + iso}>{'\u2728'} Nuevo</span>;
+  const { tipo } = estadoFechaReciente(iso || actualizado, 30);
+  if (tipo === 'hoy') return <span className="badge-fecha-hoy badge-fecha-mini" title={'Cargado el ' + iso}>{'\ud83d\udfe2'} Cargado hoy</span>;
+  if (tipo === 'nueva') return <span className="badge-fecha-nueva badge-fecha-mini" title={'Cargado el ' + iso}>{'\u2728'} Nuevo</span>;
   return null;
 }
 

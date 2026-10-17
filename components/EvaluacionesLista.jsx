@@ -10,9 +10,9 @@ import { useDialogos } from './Dialogos';
 const CLS_ESTADO = { Publicada: 'pub', Borrador: 'bor', Programada: 'prog', Cerrada: 'cer', Archivada: 'arch' };
 
 function BadgeNueva({ creado, actualizado }) {
-  const { tipo } = estadoFechaReciente(creado || actualizado, 10);
-  if (tipo === 'hoy') return <span className="badge-fecha-hoy">{'🟢'} Cargada hoy</span>;
-  if (tipo === 'nueva') return <span className="badge-fecha-nueva">{'✨'} Nueva</span>;
+  const { tipo } = estadoFechaReciente(creado || actualizado, 30);
+  if (tipo === 'hoy') return <span className="badge-fecha-hoy badge-fecha-mini">{'🟢'} Cargada hoy</span>;
+  if (tipo === 'nueva') return <span className="badge-fecha-nueva badge-fecha-mini">{'✨'} Nueva</span>;
   return null;
 }
 
@@ -44,12 +44,12 @@ export default function EvaluacionesLista({ usuario, showToast, onNueva, onEdita
     try {
       const res = await fetch('/api/evaluaciones', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ solicitanteEmail: usuario.email, slug: e.slug }) });
       const d = await res.json();
-      if (!d.ok) { showToast && showToast(d.error || 'No se pudo eliminar'); return; }
-      showToast && showToast('Evaluación eliminada'); cargar();
-    } catch { showToast && showToast('Error de conexión'); }
+      if (!d.ok) { showToast && showToast(' ' + (d.error || 'No se pudo eliminar')); return; }
+      showToast && showToast(' Evaluación eliminada'); cargar();
+    } catch { showToast && showToast(' Error de conexión'); }
   }
 
-  if (error && !evals?.length) return <div className="empty"><div className="ico"></div><h3>No se pudo cargar</h3><p>{error}</p></div>;
+  if (error && !evals?.length) return <div className="empty"><div className="ico"></div><h3>No se pudo cargar</h3><p>{error}</p></div>;
   if (!evals) return <div className="spin" />;
   return (
     <div>
@@ -60,7 +60,7 @@ export default function EvaluacionesLista({ usuario, showToast, onNueva, onEdita
         {puedeGestionar && onNueva && <button className="btn btn-primary" style={{ flex: 'none', padding: '10px 18px' }} onClick={onNueva}>+ Nueva evaluación final</button>}
       </div>
       {evals.length === 0 ? (
-        <div className="empty"><div className="ico"></div><h3>No hay evaluaciones finales todavía</h3><p>Creá la primera: con tiempo límite, intentos, días de espera y puntaje mínimo.</p>
+        <div className="empty"><div className="ico"></div><h3>No hay evaluaciones finales todavía</h3><p>Creá la primera: con tiempo límite, intentos, días de espera y puntaje mínimo.</p>
           {puedeGestionar && onNueva && <button className="btn btn-primary" style={{ flex: 'none', padding: '10px 18px' }} onClick={onNueva}>+ Nueva evaluación final</button>}</div>
       ) : (
         <div className="tablewrap"><table>
@@ -78,7 +78,7 @@ export default function EvaluacionesLista({ usuario, showToast, onNueva, onEdita
                 <td className="sec" title="Intentos / personas / aprobados">{e.conteo.intentos} · {e.conteo.personas} pers. · {e.conteo.aprobados} aprob.</td>
                 <td className="sec" title={c.aprox ? 'Fecha aproximada (última actualización)' : 'Fecha de creación'}>{c.texto ? (c.aprox ? '~' : '') + c.texto : '—'}</td>
                 <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                  <button className="btn-sm" onClick={() => { navigator.clipboard?.writeText(url); showToast && showToast('Enlace copiado'); }}>Copiar</button>{' '}
+                  <button className="btn-sm" onClick={() => { navigator.clipboard?.writeText(url); showToast && showToast(' Enlace copiado'); }}>Copiar</button>{' '}
                   <a className="btn-sm" href={url} target="_blank" rel="noreferrer" title="Abrir">↗</a>
                   {puedeGestionar && <>{' '}<button className="btn-sm solid" onClick={() => onEditar(e.slug)}>Editar</button>{' '}<button className="btn-sm" style={{ color: 'rgb(248 113 113)' }} onClick={() => eliminar(e)} title="Eliminar">✕</button></>}
                 </td>

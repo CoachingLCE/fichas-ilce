@@ -8,12 +8,13 @@ import { actualizarSesionGuardada } from '../lib/useSession';
 // Antes no existía forma de cambiarla: solo la fijaba un Admin. El servidor es quien valida (aquí se repiten las reglas para avisar enseguida).
 // Las mismas claves comunes que rechaza el servidor (lib/passwords.js): así el aviso es inmediato.
 const COMUNES = ['hola123', '12345678', '123456789', '1234567890', 'password', 'password1', 'contraseña1', 'contrasena1', 'qwerty123', 'ilce1234', 'ilce2026', 'hola1234', 'hola12345', 'abc12345', 'iloveyou1'];
+const MSG_NO_COINCIDE = 'La contraseña nueva no coincide. Volvé a introducirla.';
 function revisar(nueva, repetida, email) {
+  if (nueva !== repetida) return MSG_NO_COINCIDE;
   if (nueva.length < 8) return 'La contraseña nueva tiene que tener al menos 8 caracteres.';
   if (!/[A-Za-zÁÉÍÓÚáéíóúÑñÜü]/.test(nueva) || !/\d/.test(nueva)) return 'La contraseña nueva tiene que incluir al menos una letra y un número.';
   if (COMUNES.includes(nueva.toLowerCase())) return 'Esa contraseña es demasiado común. Elegí otra.';
   if (email && nueva.toLowerCase() === String(email).toLowerCase()) return 'La contraseña no puede ser igual a tu email.';
-  if (nueva !== repetida) return 'Las dos contraseñas nuevas no coinciden.';
   return '';
 }
 
@@ -24,6 +25,7 @@ export default function CambiarPassword({ usuario, obligatorio = false, onCerrar
   const [ver, setVer] = useState(false);
   const [error, setError] = useState('');
   const [guardando, setGuardando] = useState(false);
+  const [repetidaTocada, setRepetidaTocada] = useState(false); // el aviso de "no coincide" aparece al salir del campo, no mientras se escribe
   const primero = useRef(null);
   useEffect(() => { const t = setTimeout(() => primero.current && primero.current.focus(), 60); return () => clearTimeout(t); }, []);
   // Voluntario: Esc lo cierra. Obligatorio: no hace nada.
@@ -54,6 +56,7 @@ export default function CambiarPassword({ usuario, obligatorio = false, onCerrar
     }
   }
 
+  const noCoincide = repetidaTocada && repetida.length > 0 && nueva !== repetida;
   const tipo = ver ? 'text' : 'password';
   const campo = 'w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm mb-3';
   const etiqueta = 'text-[13px] font-semibold text-textSec block mb-1';
@@ -72,9 +75,10 @@ export default function CambiarPassword({ usuario, obligatorio = false, onCerrar
         <label htmlFor="cp-nueva" className={etiqueta}>Contraseña nueva</label>
         <input id="cp-nueva" type={tipo} autoComplete="new-password" required value={nueva} onChange={(e) => setNueva(e.target.value)} className={campo} />
         <label htmlFor="cp-repetida" className={etiqueta}>Repetí la contraseña nueva</label>
-        <input id="cp-repetida" type={tipo} autoComplete="new-password" required value={repetida} onChange={(e) => setRepetida(e.target.value)} className={campo} />
+        <input id="cp-repetida" type={tipo} autoComplete="new-password" required value={repetida} onChange={(e) => { setRepetida(e.target.value); if (error === MSG_NO_COINCIDE) setError(''); }} onBlur={() => setRepetidaTocada(true)} aria-invalid={noCoincide} aria-describedby={noCoincide ? 'cp-nocoincide' : undefined} className={campo} style={noCoincide ? { borderColor: 'rgb(248 113 113)' } : undefined} />
+        {noCoincide && <p id="cp-nocoincide" role="alert" className="text-[13px] -mt-2 mb-3" style={{ color: 'rgb(248 113 113)' }}>{MSG_NO_COINCIDE}</p>}
         <label className="flex items-center gap-2 text-[13px] text-textSec mb-3 cursor-pointer"><input type="checkbox" checked={ver} onChange={(e) => setVer(e.target.checked)} /> Mostrar las contraseñas</label>
-        {error && <p role="alert" className="text-[13px] mb-3" style={{ color: 'rgb(248 113 113)' }}>{error}</p>}
+        {error && !(noCoincide && error === MSG_NO_COINCIDE) && <p role="alert" className="text-[13px] mb-3" style={{ color: 'rgb(248 113 113)' }}>{error}</p>}
         <div className="flex gap-2 items-center">
           <button type="submit" disabled={guardando} className="flex-1 bg-gradient-to-r from-accentPurple to-accentMagenta text-white rounded-lg py-2.5 font-semibold text-sm disabled:opacity-60">{guardando ? 'Guardando…' : 'Guardar contraseña'}</button>
           {!obligatorio && <button type="button" onClick={onCerrar} className="bg-surface2 border border-border rounded-lg py-2.5 px-4 text-sm">Cancelar</button>}

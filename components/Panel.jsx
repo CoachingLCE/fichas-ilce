@@ -22,6 +22,7 @@ import PausaSemanal from './PausaSemanal';
 import Reportes from './Reportes';
 import Buscador from './Buscador';
 import TourGuiado from './TourGuiado';
+import { RolesChips } from './RolChip';
 import { SelectDropdown, FiltroChip } from './SelectDropdown';
 import { claveLugarFila } from '../lib/localidades';
 import ConstructorFormulario from './ConstructorFormulario';
@@ -517,7 +518,7 @@ export default function Panel() {
             ))}
           <div className="topnav-user">
             <b>{usuario.nombre}</b>
-            <span>{nombreVisibleRoles(usuario.roles)}</span>
+            <RolesChips roles={usuario.roles} chico />
           </div>
           <button className="btn-sm" onClick={() => window.dispatchEvent(new Event('ilce:cambiar-password'))}>Cambiar contraseña</button>
           <button className="btn-sm" onClick={() => { logout(); window.location.href = '/'; }}>Salir</button>
@@ -721,7 +722,7 @@ export default function Panel() {
                 <div className="subtabs-pill">
                   {puedeAct && <button className={elegida === 'actividades' ? 'on' : ''} onClick={() => setVistaAyF('actividades')}> Actividades</button>}
                   {puedeForm && <button className={elegida === 'formularios' ? 'on' : ''} onClick={() => setVistaAyF('formularios')}> Formularios</button>}
-                  {puedeEval && <button className={elegida === 'evaluaciones' ? 'on' : ''} onClick={() => setVistaAyF('evaluaciones')}> Evaluaciones finales</button>}
+                  {puedeEval && <button className={elegida === 'evaluaciones' ? 'on' : ''} onClick={() => setVistaAyF('evaluaciones')}> Evaluaciones finales</button>}
                 </div>
               )}
               {elegida === 'actividades'
@@ -744,7 +745,7 @@ export default function Panel() {
                 {puedeAct && <button className={elegida === 'actividades' ? 'on' : ''} onClick={() => setVistaResp('actividades')}> Respuestas actividades</button>}
                 {puedeForm && <button className={elegida === 'formularios' ? 'on' : ''} onClick={() => setVistaResp('formularios')}> Respuestas formularios</button>}
                 {puedeForm && <button className={elegida === 'especiales' ? 'on' : ''} onClick={() => setVistaResp('especiales')}> Respuestas actividades especiales</button>}
-                <button className={elegida === 'evaluaciones' ? 'on' : ''} onClick={() => setVistaResp('evaluaciones')}> Respuestas evaluaciones finales</button>
+                <button className={elegida === 'evaluaciones' ? 'on' : ''} onClick={() => setVistaResp('evaluaciones')}> Respuestas evaluaciones finales</button>
               </div>
               {elegida === 'evaluaciones'
                 ? <RespuestasEvaluaciones usuario={usuario} showToast={showToast} />
@@ -837,6 +838,7 @@ export default function Panel() {
         constructor: tienePermisoConstructor(usuario),
         gestionActividades: tienePermisoGestionActividades(usuario),
         formularios: tienePermisoFormularios(usuario),
+        evaluaciones: tienePermisoEvaluaciones(usuario),
         dashboard: tienePermisoDashboard(usuario),
         actividadesyformularios: tienePermisoActividades(usuario) || tienePermisoFormularios(usuario),
         // Pedido de Diego ("quiero que todos puedan ver las respuestas"): el paso del tour

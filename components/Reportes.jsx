@@ -10,6 +10,7 @@
 import { Fragment, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { ESTADOS, CURSOS, colorCurso, inicialesCurso } from '../lib/constants';
 import ReportesEvaluaciones from './ReportesEvaluaciones';
+import { EstadoPorCurso, AntiguedadPendientes, TasaPorMes } from './ReportesAnalisis';
 import { tienePermisoEvaluaciones } from '../lib/permisos';
 import { SelectDropdown, FiltroChip } from './SelectDropdown';
 import MiniChart from './MiniChart';
@@ -754,7 +755,7 @@ export default function Reportes({ usuario, rows, puedeActividades, puedeFormula
   };
 
   return (
-    <div>
+    <div className="repx-root">
       <div className="repx-head">
         <div className="repx-head-txt">
           <p className="fhead-sub">Analizá inscripciones, participación y actividad de los estudiantes.</p>
@@ -1042,6 +1043,7 @@ function ReportesResumen({ rows, irAConFiltro }) {
                 </span>
               </div>
               <GraficoLineaDoble etiquetas={serie.etiquetas} actual={serie.total} anterior={nuevasPrev > 0 ? seriePrev.total : null} hoyIndex={hoyIndex} color="#22d3ee" alto={150} />
+              {hoyIndex != null && nuevasPrev > 0 && <p className="evol-aviso">Mes en curso: hoy es el día {hoyIndex + 1}, así que la variación compara un mes incompleto con {nombreMesLargo(mesPrev)} completo. La línea punteada marca hoy.</p>}
             </div>
             <div className="evol-paneles">
               <div className="evol-panel">
@@ -1059,6 +1061,19 @@ function ReportesResumen({ rows, irAConFiltro }) {
           </>);
         })()}
       </Seccion>
+
+      <Seccion titulo="Estado de las fichas por curso" sub="Cuántas fichas tiene cada curso y en qué estado están hoy. Tocá un curso para ver su detalle.">
+        <EstadoPorCurso rows={rows} irAConFiltro={irAConFiltro} />
+      </Seccion>
+
+      <div className="repx-duo">
+        <Seccion titulo="Antigüedad de pendientes" sub="Hace cuánto están sin resolver las fichas Pendientes, Iniciadas y En revisión.">
+          <AntiguedadPendientes rows={rows} irAConFiltro={irAConFiltro} />
+        </Seccion>
+        <Seccion titulo="Tasa de completitud por mes" sub="De las fichas que llegaron cada mes, qué porcentaje está completada.">
+          <TasaPorMes rows={rows} />
+        </Seccion>
+      </div>
 
       <Seccion titulo="Por curso" sub="Ranking de fichas por curso — clickeá una fila para verlo en Fichas completadas.">
         {/* Pedido de Diego: "estirar para que no haya scroll" — antes el contenedor tenía un
@@ -1087,13 +1102,13 @@ function ReportesResumen({ rows, irAConFiltro }) {
       <div className="repx-duo">
         <Seccion titulo="Por país" sub="De dónde son las fichas — clickeá una fila para verla en Fichas completadas.">
           {porPais.length === 0 ? <p className="vacio vacio-chico">Sin datos todavía.</p> : (
-            <TablaCompacta filas={porPais} dirtyLabel="Sin datos" onClick={irAConFiltro ? (k) => irAConFiltro('pais', k) : undefined} icono={banderaPais} />
+            <TablaCompacta filas={porPais} dirtyLabel="Sin datos" onClick={irAConFiltro ? (k) => irAConFiltro('pais', k) : undefined} icono={banderaPais} total={rows.length} />
           )}
         </Seccion>
 
         <Seccion titulo="Origen de inscripciones" sub="Por qué canal llegó cada ficha.">
           {porOrigen.length === 0 ? <p className="vacio vacio-chico">Sin datos todavía.</p> : (
-            <TablaCompacta filas={porOrigen} dirtyLabel="Sin informar" icono={iconoOrigen} />
+            <TablaCompacta filas={porOrigen} dirtyLabel="Sin informar" icono={iconoOrigen} total={rows.length} />
           )}
         </Seccion>
       </div>
@@ -1225,7 +1240,7 @@ function ReportesLugares({ rows, irAConFiltro }) {
 // dato y misma lógica de agrupación (ver porPais/porOrigen más arriba), solo cambia cómo se
 // muestra. dirtyLabel marca en gris/itálica la fila de valores "sucios" (p. ej. "Sin datos"),
 // igual que antes hacía claseFill="m" en la barra.
-function TablaCompacta({ filas, dirtyLabel, onClick, icono }) {
+function TablaCompacta({ filas, dirtyLabel, onClick, icono, total }) {
   return (
     <table className="repx-minitable">
       <tbody>
@@ -1236,7 +1251,7 @@ function TablaCompacta({ filas, dirtyLabel, onClick, icono }) {
           return (
             <tr key={k} className={(dirty ? 'rm-dirty ' : '') + (clickable ? 'rm-click' : '')} onClick={clickable ? () => onClick(k) : undefined}>
               <td className="rm-n" title={k}>{ic && <span className="rm-ico">{ic}</span>}{k}</td>
-              <td className="rm-v">{v}</td>
+              <td className="rm-v">{v}{total > 0 && <span className="rm-pct">{Math.round(v / total * 1000) / 10}%</span>}</td>
             </tr>
           );
         })}

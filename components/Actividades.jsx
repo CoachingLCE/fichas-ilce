@@ -580,9 +580,9 @@ function CursoConPunto({ curso }) {
 // "Actualizado" se escribe una sola vez y no cambia con cada edición posterior.
 function BadgeCreado({ iso, actualizado }) {
   // Si la fila no tiene "Creado" (se pegó a mano en la Sheet) se usa la fecha de carga, para que igual se note que es nueva.
-  const { tipo } = estadoFechaReciente(iso || actualizado, 10);
-  if (tipo === 'hoy') return <span className="badge-fecha-hoy" title={'Cargada el ' + iso}>🟢 Cargada hoy</span>;
-  if (tipo === 'nueva') return <span className="badge-fecha-nueva" title={'Cargada el ' + iso}> Nueva</span>;
+  const { tipo } = estadoFechaReciente(iso || actualizado, 30);
+  if (tipo === 'hoy') return <span className="badge-fecha-hoy badge-fecha-mini" title={'Cargada el ' + iso}>🟢 Cargada hoy</span>;
+  if (tipo === 'nueva') return <span className="badge-fecha-nueva badge-fecha-mini" title={'Cargada el ' + iso}> Nueva</span>;
   return null;
 }
 
@@ -632,6 +632,22 @@ function TablaActividades({ items, puedeGestionar, onEditar, onDuplicar, onDetal
   );
 }
 
+// Enlace con "Copiar" que confirma visualmente (pasa a "Copiado ✓" un instante). No cambia el enlace ni lo que se copia.
+function EnlaceCopiable({ ruta, url, showToast }) {
+  const [ok, setOk] = useState(false);
+  const copiar = () => {
+    try { navigator.clipboard?.writeText(url); } catch (e) { /* sin permiso: el aviso igual se muestra */ }
+    setOk(true); showToast(' Enlace copiado');
+    setTimeout(() => setOk(false), 1600);
+  };
+  return (
+    <div className="pcard-url">
+      <span className="pcard-url-txt" title={url}>{ruta}</span>
+      <button className={'pcard-url-copy' + (ok ? ' ok' : '')} onClick={copiar} title="Copiar enlace">{ok ? 'Copiado ✓' : 'Copiar'}</button>
+    </div>
+  );
+}
+
 function GridActividades({ items, puedeGestionar, onEditar, onDuplicar, onDetalle, showToast }) {
   return (
     <div className="pcard-wrap">
@@ -641,27 +657,22 @@ function GridActividades({ items, puedeGestionar, onEditar, onDuplicar, onDetall
         const badge = ESTADO_ICO[efectivo] || ESTADO_ICO.Publicada;
         const color = colorCurso(a.curso);
         const sub = `${a.curso}${a.edicion ? ` · Ed. ${a.edicion}` : ''}${a.clase ? ` · Clase ${a.clase}` : ''}`;
+        const nPreg = a.preguntas.length;
         return (
-          <div className="pcard" key={a.slug} style={{ borderLeft: `4px solid ${color}66` }}>
+          <div className="pcard pcard-v2" key={a.slug} style={{ '--curso': color }}>
             <div className="pcard-top">
-              <div className="pcard-dotrow">
-                <span className="pcard-colordot" style={{ background: color }} />
-                <button className="acts-titlelink pcard-title" style={{ background: 'none', border: 0, textAlign: 'left', cursor: 'pointer', color: 'inherit' }} title={a.titulo} onClick={() => onDetalle(a)}>{a.titulo}</button>
-              </div>
               <span className={'pcard-dot ' + badge.cls}><span className="d" />{efectivo}</span>
-            </div>
-            <div className="pcard-sub" title={sub}>{sub}</div>
-            <div className="pcard-datos">
-              <span className="pcard-datos-destacado">{a.preguntas.length} pregunta{a.preguntas.length === 1 ? '' : 's'}</span>
               <BadgeCreado iso={a.creado} actualizado={a.actualizado} />
-              {creadaEfectiva(a.creado, a.actualizado).texto && <span className="sec" title="Fecha de creación">Creada el <FechaCreada creado={a.creado} actualizado={a.actualizado} /></span>}
             </div>
-            <div className="pcard-url">
-              <span className="pcard-url-txt">/actividad/{a.slug}</span>
-              <button className="pcard-url-copy" onClick={() => { navigator.clipboard?.writeText(`${APP_URL}/actividad/${a.slug}`); showToast(' Enlace copiado'); }} title="Copiar enlace">Copiar</button>
+            <button className="acts-titlelink pcard-title pcard-title-2" title={a.titulo} onClick={() => onDetalle(a)}>{a.titulo}</button>
+            <div className="pcard-sub" title={sub}><span className="pcard-colordot" style={{ background: color }} aria-hidden="true" />{sub}</div>
+            <div className="pcard-datos">
+              <span className="pcard-datos-destacado"><span className="pcard-ico" aria-hidden="true">?</span>{nPreg} pregunta{nPreg === 1 ? '' : 's'}</span>
+              {creadaEfectiva(a.creado, a.actualizado).texto && <span className="sec pcard-creada" title="Fecha de creación">Creada el <FechaCreada creado={a.creado} actualizado={a.actualizado} /></span>}
             </div>
+            <EnlaceCopiable ruta={`/actividad/${a.slug}`} url={`${APP_URL}/actividad/${a.slug}`} showToast={showToast} />
             <div className="pcard-actions">
-              <a className="pcard-act pcard-act-icon" href={`${APP_URL}/actividad/${a.slug}`} target="_blank" rel="noreferrer" title="Ver actividad"></a>
+              <a className="pcard-act pcard-act-icon" href={`${APP_URL}/actividad/${a.slug}`} target="_blank" rel="noreferrer" title="Ver actividad (se abre en otra pestaña)" aria-label="Ver actividad"></a>
               {puedeGestionar && <button className="pcard-act" onClick={() => onDuplicar(a)}>⧉ Duplicar</button>}
               {puedeGestionar && <button className="pcard-act pcard-act-primary" onClick={() => onEditar(a)}> Editar</button>}
             </div>
@@ -916,22 +927,26 @@ const Lista = forwardRef(function Lista({ usuario, showToast, puedeGestionar, ir
 
   return (
     <div>
-      <div className="sechead">
-        <span className="hcount">{filtradas.length} actividad{filtradas.length === 1 ? '' : 'es'}</span>
+      <div className="sechead acts-toolbar">
+        <span className="hcount acts-count">{filtradas.length} actividad{filtradas.length === 1 ? '' : 'es'}</span>
         <span className="grow" />
         {/* El buscador de texto libre queda solo en el ícono  de arriba del todo (pestaña
             Buscador, busca en toda la app) — antes había acá un botón "Buscar" que lo
             duplicaba (pedido de Diego: "ES INNECESARIO ESTA ARRIBA", "evitemos botones
             innecesarios y repetidos"); quedan solo los filtros propios de esta lista
             (Curso/Edición/Estado), que el buscador global no cubre. */}
-        <SelectDropdown placeholder="Edición: todas" searchable value={fEd} onChange={setFEd} options={edicionesDisp.map((ed) => ({ value: ed, label: 'Ed. ' + ed }))} />
-        <SelectDropdown placeholder="Estado: todos" value={fEstado} onChange={setFEstado} options={['Publicada', 'Programada', 'Borrador', 'Archivada'].map((x) => ({ value: x, label: x }))} />
-        {hayFiltros && <button className="btn-sm" onClick={() => { setQ(''); setFCurso(''); setFEd(''); setFEstado(''); }}>Limpiar</button>}
+        <div className="acts-tb-grupo" role="group" aria-label="Filtros">
+          <SelectDropdown className={fEd ? 'tb-activo' : ''} placeholder="Edición: todas" searchable value={fEd} onChange={setFEd} options={edicionesDisp.map((ed) => ({ value: ed, label: 'Ed. ' + ed }))} />
+          <SelectDropdown className={fEstado ? 'tb-activo' : ''} placeholder="Estado: todos" value={fEstado} onChange={setFEstado} options={['Publicada', 'Programada', 'Borrador', 'Archivada'].map((x) => ({ value: x, label: x }))} />
+          {hayFiltros && <button className="btn-sm" onClick={() => { setQ(''); setFCurso(''); setFEd(''); setFEstado(''); }}>Limpiar</button>}
+        </div>
+        <div className="acts-tb-grupo" role="group" aria-label="Orden y vista">
         <SelectDropdown value={orden} onChange={cambiarOrden} options={ORDENES.map((o) => ({ value: o.v, label: 'Ordenar: ' + o.l }))} />
         <button className={'btn-sm' + (agrupar ? ' solid' : '')} onClick={toggleAgrupar} title="Agrupar por curso y edición">▤ Agrupar</button>
         <div className="vista-toggle">
           <button className={vista === 'cards' ? 'on' : ''} onClick={() => cambiarVista('cards')} title="Ver en tarjetas">▦</button>
           <button className={vista === 'lista' ? 'on' : ''} onClick={() => cambiarVista('lista')} title="Ver en lista"></button>
+        </div>
         </div>
         {puedeGestionar && <button className="btn btn-primary" style={{ flex: 'none', padding: '10px 18px' }} onClick={nueva}>+ Nueva actividad</button>}
       </div>
