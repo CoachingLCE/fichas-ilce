@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSession } from '../lib/useSession';
-import { tienePermisoInscripciones, tienePermisoCambiarEstado, tienePermisoExportar, tienePermisoDashboard, tienePermisoConstructor, tienePermisoAccesos, tienePermisoActividades, tienePermisoGestionActividades, tienePermisoAsignarDocentes, tienePermisoEmails, tienePermisoAuditoria, tienePermisoFormularios, tienePermisoVerRespuestasActividades, tienePermisoVerRespuestasFormularios, puedeVerComoOtro } from '../lib/permisos';
+import { tienePermisoInscripciones, tienePermisoCambiarEstado, tienePermisoExportar, tienePermisoDashboard, tienePermisoConstructor, tienePermisoAccesos, tienePermisoActividades, tienePermisoGestionActividades, tienePermisoAsignarDocentes, tienePermisoEmails, tienePermisoAuditoria, tienePermisoFormularios, tienePermisoVerRespuestasActividades, tienePermisoVerRespuestasFormularios, puedeVerComoOtro, tienePermisoEliminarFichas } from '../lib/permisos';
 import { ESTADOS, normalizarEstado, nombreVisibleRoles, estiloCurso, colorCurso, estadoFechaReciente } from '../lib/constants';
 import { Isologo, IsologoDefs } from './Isologo';
 import ThemeSelector from './ThemeSelector';
@@ -186,6 +186,8 @@ export default function Panel() {
   }, []);
   function guardarCols(set) { try { localStorage.setItem('ilce-fichas-cols', JSON.stringify([...set])); } catch { /* */ } }
   const [sel, setSel] = useState(null); // registro abierto en drawer
+  const [confirmarEliminar, setConfirmarEliminar] = useState(null); // ficha que se está por eliminar (ventana de confirmación)
+  const [eliminando, setEliminando] = useState(false);
   const { nivel: nivelLetra, escala: escalaLetra, cambiar: cambiarLetra } = useEscalaLetra(); // tamaño de la letra que eligió esta persona ("Aa" en la barra lateral)
   const enZonaLectura = ['fichas', 'inscripciones', 'actividadesyformularios', 'respuestas'].includes(tab);
   // Con la tecla Esc se cierra el panel lateral (igual que en Respuestas de actividades y de formularios).
@@ -379,6 +381,20 @@ export default function Panel() {
       if (data.ok) setHistorial(data.eventos);
     } catch {}
   }
+  // Eliminar una ficha (solo quien tiene tienePermisoEliminarFichas; el servidor lo vuelve a comprobar). Es irreversible: pide confirmación y deja la ficha completa en el Historial de acciones.
+  async function eliminarFicha() {
+    const f = confirmarEliminar;
+    if (!f || eliminando) return;
+    setEliminando(true);
+    try {
+      const res = await fetch('/api/inscripciones', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ solicitanteEmail: usuario.email, id: f.id }) });
+      const data = await res.json();
+      if (data.ok) { setRows((prev) => (prev || []).filter((x) => x.id !== f.id)); setSel(null); setConfirmarEliminar(null); showToast('✓ Ficha eliminada'); }
+      else showToast(data.error || 'No se pudo eliminar');
+    } catch { showToast('Error de conexión'); }
+    finally { setEliminando(false); }
+  }
+
   async function cambiarEstado(nuevo) {
     if (!sel) return;
     const res = await fetch('/api/inscripcion/estado', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ solicitanteEmail: usuario.email, id: sel.id, estado: nuevo }) });
@@ -419,6 +435,7 @@ export default function Panel() {
   if (!usuario) return null;
   const puedeExportar = tienePermisoExportar(usuario);
   const puedeCambiar = tienePermisoCambiarEstado(usuario);
+  const puedeEliminarFichas = tienePermisoEliminarFichas(usuario);
 
   return (
     <div className={'appwrap' + (enZonaLectura ? ' zona-lectura' : '')} style={enZonaLectura ? { '--escala-letra': escalaLetra } : undefined}>
@@ -743,6 +760,7 @@ export default function Panel() {
                 {sel.em && <button className="btn-sm" onClick={() => { navigator.clipboard?.writeText(sel.em); showToast(' Email copiado'); }}> Copiar email</button>}
                 {sel.wa && <button className="btn-sm" onClick={() => { navigator.clipboard?.writeText(sel.wa); showToast(' WhatsApp copiado'); }}> Copiar WhatsApp</button>}
                 {sel.wa && <a className="btn-sm" href={enlaceWhatsapp(sel.wa) || `https://wa.me/${digits(sel.wa)}`} target="_blank" rel="noreferrer">↗ Abrir WhatsApp</a>}
+                {puedeEliminarFichas && <button className="btn-sm peligro" data-accion="eliminar-ficha" onClick={() => setConfirmarEliminar(sel)} title="Eliminar esta ficha (no se puede deshacer)">Eliminar ficha</button>}
               </div>
             </div>
             <div className="dr-body">
@@ -761,6 +779,19 @@ export default function Panel() {
           </>
         )}
       </aside>
+
+      {/* confirmar eliminar ficha */}
+      <div className={'mwrap' + (confirmarEliminar ? ' on' : '')} onClick={() => !eliminando && setConfirmarEliminar(null)}>
+        {confirmarEliminar && (
+          <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Eliminar ficha">
+            <h3>¿Eliminar esta ficha?</h3>
+            <p style={{ fontSize: letra(14.5), margin: '8px 0 4px' }}><b>{(`${confirmarEliminar.nom || ''} ${confirmarEliminar.ape || ''}`).trim() || confirmarEliminar.em || confirmarEliminar.id}</b> — {confirmarEliminar.curso}{confirmarEliminar.ed ? ` · ${confirmarEliminar.ed}` : ''}</p>
+            <p style={{ fontSize: letra(13.5), color: 'rgb(var(--textMuted))', margin: '0 0 12px' }}>Se saca de la lista y <b>no se puede deshacer</b>. Los datos de la ficha quedan escritos en el Historial de acciones.</p>
+            <button className="btn-sm peligro solid-peligro" data-accion="confirmar-eliminar" disabled={eliminando} style={{ width: '100%', justifyContent: 'center' }} onClick={eliminarFicha}>{eliminando ? 'Eliminando…' : 'Sí, eliminar la ficha'}</button>
+            <button className="btn-sm" disabled={eliminando} style={{ width: '100%', justifyContent: 'center', marginTop: 8 }} onClick={() => setConfirmarEliminar(null)}>Cancelar</button>
+          </div>
+        )}
+      </div>
 
       {/* modal columnas */}
       <div className={'mwrap' + (colModal ? ' on' : '')}>

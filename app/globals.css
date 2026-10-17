@@ -2259,3 +2259,9 @@ button,input,select,textarea{font-family:inherit}
 
 /* Aviso chico debajo de los botones de pago de la pantalla final de la ficha. */
 .pago-aviso{margin:10px 2px 0;font-size:calc(12.5px * var(--escala-letra, 1));line-height:1.4;opacity:.75;text-align:center}
+
+/* Botón de acción peligrosa (eliminar una ficha). */
+.btn-sm.peligro{border-color:rgba(248,113,113,.55);color:rgb(248 113 113)}
+.btn-sm.peligro:hover:not(:disabled){background:rgba(248,113,113,.12)}
+.btn-sm.solid-peligro{background:rgb(220 38 38);border-color:transparent;color:#fff}
+.btn-sm.solid-peligro:hover:not(:disabled){background:rgb(185 28 28)}
