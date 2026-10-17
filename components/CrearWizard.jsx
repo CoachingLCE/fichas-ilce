@@ -12,12 +12,13 @@ const TIPOS = [
   { key: 'actividad', icono: '', label: 'Actividad', desc: 'Un postwork con preguntas (se autocorrige y da puntaje).' },
   { key: 'formulario', icono: '', label: 'Formulario', desc: 'Una encuesta o formulario abierto (sin puntaje). Puede no tener curso.' },
   // v1.41.0: laboratorios, masterclasses, caja de ideas… independientes de las cursadas (son formularios con su tipo y una plantilla).
+  { key: 'evaluacion', icono: '', label: 'Evaluación final', desc: 'Un examen con tiempo límite, intentos, días de espera y puntaje mínimo.', nuevo: true },
   { key: 'especial', icono: '', label: 'Actividades especiales', desc: 'Laboratorio, masterclass, caja de ideas, etc. Independientes de las cursadas.', nuevo: true }
 ];
 const CURSO_ELIGE = '__elige__';
 const CURSO_NINGUNO = '__ninguno__';
 
-export default function CrearWizard({ onCerrar, onCrearActividad, onCrearFormulario, onCrearInscripcion, onCrearEspecial, puede = {} }) {
+export default function CrearWizard({ onCerrar, onCrearActividad, onCrearFormulario, onCrearInscripcion, onCrearEspecial, onCrearEvaluacion, puede = {} }) {
   // Cada persona ve solo lo que su rol puede crear (antes se ofrecían todos los tipos a cualquiera, aunque no pudiera terminarlos).
   const tiposVisibles = TIPOS.filter((t) => puede[t.key] !== false);
   const [paso, setPaso] = useState(0);
@@ -38,6 +39,8 @@ export default function CrearWizard({ onCerrar, onCrearActividad, onCrearFormula
     // Un formulario puede no estar relacionado con ningún curso (pedido de Diego): no se pide curso acá, se elige adentro del
     // constructor (con "Sin curso ni programa" como opción). Ficha y actividad siguen pidiendo su curso.
     if (k === 'formulario') { onCrearFormulario({}); return; }
+    // La evaluación final se arma entera en su propio constructor (curso incluido): acá no hay nada más que pedir.
+    if (k === 'evaluacion') { onCrearEvaluacion && onCrearEvaluacion(); return; }
     if (k === 'especial') { setCursoEsp(CURSO_ELIGE); }
     setTipo(k);
     setPaso(1);

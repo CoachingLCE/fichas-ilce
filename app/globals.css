@@ -1333,7 +1333,18 @@ tr.clickable .repx-cellbar:hover .fl{filter:brightness(1.15)}
 @media (max-width:640px){ .escala-b{width:44px;height:44px} }
 
 /* ── Formulario público: recuadro de introducción ── */
-.quiz-intro-box{white-space:pre-line;font-size:13.5px;line-height:1.6;color:rgb(var(--textSec));background:rgb(var(--surface2));border:1px solid rgb(var(--border));border-radius:12px;padding:14px 16px;margin-bottom:22px}
+.quiz-intro-box{font-size:13.5px;line-height:1.6;color:rgb(var(--textSec));background:linear-gradient(135deg,rgb(var(--accentTeal) / .10),rgb(var(--accentPurple) / .10)),rgb(var(--surface2));border:1px solid rgb(var(--border));border-left:3px solid rgb(var(--accentTeal));border-radius:14px;padding:16px 18px;margin-bottom:22px}
+.quiz-intro-lead{font-size:16.5px;font-weight:600;line-height:1.45;color:rgb(var(--text));margin-bottom:2px}
+.quiz-intro-lista{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:7px}
+.quiz-intro-lista li{display:flex;gap:10px;align-items:flex-start}
+.quiz-intro-lista .tilde{flex:none;width:18px;height:18px;margin-top:2px;border-radius:50%;background:rgb(var(--accentTeal) / .18);color:rgb(var(--accentTeal));font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
+/* ── Formulario público: texto de ayuda de una pregunta (rótulos, botones de links, párrafos) ── */
+.quiz-help-p{margin:0}
+.quiz-help-gap{height:8px}
+.quiz-help-rotulo{margin:10px 0 7px;font-size:10.5px;font-weight:700;letter-spacing:.12em;color:rgb(var(--accentTeal))}
+.quiz-help-links{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 4px}
+.quiz-help-link{display:inline-flex;align-items:center;gap:4px;padding:7px 14px;border-radius:999px;border:1px solid rgb(var(--accentTeal) / .45);background:rgb(var(--accentTeal) / .10);color:rgb(var(--accentTeal));font-size:13px;font-weight:600;text-decoration:none;transition:.15s}
+.quiz-help-link:hover{background:rgb(var(--accentTeal) / .22);transform:translateY(-1px)}
 
 /* ── Bajada descriptiva de sección (reemplaza el breadcrumb + título) ── */
 .section-lead{font-size:15px;color:rgb(var(--textSec));font-weight:500;margin:0;line-height:1.5;max-width:74ch}
@@ -2187,6 +2198,9 @@ button,input,select,textarea{font-family:inherit}
 .escala-publica .escala-b{font-size:calc(16px * var(--escala-letra, 1))}
 .escala-publica .quiz-submit{font-size:calc(16px * var(--escala-letra, 1))}
 .escala-publica .quiz-intro-box{font-size:calc(13.5px * var(--escala-letra, 1))}
+.escala-publica .quiz-intro-lead{font-size:calc(16.5px * var(--escala-letra, 1))}
+.escala-publica .quiz-help-link{font-size:calc(13px * var(--escala-letra, 1))}
+.escala-publica .quiz-help-rotulo{font-size:calc(10.5px * var(--escala-letra, 1))}
 .escala-publica .cf-q-r select.ctrl{font-size:calc(13.5px * var(--escala-letra, 1))}
 .escala-publica .grilla th,
 .escala-publica .grilla td{font-size:calc(13px * var(--escala-letra, 1))}
@@ -2265,3 +2279,36 @@ button,input,select,textarea{font-family:inherit}
 .btn-sm.peligro:hover:not(:disabled){background:rgba(248,113,113,.12)}
 .btn-sm.solid-peligro{background:rgb(220 38 38);border-color:transparent;color:#fff}
 .btn-sm.solid-peligro:hover:not(:disabled){background:rgb(185 28 28)}
+
+/* ── Pestaña Emails: módulos más diferenciados (v1.75.0) ──
+   Cada módulo tiene su propio fondo y borde; los colores de estado (etiquetas de tipo, Enviado/Falló) no se tocan. */
+.panel-em{border-width:1.5px;border-radius:16px;padding:18px 20px;margin-bottom:30px}
+.panel-em-auto{background:linear-gradient(rgb(var(--accentTeal) / .05),rgb(var(--accentTeal) / .05)),rgb(var(--surface));border-color:rgb(var(--accentTeal) / .35)}
+.panel-em-finales{background:linear-gradient(rgb(var(--accentPurple) / .08),rgb(var(--accentPurple) / .08)),rgb(var(--surface));border-color:rgb(var(--accentPurple) / .45)}
+.panel-em-log{background:rgb(var(--surface2) / .55);border-color:rgb(var(--border))}
+.panel-em .sechead{margin-bottom:12px}
+.panel-em .htitle{font-size:16px;font-weight:600}
+/* tarjetas de estadísticas */
+.panel-em-log .metrica-grid{gap:14px;margin:6px 0 22px}
+.panel-em-log .metrica{background:rgb(var(--surface));border:1px solid rgb(var(--border));border-top:3px solid rgb(var(--accentTeal));border-radius:12px;padding:14px 16px;box-shadow:0 6px 16px -10px rgba(0,0,0,.6)}
+.panel-em-log .metrica-val{font-size:30px;font-weight:600;line-height:1.1}
+.panel-em-log .metrica-lbl{font-size:12.5px;margin-top:6px;white-space:normal}
+/* bloque de búsqueda y exportación */
+.em-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:rgb(var(--surface));border:1px solid rgb(var(--border));border-radius:12px;padding:10px 12px;margin:0 0 20px}
+.em-filtros{margin:0 0 20px}
+.panel-em-log .repx-chips-row{margin-bottom:16px}
+/* tablas: encabezado marcado, filas alternadas y divisorias más visibles */
+.tabla-em table{border-collapse:separate;border-spacing:0}
+.tabla-em thead th{background:rgb(var(--surface2));color:rgb(var(--text));font-weight:600;border-bottom:2px solid rgb(var(--border))}
+.tabla-em tbody td{border-bottom:1px solid rgb(var(--border) / .9)}
+.tabla-em tbody tr:nth-child(even) td{background:rgb(var(--text) / .035)}
+.tabla-em tbody tr:hover td{background:rgb(var(--accentTeal) / .09)}
+/* pantallas finales */
+.finales-grid{display:grid;grid-template-columns:repeat(auto-fill,220px);gap:16px}
+.final-card{display:flex;flex-direction:column;text-align:left;background:rgb(var(--surface));border:1px solid rgb(var(--border));border-radius:14px;padding:0;overflow:hidden;cursor:pointer;color:inherit;font:inherit;transition:.15s}
+.final-card:hover{border-color:rgb(var(--accentPurple));transform:translateY(-2px);box-shadow:0 14px 28px -18px rgba(0,0,0,.8)}
+.final-thumb{position:relative;height:300px;overflow:hidden;background:rgb(var(--surface2));border-bottom:1px solid rgb(var(--border));pointer-events:none}
+.final-thumb iframe{position:absolute;top:0;left:0;width:500px;height:820px;border:0;transform:scale(.44);transform-origin:top left}
+.final-info{padding:10px 12px 12px;display:flex;flex-direction:column;gap:3px}
+.final-info b{font-size:14px}
+.final-info span{font-size:12px;color:rgb(var(--textSec));line-height:1.4}

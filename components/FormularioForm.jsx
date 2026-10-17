@@ -12,26 +12,77 @@ import { letra } from '../lib/escalaLetra';
 const TARJETA = { background: 'rgb(var(--bg) / .45)', border: '1px solid rgb(var(--border))', borderLeft: '3px solid rgb(var(--accentTeal))', borderRadius: 14, padding: '16px 18px', marginBottom: 16 };
 
 
-// Texto de ayuda de una pregunta: respeta los saltos de línea (una línea debajo de la otra) y convierte los links
-// (http/https) en enlaces que se pueden tocar. Se arma con elementos de React, no con HTML crudo.
+// Link suelto dentro de un texto (se arma con elementos de React, no con HTML crudo).
+function conLinks(texto, keyBase = '') {
+  return String(texto).split(/(https?:\/\/[^\s]+)/g).map((p, i) => {
+    if (!/^https?:\/\//.test(p)) return <span key={keyBase + i}>{p}</span>;
+    const m = p.match(/^(.*?)([).,;:!?]*)$/);
+    return <span key={keyBase + i}><a href={m[1]} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline', wordBreak: 'break-all' }}>{m[1]}</a>{m[2]}</span>;
+  });
+}
+
+// "Facebook | https://..." → botón con el nombre de la red (se muestra solo el nombre, no la dirección larga).
+const RE_LINK_ROTULADO = /^\s*([^|\n]{1,40}?)\s*\|\s*(https?:\/\/\S+)\s*$/;
+const nombreBonito = (t) => { const x = t.trim(); return x === x.toUpperCase() ? x.charAt(0) + x.slice(1).toLowerCase() : x; };
+
+// Texto de ayuda de una pregunta. Las líneas "NOMBRE | link" se muestran como botones, un título en mayúsculas terminado en ":" como rótulo
+// chico, y el resto como párrafos (con los links tocables). Los saltos de línea se respetan.
 function Ayuda({ texto }) {
   if (!texto) return null;
-  const partes = String(texto).split(/(https?:\/\/[^\s]+)/g);
+  const lineas = String(texto).split('\n');
+  const bloques = []; // { tipo: 'p' | 'rotulo' | 'links' | 'espacio', ... }
+  lineas.forEach((l) => {
+    const m = l.match(RE_LINK_ROTULADO);
+    if (m) {
+      const ult = bloques[bloques.length - 1];
+      const item = { nombre: nombreBonito(m[1]), url: m[2].replace(/[).,;:!?]+$/, '') };
+      if (ult && ult.tipo === 'links') ult.items.push(item); else bloques.push({ tipo: 'links', items: [item] });
+    } else if (!l.trim()) {
+      if (bloques.length && bloques[bloques.length - 1].tipo !== 'espacio') bloques.push({ tipo: 'espacio' });
+    } else if (/^[^a-záéíóúñ]{3,60}:$/.test(l.trim()) && l.trim() === l.trim().toUpperCase()) {
+      bloques.push({ tipo: 'rotulo', texto: l.trim().replace(/:$/, '') });
+    } else {
+      bloques.push({ tipo: 'p', texto: l });
+    }
+  });
+  while (bloques.length && bloques[bloques.length - 1].tipo === 'espacio') bloques.pop();
   return (
-    <div className="quiz-help" style={{ whiteSpace: 'pre-line' }}>
-      {partes.map((p, i) => {
-        if (!/^https?:\/\//.test(p)) return <span key={i}>{p}</span>;
-        const m = p.match(/^(.*?)([).,;:!?]*)$/);
-        return <span key={i}><a href={m[1]} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline', wordBreak: 'break-all' }}>{m[1]}</a>{m[2]}</span>;
+    <div className="quiz-help">
+      {bloques.map((b, i) => {
+        if (b.tipo === 'espacio') return <div key={i} className="quiz-help-gap" />;
+        if (b.tipo === 'rotulo') return <div key={i} className="quiz-help-rotulo">{b.texto}</div>;
+        if (b.tipo === 'links') return (
+          <div key={i} className="quiz-help-links">
+            {b.items.map((it, j) => <a key={j} className="quiz-help-link" href={it.url} target="_blank" rel="noopener noreferrer" title={it.url}>{it.nombre}<span aria-hidden="true"> ↗</span></a>)}
+          </div>
+        );
+        return <div key={i} className="quiz-help-p">{conLinks(b.texto, i + '-')}</div>;
       })}
     </div>
   );
 }
 
-export default function FormularioForm({ form, vistaPrevia = false }) {
+// Introducción del formulario: la primera línea es la frase principal y las siguientes se muestran como puntos con tilde.
+function Intro({ texto }) {
+  const lineas = String(texto || '').split('\n').map((l) => l.trim()).filter(Boolean);
+  if (!lineas.length) return null;
+  const [lead, ...resto] = lineas;
+  return (
+    <div className="quiz-intro-box">
+      <div className="quiz-intro-lead">{conLinks(lead, 'l')}</div>
+      {resto.length > 0 && (
+        <ul className="quiz-intro-lista">
+          {resto.map((l, i) => <li key={i}><span className="tilde" aria-hidden="true">✓</span><span>{conLinks(l, i + '-')}</span></li>)}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+export default function FormularioForm({ form, vistaPrevia = false, ejemploFinal = false }) {
   const [val, setVal] = useState({ curso: cursoInicial(form) }); // '' = sin curso (ver cursoInicial)
   const [enviando, setEnviando] = useState(false);
-  const [enviado, setEnviado] = useState(false);
+  const [enviado, setEnviado] = useState(ejemploFinal);
   const [error, setError] = useState('');
 
   const set = (k, v) => { setVal((s) => ({ ...s, [k]: v })); setError(''); };
@@ -209,7 +260,7 @@ export default function FormularioForm({ form, vistaPrevia = false }) {
         <ControlLetraPublico oculto={vistaPrevia} />
       </div>
       <div className="quiz-body">
-        {form.intro && <div className="quiz-intro-box">{form.intro}</div>}
+        {form.intro && <Intro texto={form.intro} />}
         {/* Correo siempre primero (salvo en los formularios anónimos) */}
         {!form.anonimo && (
           <div className="quiz-field">

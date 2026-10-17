@@ -104,7 +104,7 @@ function corregirLocal(preguntas, resp) {
 // tocar la Sheet ni el localStorage del navegador: no verifica "ya completada", no envía nada
 // al servidor (corrige localmente nomás, para mostrar una pantalla final de ejemplo) y no lee
 // ni escribe ningún borrador real.
-export default function ActividadForm({ act, modoPreview = false, pasoInicial = 0 }) {
+export default function ActividadForm({ act, modoPreview = false, pasoInicial = 0, ejemploFinal = false }) {
   const draftInicial = useRef(null);
   if (draftInicial.current === null) draftInicial.current = modoPreview ? {} : (leerDraft(act.slug) || {});
 
@@ -116,7 +116,7 @@ export default function ActividadForm({ act, modoPreview = false, pasoInicial = 
   const [edicion, setEdicion] = useState(act.edicion || draftInicial.current.edicion || '');
   const [resp, setResp] = useState(draftInicial.current.resp || {});
   const [enviando, setEnviando] = useState(false);
-  const [resultado, setResultado] = useState(null);
+  const [resultado, setResultado] = useState(ejemploFinal ? { ok: true, puntaje: 8, total: 10, emailOk: true, local: true } : null);
   const [error, setError] = useState('');
   const [guardado, setGuardado] = useState(null); // null | 'ok' | 'guardando' | 'error'
   const [confirmarEnvio, setConfirmarEnvio] = useState(false);

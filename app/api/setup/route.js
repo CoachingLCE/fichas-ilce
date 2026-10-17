@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
-import { readHeaders, setHeaders } from '../../../lib/sheets';
-import { HEADERS } from '../../../lib/constants';
+import { readHeaders, setHeaders, asegurarPestana } from '../../../lib/sheets';
+import { HEADERS, TABS } from '../../../lib/constants';
+
+// Pestañas que se crean solas si faltan (Evaluaciones finales, v1.75.0).
+const CREAR_SI_FALTA = [TABS.EVALUACIONES, TABS.INTENTOS_EVAL, TABS.HABILITACIONES_EVAL];
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +27,7 @@ export async function GET(req) {
   const resultado = [];
   for (const [tab, headers] of Object.entries(HEADERS)) {
     try {
+      if (CREAR_SI_FALTA.includes(tab)) await asegurarPestana(tab, headers);
       const actuales = await readHeaders(tab);
       if (actuales.length > 0 && !force) {
         resultado.push({ tab, accion: 'sin cambios (ya tenía encabezados)', columnas: actuales.length });

@@ -45,7 +45,7 @@ export async function POST(req) {
   if (crear && ex) return NextResponse.json({ ok: false, error: 'Ya existe un formulario con ese enlace' }, { status: 409 });
   if (!crear && !ex) return NextResponse.json({ ok: false, error: 'No existe el formulario que se quiere editar' }, { status: 404 });
   // "Creado" se escribe una sola vez: se conserva si ya existía, se marca ahora si es nuevo.
-  const creado = ex ? (ex['Creado'] || '') : new Date().toISOString();
+  const creado = ex ? (ex['Creado'] || ex.Actualizado || '') : new Date().toISOString(); // fila previa sin "Creado": se fija con su primera fecha conocida (la de carga)
   const fila = [slug, titulo, tipo, estado, serializarCampos({ campos, cursoFijo, intro, especial, anonimo }), new Date().toISOString(), creado];
   try {
     if (ex) await updateRow(TABS.FORMULARIOS, ex._rowIndex, fila); else await appendRow(TABS.FORMULARIOS, fila);

@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import { APP_URL, estadoFechaReciente, colorCurso } from '../lib/constants';
-import { fechaCreacion } from '../lib/fechaCreacion';
+import { creadaEfectiva } from '../lib/fechaCreacion';
 import { SelectDropdown } from './SelectDropdown';
 import { tienePermisoEliminarRespuestas } from '../lib/permisos';
 import { useDialogos } from './Dialogos';
@@ -14,11 +14,20 @@ const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(
 
 // Mismo criterio y motivo que en Actividades (ver BadgeCreado en Actividades.jsx): "Creado" se
 // escribe una sola vez al crear el formulario, por eso sirve para esto y "Actualizado" no.
-function BadgeCreado({ iso }) {
-  const { tipo } = estadoFechaReciente(iso, 10);
+function BadgeCreado({ iso, actualizado }) {
+  // Si la fila no tiene "Creado" (se pegó a mano en la Sheet) se usa la fecha de carga, para que igual se note que es nueva.
+  const { tipo } = estadoFechaReciente(iso || actualizado, 10);
   if (tipo === 'hoy') return <span className="badge-fecha-hoy" title={'Cargado el ' + iso}>{'\ud83d\udfe2'} Cargado hoy</span>;
   if (tipo === 'nueva') return <span className="badge-fecha-nueva" title={'Cargado el ' + iso}>{'\u2728'} Nuevo</span>;
   return null;
+}
+
+// Mismo criterio que Fichas y Respuestas de actividades (estadoFechaReciente): hoy aparte, 1-9 días "nueva" parpadeando, y de ahí en más la fecha común.
+function CeldaFechaRecienteForm({ iso }) {
+  const { tipo } = estadoFechaReciente(iso);
+  if (tipo === 'hoy') return <span className="badge-fecha-hoy" title={iso}>{'\ud83d\udfe2'} Recibida hoy</span>;
+  if (tipo === 'nueva') return <span className="badge-fecha-nueva" title={iso}>{'\u2728'} Respuesta nueva</span>;
+  return <span title={iso}>{(iso || '').slice(0, 10)}</span>;
 }
 
 // "subInicial" lo usa Panel.jsx para abrir directo en "Respuestas" cuando se entra desde la
@@ -77,7 +86,9 @@ function Lista({ usuario, showToast, onNuevo, onEditar }) {
   // v1.41.0: chips para filtrar por tipo (Laboratorio, Masterclass, Encuesta…). Solo aparecen si hay 2 o más tipos distintos.
   const tiposForm = Array.from(new Set(forms.map((f) => (f.tipo || '').trim()).filter(Boolean)));
   const filtroVigente = filtroTipo === 'Todos' || tiposForm.includes(filtroTipo) ? filtroTipo : 'Todos';
-  const formsVista = filtroVigente === 'Todos' ? forms : forms.filter((f) => (f.tipo || '').trim() === filtroVigente);
+  const formsFiltrados = filtroVigente === 'Todos' ? forms : forms.filter((f) => (f.tipo || '').trim() === filtroVigente);
+  // Más nuevos primero (por fecha de creación; los anteriores a "Creado" caen por su última actualización).
+  const formsVista = [...formsFiltrados].sort((a, b) => creadaEfectiva(b.creado, b.actualizado).ms - creadaEfectiva(a.creado, a.actualizado).ms);
   return (
     <div>
       {tiposForm.length >= 2 && (
@@ -99,12 +110,12 @@ function Lista({ usuario, showToast, onNuevo, onEditar }) {
           <thead><tr><th>Formulario</th><th>Tipo</th><th>Estado</th><th>Campos</th><th>Respuestas</th><th>Creado</th><th>Enlace</th><th></th></tr></thead>
           <tbody>{formsVista.map((f) => (
             <tr key={f.slug}>
-              <td className="ins-name">{f.titulo} <BadgeCreado iso={f.creado} /></td>
+              <td className="ins-name">{f.titulo} <BadgeCreado iso={f.creado} actualizado={f.actualizado} /></td>
               <td>{f.tipo ? <span className="cchip">{f.tipo}</span> : '—'}</td>
               <td><span className={'fstate ' + (f.estado === 'Publicada' ? 'pub' : 'bor')}><span className="d" />{f.estado}</span></td>
               <td className="sec">{f.campos.length}</td>
               <td>{nResp(f) === null ? <span className="sec">…</span> : (nResp(f) > 0 ? <span className="cnt" style={{ fontWeight: 500 }}>{nResp(f)}</span> : <span className="sec">0</span>)}</td>
-              <td className="sec" title="Fecha de creación">{fechaCreacion(f.creado) || '—'}</td>
+              <td className="sec" title={creadaEfectiva(f.creado, f.actualizado).aprox ? 'Fecha aproximada: se muestra la de la última actualización' : 'Fecha de creación'}>{creadaEfectiva(f.creado, f.actualizado).texto ? (creadaEfectiva(f.creado, f.actualizado).aprox ? '~' : '') + creadaEfectiva(f.creado, f.actualizado).texto : '—'}</td>
               <td className="sec">/formulario/{f.slug}</td>
               <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                 <button className="btn-sm" onClick={() => { navigator.clipboard?.writeText(`${APP_URL}/formulario/${f.slug}`); showToast(' Enlace copiado'); }}>Copiar</button>{' '}
@@ -126,8 +137,8 @@ function Lista({ usuario, showToast, onNuevo, onEditar }) {
               <div className="pcard-title" title={f.titulo} style={{ fontSize: letra(16.5), whiteSpace: 'normal', lineHeight: 1.25 }}>{f.titulo}</div>
               <div className="pcard-datos">
                 <span>{f.campos.length} campos{nResp(f) !== null ? ` · ${nResp(f)} respuesta${nResp(f) === 1 ? '' : 's'}` : ''}</span>
-                <BadgeCreado iso={f.creado} />
-                {fechaCreacion(f.creado) && <span className="sec" title="Fecha de creación">Creado el {fechaCreacion(f.creado)}</span>}
+                <BadgeCreado iso={f.creado} actualizado={f.actualizado} />
+                {creadaEfectiva(f.creado, f.actualizado).texto && <span className="sec" title="Fecha de creación">Creado el {creadaEfectiva(f.creado, f.actualizado).aprox ? '~' : ''}{creadaEfectiva(f.creado, f.actualizado).texto}</span>}
               </div>
               <div className="pcard-url">
                 <span className="pcard-url-txt">/formulario/{f.slug}</span>
@@ -283,7 +294,7 @@ function Respuestas({ usuario, showToast, soloEspeciales }) {
           <tbody>{ordenadas.map((x) => (
             <tr key={x.id} className="fila-click" tabIndex={0} role="button" aria-label={`Ver la respuesta de ${x.nombre || x.email || 'una persona anónima'}`}
               onClick={() => setAbierto(x)} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setAbierto(x); } }}>
-              <td className="sec">{(x.fecha || '').slice(0, 10)}</td>
+              <td className="sec"><CeldaFechaRecienteForm iso={x.fecha} /></td>
               <td><b>{x.nombre || '—'}</b></td>
               <td className="sec">{x.email || 'Anónimo'}</td>
               <td>{x.curso || '—'}</td>

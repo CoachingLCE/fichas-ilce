@@ -9,6 +9,8 @@
 // de emoji. Ninguna fórmula ni endpoint cambia.
 import { Fragment, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { ESTADOS, CURSOS, colorCurso, inicialesCurso } from '../lib/constants';
+import ReportesEvaluaciones from './ReportesEvaluaciones';
+import { tienePermisoEvaluaciones } from '../lib/permisos';
 import { SelectDropdown, FiltroChip } from './SelectDropdown';
 import MiniChart from './MiniChart';
 import { agruparLugares, paisesDisponibles, normTxt as normLugar } from '../lib/localidades';
@@ -322,6 +324,8 @@ const NAV = [
   { v: 'formularios', l: 'Formularios', req: 'form', ic: 'folder', c: '#0891b2' },
   // Alertas (pedido de Diego): formularios publicados que llevan más de 30 días sin recibir respuestas. Naranja: los colores verde, amarillo y rojo están reservados para Estado.
   { v: 'alertas', l: 'Alertas', req: 'form', ic: 'alert', c: '#ea580c' },
+  // v1.75.0: Evaluaciones finales (aprobados, promedio, tiempo y preguntas más falladas).
+  { v: 'evaluaciones', l: 'Evaluaciones', req: 'eval', ic: 'check', c: '#d97706' },
 ];
 const PERIODOS = [
   { v: 'todo', l: 'Todo' }, { v: 'hoy', l: 'Hoy' }, { v: '7d', l: '7 días' },
@@ -775,7 +779,7 @@ export default function Reportes({ usuario, rows, puedeActividades, puedeFormula
       </div>
 
       <div className="repx-nav">
-        {NAV.filter((n) => (n.req === 'act' ? puedeActividades : n.req === 'form' ? puedeFormularios : true)).map((n) => {
+        {NAV.filter((n) => (n.req === 'act' ? puedeActividades : n.req === 'form' ? puedeFormularios : n.req === 'eval' ? tienePermisoEvaluaciones(usuario) : true)).map((n) => {
           const Icono = Ico[n.ic];
           const activo = sub === n.v;
           return (
@@ -855,6 +859,7 @@ export default function Reportes({ usuario, rows, puedeActividades, puedeFormula
         !formF ? <div className="spin" /> :
         <ReportesFormularios data={formF} irAConFiltro={irAConFiltro} />
       )}
+      {sub === 'evaluaciones' && tienePermisoEvaluaciones(usuario) && <ReportesEvaluaciones usuario={usuario} fCurso={fCurso} fEd={fEd} fDesde={fDesde} fHasta={fHasta} />}
       {sub === 'alertas' && puedeFormularios && (
         alertasError ? <div className="empty"><Ico.alert className="lg" /><h3>No se pudo cargar</h3><p>{alertasError}</p></div> :
         !alertasData ? <div className="spin" /> :

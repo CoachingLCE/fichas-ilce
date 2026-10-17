@@ -74,7 +74,7 @@ export async function POST(req) {
   const ex = filas.find((f) => f.Slug === slug);
   // "Creado" se escribe una sola vez: si ya existía, se conserva su valor original (aunque
   // esté vacío, por ser una actividad previa a este cambio); si es nueva, se marca ahora.
-  const creado = ex ? (ex['Creado'] || '') : new Date().toISOString();
+  const creado = ex ? (ex['Creado'] || ex.Actualizado || '') : new Date().toISOString(); // fila previa sin "Creado": se fija con su primera fecha conocida (la de carga), así editarla después no la hace pasar por nueva
   const fila = [slug, curso || '', titulo, estado || 'Publicada', def, new Date().toISOString(), creado];
   if (ex) await updateRow(TABS.ACTIVIDADES, ex._rowIndex, fila);
   else await appendRow(TABS.ACTIVIDADES, fila);

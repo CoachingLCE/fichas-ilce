@@ -1,4 +1,5 @@
 'use client';
+import { creadaEfectiva } from '../lib/fechaCreacion';
 import { useEffect, useMemo, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { CURSOS, APP_URL, colorCurso, inicialesCurso, estadoFechaReciente } from '../lib/constants';
 import { tienePermisoEliminarRespuestas } from '../lib/permisos';
@@ -115,6 +116,7 @@ export default Actividades;
 // Distintas formas de ordenar el listado de actividades (Diego pidió variantes,
 // sobre todo poder ver por clase dentro de un mismo curso).
 const ORDENES = [
+  { v: 'nuevas', l: 'Más nuevas primero' },
   { v: 'clase', l: 'Curso y clase' },
   { v: 'manual', l: 'Orden manual (arrastrar)' },
   { v: 'nombre', l: 'Nombre (A-Z)' },
@@ -126,7 +128,10 @@ function ordenarActividades(lista, orden) {
   const arr = [...lista];
   const claseNum = (a) => { const n = parseInt(a.clase, 10); return Number.isFinite(n) ? n : 9999; };
   const porTitulo = (a, b) => (a.titulo || '').localeCompare(b.titulo || '', 'es', { sensitivity: 'base' });
-  if (orden === 'nombre') arr.sort(porTitulo);
+  // Más nuevas primero: por fecha de creación; las anteriores a que existiera "Creado" caen por su última actualización.
+  const tCreada = (a) => creadaEfectiva(a.creado, a.actualizado).ms;
+  if (orden === 'nuevas') arr.sort((a, b) => (tCreada(b) - tCreada(a)) || porTitulo(a, b));
+  else if (orden === 'nombre') arr.sort(porTitulo);
   else if (orden === 'curso') arr.sort((a, b) => (a.curso || '').localeCompare(b.curso || '', 'es') || porTitulo(a, b));
   else if (orden === 'estado') arr.sort((a, b) => (a.estado || '').localeCompare(b.estado || '', 'es') || porTitulo(a, b));
   else if (orden === 'preguntas') arr.sort((a, b) => (b.preguntas?.length || 0) - (a.preguntas?.length || 0) || porTitulo(a, b));
@@ -573,23 +578,31 @@ function CursoConPunto({ curso }) {
 // hoy" el mismo día, "nueva" entre el día 1 y 10 (distinto del criterio de 1-9 de Fichas, por
 // eso el segundo parámetro). Usa "Creado" (ver lib/constants.js), que a diferencia de
 // "Actualizado" se escribe una sola vez y no cambia con cada edición posterior.
-function BadgeCreado({ iso }) {
-  const { tipo } = estadoFechaReciente(iso, 10);
+function BadgeCreado({ iso, actualizado }) {
+  // Si la fila no tiene "Creado" (se pegó a mano en la Sheet) se usa la fecha de carga, para que igual se note que es nueva.
+  const { tipo } = estadoFechaReciente(iso || actualizado, 10);
   if (tipo === 'hoy') return <span className="badge-fecha-hoy" title={'Cargada el ' + iso}>🟢 Cargada hoy</span>;
   if (tipo === 'nueva') return <span className="badge-fecha-nueva" title={'Cargada el ' + iso}> Nueva</span>;
   return null;
 }
 
+// Muestra la fecha de creación; si la fila no tiene "Creado" usa la de carga (Actualizado) y lo aclara con un "~".
+function FechaCreada({ creado, actualizado }) {
+  const c = creadaEfectiva(creado, actualizado);
+  if (!c.texto) return '—';
+  return <span title={c.aprox ? 'Fecha aproximada: esta fila no tiene la fecha de creación guardada, se muestra la de su última actualización' : 'Fecha de creación'}>{c.aprox ? '~' : ''}{c.texto}</span>;
+}
+
 function TablaActividades({ items, puedeGestionar, onEditar, onDuplicar, onDetalle, onGuardarCampo }) {
   return (
     <div className="tablewrap"><table>
-      <thead><tr><th>Actividad</th><th>Curso</th><th>Edición</th><th>Clase</th><th>Estado</th><th>Preguntas</th><th style={{ textAlign: 'right' }}>Acciones</th></tr></thead>
+      <thead><tr><th>Actividad</th><th>Curso</th><th>Edición</th><th>Clase</th><th>Estado</th><th>Preguntas</th><th>Creada</th><th style={{ textAlign: 'right' }}>Acciones</th></tr></thead>
       <tbody>{items.map((a) => {
         const efectivo = estadoEfectivoCliente(a);
         const badge = ESTADO_ICO[efectivo] || ESTADO_ICO.Publicada;
         return (
           <tr key={a.slug}>
-            <td className="ins-name acts-titlelink-cell"><button className="acts-titlelink" onClick={() => onDetalle(a)}>{a.titulo}</button> <BadgeCreado iso={a.creado} /></td>
+            <td className="ins-name acts-titlelink-cell"><button className="acts-titlelink" onClick={() => onDetalle(a)}>{a.titulo}</button> <BadgeCreado iso={a.creado} actualizado={a.actualizado} /></td>
             <td>{a.curso ? <CursoConPunto curso={a.curso} /> : ''}</td>
             <td>
               <CeldaEditable
@@ -606,6 +619,7 @@ function TablaActividades({ items, puedeGestionar, onEditar, onDuplicar, onDetal
             </td>
             <td><span className={'fstate fstate-liviana ' + badge.cls}><span className="d" />{efectivo}</span></td>
             <td className="sec">{a.preguntas.length}</td>
+            <td className="sec"><FechaCreada creado={a.creado} actualizado={a.actualizado} /></td>
             <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
               <a className="btn-sm" href={`${APP_URL}/actividad/${a.slug}`} target="_blank" rel="noreferrer" title="Abrir actividad"></a>{' '}
               {puedeGestionar && <button className="btn-sm" onClick={() => onDuplicar(a)} title="Duplicar">⧉</button>}{' '}
@@ -639,7 +653,8 @@ function GridActividades({ items, puedeGestionar, onEditar, onDuplicar, onDetall
             <div className="pcard-sub" title={sub}>{sub}</div>
             <div className="pcard-datos">
               <span className="pcard-datos-destacado">{a.preguntas.length} pregunta{a.preguntas.length === 1 ? '' : 's'}</span>
-              <BadgeCreado iso={a.creado} />
+              <BadgeCreado iso={a.creado} actualizado={a.actualizado} />
+              {creadaEfectiva(a.creado, a.actualizado).texto && <span className="sec" title="Fecha de creación">Creada el <FechaCreada creado={a.creado} actualizado={a.actualizado} /></span>}
             </div>
             <div className="pcard-url">
               <span className="pcard-url-txt">/actividad/{a.slug}</span>
@@ -752,7 +767,7 @@ const Lista = forwardRef(function Lista({ usuario, showToast, puedeGestionar, ir
   const [modo, setModo] = useState(null); // null | {tipo:'editor', base} | {tipo:'detalle', act}
   const [q, setQ] = useState('');
   const [vista, setVista] = useState('lista');
-  const [orden, setOrden] = useState('clase');
+  const [orden, setOrden] = useState('nuevas');
   const [agrupar, setAgrupar] = useState(false);
   const [fCurso, setFCurso] = useState(''); const [fEd, setFEd] = useState(''); const [fEstado, setFEstado] = useState('');
   const [mostrarArch, setMostrarArch] = useState(false);
@@ -760,12 +775,12 @@ const Lista = forwardRef(function Lista({ usuario, showToast, puedeGestionar, ir
   useEffect(() => {
     try {
       const v = localStorage.getItem('ilce-actividades-vista'); if (v === 'cards' || v === 'lista') setVista(v);
-      const o = localStorage.getItem('ilce-actividades-orden'); if (ORDENES.some((x) => x.v === o)) setOrden(o);
+      const o = localStorage.getItem('ilce-actividades-orden-v2'); if (ORDENES.some((x) => x.v === o)) setOrden(o);
       const g = localStorage.getItem('ilce-actividades-agrupar'); if (g === '1') setAgrupar(true);
     } catch { /* */ }
   }, []);
   const cambiarVista = (v) => { setVista(v); try { localStorage.setItem('ilce-actividades-vista', v); } catch { /* */ } };
-  const cambiarOrden = (v) => { setOrden(v); try { localStorage.setItem('ilce-actividades-orden', v); } catch { /* */ } };
+  const cambiarOrden = (v) => { setOrden(v); try { localStorage.setItem('ilce-actividades-orden-v2', v); } catch { /* */ } };
   const toggleAgrupar = () => { const v = !agrupar; setAgrupar(v); try { localStorage.setItem('ilce-actividades-agrupar', v ? '1' : '0'); } catch { /* */ } };
 
   useEffect(() => { cargar(); /* eslint-disable-next-line */ }, []);

@@ -12,11 +12,12 @@ import { letra } from '../lib/escalaLetra';
 
 const STEP_NAMES = ['Bienvenida', 'Edición y horario', 'Datos personales', 'Sobre vos', 'Revisión', '¡Listo!'];
 
-export default function FichaWizard({ def }) {
+// ejemploFinal: solo lo usa la pestaña Emails del panel para mostrar la pantalla final con datos de ejemplo (no guarda nada).
+export default function FichaWizard({ def, ejemploFinal = false }) {
   const { avisar } = useDialogos();
   const [errEnvio, setErrEnvio] = useState('');
-  const [step, setStep] = useState(0);
-  const [form, setForm] = useState({ pais: 'Argentina', waPais: 'AR' }); // waPais = país del número de WhatsApp (se autocompleta con el país de residencia; waManual = lo cambió la persona)
+  const [step, setStep] = useState(ejemploFinal ? 5 : 0);
+  const [form, setForm] = useState(ejemploFinal ? { pais: 'Argentina', waPais: 'AR', email: 'nombre@correo.com' } : { pais: 'Argentina', waPais: 'AR' }); // waPais = país del número de WhatsApp (se autocompleta con el país de residencia; waManual = lo cambió la persona)
   const [wa, setWa] = useState(null); // lib/whatsapp.js (validación de teléfonos, 39 KB): se carga en segundo plano al abrir la ficha
   const [errs, setErrs] = useState({});
   const [saved, setSaved] = useState('');      // texto del chip
@@ -25,7 +26,7 @@ export default function FichaWizard({ def }) {
   const [recover, setRecover] = useState(null); // {ts} si hay borrador
   const [enviando, setEnviando] = useState(false);
   const [trampa, setTrampa] = useState(''); // campo invisible: una persona no lo ve ni lo llena; un programa que completa todo, sí (se descarta esa ficha)
-  const [resultado, setResultado] = useState(null); // {ok, emailOk} tras enviar
+  const [resultado, setResultado] = useState(ejemploFinal ? { ok: true, emailOk: true, pago: { botones: [{ clave: 'contado', titulo: 'Pagar con Mercado Pago', link: '#' }, { clave: 'debito', titulo: 'Débito automático', link: '#' }] } } : null); // {ok, emailOk} tras enviar
   const saveTimer = useRef(null);
   const inicioRef = useRef(null);
 
@@ -33,6 +34,7 @@ export default function FichaWizard({ def }) {
 
   // --- init: token desde la URL o generado; recuperar borrador del navegador ---
   useEffect(() => {
+    if (ejemploFinal) return;
     const url = new URL(window.location.href);
     let t = url.searchParams.get('token');
     if (!t) {

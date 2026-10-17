@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSession } from '../lib/useSession';
-import { tienePermisoInscripciones, tienePermisoCambiarEstado, tienePermisoExportar, tienePermisoDashboard, tienePermisoConstructor, tienePermisoAccesos, tienePermisoActividades, tienePermisoGestionActividades, tienePermisoAsignarDocentes, tienePermisoEmails, tienePermisoAuditoria, tienePermisoFormularios, tienePermisoVerRespuestasActividades, tienePermisoVerRespuestasFormularios, puedeVerComoOtro, tienePermisoEliminarFichas } from '../lib/permisos';
+import { tienePermisoInscripciones, tienePermisoCambiarEstado, tienePermisoExportar, tienePermisoDashboard, tienePermisoConstructor, tienePermisoAccesos, tienePermisoActividades, tienePermisoGestionActividades, tienePermisoAsignarDocentes, tienePermisoEmails, tienePermisoAuditoria, tienePermisoFormularios, tienePermisoVerRespuestasActividades, tienePermisoVerRespuestasFormularios, tienePermisoEvaluaciones, puedeVerComoOtro, tienePermisoEliminarFichas } from '../lib/permisos';
 import { ESTADOS, normalizarEstado, nombreVisibleRoles, estiloCurso, colorCurso, estadoFechaReciente } from '../lib/constants';
 import { Isologo, IsologoDefs } from './Isologo';
 import ThemeSelector from './ThemeSelector';
@@ -25,6 +25,9 @@ import TourGuiado from './TourGuiado';
 import { SelectDropdown, FiltroChip } from './SelectDropdown';
 import { claveLugarFila } from '../lib/localidades';
 import ConstructorFormulario from './ConstructorFormulario';
+import ConstructorEvaluacion from './ConstructorEvaluacion';
+import EvaluacionesLista from './EvaluacionesLista';
+import RespuestasEvaluaciones from './RespuestasEvaluaciones';
 import { paginarPorMes } from '../lib/respuestasPorMes';
 import VerMasMeses from './VerMasMeses';
 import { letra } from '../lib/escalaLetra';
@@ -240,6 +243,9 @@ export default function Panel() {
   // Constructor de formularios: null = cerrado · { slug: null } = formulario nuevo · { slug: 'x' } = editar ese formulario.
   const [ctorForm, setCtorForm] = useState(null);
   const [vistaResp, setVistaResp] = useState(null);
+  // Evaluaciones finales: null = cerrado · { slug: null } = nueva · { slug: 'x' } = editar. "recargaEval" fuerza a la lista a volver a leer la planilla.
+  const [ctorEval, setCtorEval] = useState(null);
+  const [recargaEval, setRecargaEval] = useState(0);
   useEffect(() => {
     if (tab === 'fichas' && accionAlEntrar === 'ficha') { fichasRef.current?.abrirConstructor(preseedCrear?.curso); setAccionAlEntrar(null); setPreseedCrear(null); }
     if (tab === 'actividadesyformularios' && vistaAyF === 'actividades' && accionAlEntrar === 'actividad') { actividadesRef.current?.nueva(preseedCrear); setAccionAlEntrar(null); setPreseedCrear(null); }
@@ -257,6 +263,10 @@ export default function Panel() {
   function crearFormulario() {
     // Pedido de Diego: un formulario puede no tener curso, así que acá ya no se pide: se elige adentro del constructor.
     setCrearAbierto(false); setVistaAyF('formularios'); setTab('actividadesyformularios'); setCtorForm({ slug: null });
+  }
+  // v1.75.0: evaluación final — se abre su constructor dentro de "Actividades y formularios" → "Evaluaciones finales".
+  function crearEvaluacion() {
+    setCrearAbierto(false); setVistaAyF('evaluaciones'); setTab('actividadesyformularios'); setCtorEval({ slug: null });
   }
   // v1.41.0: actividades especiales (laboratorio, masterclass, caja de ideas…): se abre el constructor de formularios con la plantilla.
   function crearEspecial(actividad) {
@@ -453,7 +463,7 @@ export default function Panel() {
           </div>
           {/* "+ Crear" va primero, antes que Fichas — es el punto de entrada único para dar de
               alta una Inscripción, Actividad o Formulario (ver el selector más abajo). */}
-          {(tienePermisoConstructor(usuario) || tienePermisoGestionActividades(usuario) || tienePermisoFormularios(usuario)) && (
+          {(tienePermisoConstructor(usuario) || tienePermisoGestionActividades(usuario) || tienePermisoFormularios(usuario) || tienePermisoEvaluaciones(usuario)) && (
             <button data-tour="crear" className="btn btn-primary" style={{ flex: 'none', height: 36, padding: '0 16px', marginRight: 4 }} onClick={() => setCrearAbierto(true)}>+ Crear</button>
           )}
           {/* Pestañas atenuadas cuando el rol de la persona no tiene acceso a esa sección
@@ -533,12 +543,13 @@ export default function Panel() {
 
         {crearAbierto && (
           <CrearWizard
-            puede={{ inscripcion: tienePermisoConstructor(usuario), actividad: tienePermisoGestionActividades(usuario), formulario: tienePermisoFormularios(usuario), especial: tienePermisoFormularios(usuario) }}
+            puede={{ inscripcion: tienePermisoConstructor(usuario), actividad: tienePermisoGestionActividades(usuario), formulario: tienePermisoFormularios(usuario), especial: tienePermisoFormularios(usuario), evaluacion: tienePermisoEvaluaciones(usuario) }}
             onCerrar={() => setCrearAbierto(false)}
             onCrearActividad={crearActividad}
             onCrearFormulario={crearFormulario}
             onCrearInscripcion={crearInscripcion}
             onCrearEspecial={crearEspecial}
+            onCrearEvaluacion={crearEvaluacion}
           />
         )}
 
@@ -693,22 +704,30 @@ export default function Panel() {
         {tab === 'actividadesyformularios' && (() => {
           const puedeAct = tienePermisoActividades(usuario);
           const puedeForm = tienePermisoFormularios(usuario);
-          if (!puedeAct && !puedeForm) return <AccesoDenegado seccion="Actividades y formularios" />;
-          // Toggle fijo arriba: Actividades | Formularios (cada uno con sus propias sub-pestañas adentro).
-          const elegida = vistaAyF || (puedeForm && !puedeAct ? 'formularios' : 'actividades');
+          const puedeEval = tienePermisoEvaluaciones(usuario);
+          if (!puedeAct && !puedeForm && !puedeEval) return <AccesoDenegado seccion="Actividades y formularios" />;
+          // Toggle fijo arriba: Actividades | Formularios | Evaluaciones finales (cada uno con sus propias sub-pestañas adentro).
+          const disponibles = [puedeAct && 'actividades', puedeForm && 'formularios', puedeEval && 'evaluaciones'].filter(Boolean);
+          const elegida = disponibles.includes(vistaAyF) ? vistaAyF : disponibles[0];
           if (ctorForm && puedeForm) {
             return <ConstructorFormulario key={ctorForm.slug || (ctorForm.preseed ? 'nuevo-esp-' + ctorForm.preseed.actividad.tipo : 'nuevo')} usuario={usuario} slugInicial={ctorForm.slug} preseed={ctorForm.preseed} showToast={showToast} onVolver={() => setCtorForm(null)} />;
           }
+          if (ctorEval && puedeEval) {
+            return <ConstructorEvaluacion key={ctorEval.slug || 'nueva'} usuario={usuario} slugInicial={ctorEval.slug} showToast={showToast} onVolver={(guardo) => { setCtorEval(null); if (guardo) setRecargaEval((n) => n + 1); }} />;
+          }
           return (
             <>
-              {puedeAct && puedeForm && (
+              {disponibles.length > 1 && (
                 <div className="subtabs-pill">
-                  <button className={elegida === 'actividades' ? 'on' : ''} onClick={() => setVistaAyF('actividades')}> Actividades</button>
-                  <button className={elegida === 'formularios' ? 'on' : ''} onClick={() => setVistaAyF('formularios')}> Formularios</button>
+                  {puedeAct && <button className={elegida === 'actividades' ? 'on' : ''} onClick={() => setVistaAyF('actividades')}> Actividades</button>}
+                  {puedeForm && <button className={elegida === 'formularios' ? 'on' : ''} onClick={() => setVistaAyF('formularios')}> Formularios</button>}
+                  {puedeEval && <button className={elegida === 'evaluaciones' ? 'on' : ''} onClick={() => setVistaAyF('evaluaciones')}> Evaluaciones finales</button>}
                 </div>
               )}
               {elegida === 'actividades'
                 ? <Actividades ref={actividadesRef} usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} irABuscador={() => setTab('buscador')} irAReportes={() => setTab('reportes')} />
+                : elegida === 'evaluaciones'
+                ? <EvaluacionesLista usuario={usuario} showToast={showToast} puedeGestionar={puedeEval} recarga={recargaEval} onNueva={() => setCtorEval({ slug: null })} onEditar={(slug) => setCtorEval({ slug })} />
                 : <Formularios usuario={usuario} showToast={showToast} onNuevo={() => setCtorForm({ slug: null })} onEditar={(slug) => setCtorForm({ slug })} />}
             </>
           );
@@ -725,8 +744,11 @@ export default function Panel() {
                 {puedeAct && <button className={elegida === 'actividades' ? 'on' : ''} onClick={() => setVistaResp('actividades')}> Respuestas actividades</button>}
                 {puedeForm && <button className={elegida === 'formularios' ? 'on' : ''} onClick={() => setVistaResp('formularios')}> Respuestas formularios</button>}
                 {puedeForm && <button className={elegida === 'especiales' ? 'on' : ''} onClick={() => setVistaResp('especiales')}> Respuestas actividades especiales</button>}
+                <button className={elegida === 'evaluaciones' ? 'on' : ''} onClick={() => setVistaResp('evaluaciones')}> Respuestas evaluaciones finales</button>
               </div>
-              {elegida === 'actividades'
+              {elegida === 'evaluaciones'
+                ? <RespuestasEvaluaciones usuario={usuario} showToast={showToast} />
+                : elegida === 'actividades'
                 ? <Actividades usuario={usuario} showToast={showToast} puedeGestionar={tienePermisoGestionActividades(usuario)} irABuscador={() => setTab('buscador')} irAReportes={() => setTab('reportes')} subInicial="respuestas" />
                 : <Formularios key={elegida} usuario={usuario} showToast={showToast} subInicial="respuestas" soloEspeciales={elegida === 'especiales'} />}
             </>

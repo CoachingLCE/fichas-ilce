@@ -15,6 +15,15 @@ const PERIODOS = [
   { v: '30d', l: '30 d\u00edas' }, { v: 'mes', l: 'Este mes' },
 ];
 
+// Pantallas finales: lo que ve la persona al terminar cada espacio (página /vista-final/..., con datos de ejemplo).
+const PANTALLAS_FINALES = [
+  { tipo: 'ficha', titulo: 'Ficha de inscripción', desc: 'Al enviar la ficha: confirmación, aviso del correo y botones de pago.' },
+  { tipo: 'formulario', titulo: 'Formulario', desc: 'Al enviar un formulario o una actividad especial.' },
+  { tipo: 'actividad', titulo: 'Actividad', desc: 'Al terminar una actividad: puntaje y detalle por correo.' },
+  { tipo: 'evaluacion-aprobada', titulo: 'Evaluación final · aprobó', desc: 'Resultado, diploma y revisión de las respuestas.' },
+  { tipo: 'evaluacion-no-aprobada', titulo: 'Evaluación final · no aprobó', desc: 'Resultado, intentos que quedan y revisión.' }
+];
+
 // Correos que ya tienen vista previa (usan la misma plantilla que se envía).
 const PREVIEWABLES = new Set([
   'Confirmación inscripción', 'Aviso equipo', 'Credenciales acceso',
@@ -25,7 +34,7 @@ const PREVIEWABLES = new Set([
 // lib/mailer.js). "Credenciales acceso" queda afuera a propósito: no guarda payload reintentable
 // porque incluiría la contraseña en texto plano una segunda vez en la planilla.
 const REINTENTABLES = new Set([
-  'Confirmación inscripción', 'Aviso equipo', 'Resultado actividad', 'Aviso actividad docente', 'Resumen viernes', 'Resumen inscripciones'
+  'Confirmación inscripción', 'Aviso equipo', 'Resultado actividad', 'Aviso actividad docente', 'Resultado evaluación final', 'Aviso evaluación final equipo', 'Resumen viernes', 'Resumen inscripciones'
 ]);
 
 // Pedido de Diego (referencia: disponibilidad-zoom/emails): que la columna "Tipo" se distinga
@@ -38,6 +47,8 @@ const TIPO_COLOR = {
   'Credenciales acceso': { bg: 'rgba(251,191,36,.15)', fg: 'rgb(251 191 36)' },
   'Resultado actividad': { bg: 'rgba(74,222,128,.14)', fg: 'rgb(74 222 128)' },
   'Aviso actividad docente': { bg: 'rgba(192,38,211,.15)', fg: 'rgb(224 110 236)' },
+  'Resultado evaluación final': { bg: 'rgba(45,212,191,.14)', fg: 'rgb(45 212 191)' },
+  'Aviso evaluación final equipo': { bg: 'rgba(244,114,182,.14)', fg: 'rgb(244 114 182)' },
   'Resumen viernes': { bg: 'rgba(59,130,246,.15)', fg: 'rgb(96 165 250)' },
   'Resumen inscripciones': { bg: 'rgba(249,115,22,.15)', fg: 'rgb(251 146 60)' }
 };
@@ -48,6 +59,8 @@ const AUTOMATIZACIONES = [
   { evento: 'Se crea un usuario / se da acceso a un docente', para: 'Al usuario (con su contraseña)', remitente: 'Plataforma ILCE', cc: '—', asunto: 'Tu acceso al panel de ILCE', tipo: 'Credenciales acceso' },
   { evento: 'El estudiante responde una actividad (Postwork)', para: 'Al estudiante (con su puntaje)', remitente: 'Instituto ILCE', cc: '—', asunto: 'Resultado de tu actividad · [actividad]', tipo: 'Resultado actividad' },
   { evento: 'El estudiante responde una actividad (Postwork)', para: 'Al/los docente(s) del curso/edición', remitente: 'Instituto ILCE', cc: '—', asunto: ' [estudiante] completó “[actividad]” · [puntaje]/[total]', tipo: 'Aviso actividad docente' },
+  { evento: 'El estudiante termina una evaluación final', para: 'Al estudiante (con su resultado)', remitente: 'Instituto ILCE', cc: '—', asunto: 'Resultado de tu evaluación final · [evaluación]', tipo: 'Resultado evaluación final' },
+  { evento: 'El estudiante termina una evaluación final', para: 'Al equipo cargado en esa evaluación', remitente: 'Instituto ILCE', cc: '—', asunto: '[estudiante] · [evaluación] · Aprobó / No aprobó', tipo: 'Aviso evaluación final equipo' },
   { evento: 'Todos los viernes (automático) — actividades y formularios de la semana, y las alertas de formularios sin respuestas hace más de 30 días', para: 'Sofía, Paula, Lourdes, Victoria y Diego', remitente: 'Plataforma ILCE', cc: '—', asunto: ' Resumen semanal · N actividades y M formularios', tipo: 'Resumen viernes' },
   { evento: 'Todos los viernes a las 10 h (automático) — fichas de inscripción recibidas en la semana', para: 'Macarena, Alexander y Jesabel', remitente: 'Plataforma ILCE', cc: '—', asunto: ' Fichas de inscripción de la semana · N fichas', tipo: 'Resumen inscripciones' }
 ];
@@ -61,6 +74,7 @@ export default function EmailsPanel({ usuario }) {
   // traer el resto si hace falta (ver "verTodo" más abajo).
   const [periodo, setPeriodo] = useState('mes');
   const [fDesde, setFDesde] = useState(primerDiaMes()); const [fHasta, setFHasta] = useState(hace(0));
+  const [pantalla, setPantalla] = useState(null); // pantalla final abierta en grande
   const [preview, setPreview] = useState(null); // { tipo, asunto, html, loading, error, ejemplo }
   const [detalle, setDetalle] = useState(null); // { fecha, tipo, para, asunto, detalle }
   const [reintentando, setReintentando] = useState(null); // índice de fila en curso
@@ -168,13 +182,13 @@ export default function EmailsPanel({ usuario }) {
   return (
     <div>
       {/* Automatizaciones */}
-      <div className="panel">
+      <div className="panel panel-em panel-em-auto">
         <div className="sechead">
           <span className="htitle">Mails automáticos que genera el sistema</span>
           <span className="hcount">{AUTOMATIZACIONES.length} automatización(es)</span>
         </div>
         <p className="muted" style={{ fontSize: 12.5, margin: '0 0 10px' }}>Tocá un correo con  para ver una vista previa de lo que recibe la persona.</p>
-        <div className="tablewrap" style={{ maxHeight: 'none' }}>
+        <div className="tablewrap tabla-em" style={{ maxHeight: 'none' }}>
           <table>
             <thead><tr><th style={{ minWidth: 210 }}>Cuándo se envía</th><th style={{ minWidth: 190 }}>A quién</th><th style={{ minWidth: 150 }}>De / CC</th><th style={{ minWidth: 240 }}>Asunto</th><th style={{ minWidth: 180 }}>Tipo</th></tr></thead>
             <tbody>{AUTOMATIZACIONES.map((a, i) => {
@@ -193,14 +207,33 @@ export default function EmailsPanel({ usuario }) {
         </div>
       </div>
 
+      {/* Pantallas finales */}
+      <div className="panel panel-em panel-em-finales">
+        <div className="sechead">
+          <span className="htitle">Pantallas finales: lo que ve la persona al terminar</span>
+          <span className="hcount">{PANTALLAS_FINALES.length} pantallas</span>
+        </div>
+        <p className="muted" style={{ fontSize: 12.5, margin: '0 0 14px' }}>Así se ve la última pantalla de cada espacio (con datos de ejemplo). Tocá una para verla en grande.</p>
+        <div className="finales-grid">
+          {PANTALLAS_FINALES.map((p) => (
+            <button key={p.tipo} type="button" className="final-card" onClick={() => setPantalla(p)}>
+              <div className="final-thumb"><iframe title={p.titulo} src={`/vista-final/${p.tipo}`} loading="lazy" tabIndex={-1} /></div>
+              <div className="final-info"><b>{p.titulo}</b><span>{p.desc}</span></div>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Registro en vivo */}
-      <div className="panel">
+      <div className="panel panel-em panel-em-log">
         <div className="sechead">
           <span className="htitle">Registro de envíos</span>
           <span className="hcount">{emails ? filtrados.length : 0} envío(s)</span>
           {hayMasAfuera && <button className="linklike" style={{ fontSize: 12 }} onClick={() => aplicarPeriodo('todo')}>Ver el resto (fuera de este mes) →</button>}
-          <span className="grow" />
-          <div className="fsearch" style={{ maxWidth: 240, flex: 'none' }}> <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar…" /></div>
+        </div>
+
+        <div className="em-toolbar">
+          <div className="fsearch" style={{ maxWidth: 280, flex: 1 }}> <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar…" /></div>
           <button className="btn-sm" disabled={!emails || filtrados.length === 0} onClick={exportarEnvios}> Exportar CSV</button>
         </div>
 
@@ -212,6 +245,7 @@ export default function EmailsPanel({ usuario }) {
           </div>
         )}
 
+        <div className="em-filtros">
         <div className="fchips" style={{ margin: '0 0 10px' }}>
           {PERIODOS.map((p) => <button key={p.v} className={'fchip' + (periodo === p.v ? ' on' : '')} onClick={() => aplicarPeriodo(p.v)}>{p.l}</button>)}
         </div>
@@ -219,6 +253,7 @@ export default function EmailsPanel({ usuario }) {
           <select className="fsel" value={fTipo} onChange={(e) => setFTipo(e.target.value)}><option value="">Tipo: todos</option>{tipos.map((t) => <option key={t}>{t}</option>)}</select>
           <select className="fsel" value={fEstado} onChange={(e) => setFEstado(e.target.value)}><option value="">Estado: todos</option><option>Enviado</option><option>Falló</option></select>
           {hayFiltros && <button className="btn-sm" onClick={limpiarFiltros}>Limpiar filtros</button>}
+        </div>
         </div>
         {chips.length > 0 && (
           <div className="repx-chips-row">
@@ -233,7 +268,7 @@ export default function EmailsPanel({ usuario }) {
              más chica, columnas más angostas y "Para"/"Asunto" truncados con "…" (el texto
              completo queda disponible al pasar el mouse, por el title). Altura del contenedor
              también un poco más alta ("agrandar un poco más la tabla"). */
-          <div className="tablewrap tablewrap-emailslog" style={{ maxHeight: '72vh' }}><table>
+          <div className="tablewrap tablewrap-emailslog tabla-em" style={{ maxHeight: '72vh' }}><table>
             <thead><tr><th style={{ minWidth: 120 }}>Fecha</th><th style={{ minWidth: 110 }}>Tipo</th><th style={{ minWidth: 160 }}>Para</th><th style={{ minWidth: 170 }}>Asunto</th><th style={{ minWidth: 72 }}>Estado</th><th style={{ minWidth: 120 }}>Acciones</th></tr></thead>
             <tbody>{filtrados.map((e, i) => {
               const fallo = e.estado !== 'Enviado';
@@ -266,6 +301,22 @@ export default function EmailsPanel({ usuario }) {
           </table></div>
         )}
       </div>
+
+      {/* Modal de pantalla final en grande */}
+      {pantalla && (
+        <div className="preview-ov" onClick={() => setPantalla(null)}>
+          <div className="preview-card" onClick={(e) => e.stopPropagation()} style={{ width: 520 }}>
+            <div className="preview-head">
+              <div style={{ minWidth: 0 }}>
+                <div className="preview-kd">Pantalla final · datos de ejemplo</div>
+                <div className="preview-asunto">{pantalla.titulo}</div>
+              </div>
+              <button className="btn-sm" onClick={() => setPantalla(null)}> Cerrar</button>
+            </div>
+            <div className="preview-body"><iframe title={pantalla.titulo} src={`/vista-final/${pantalla.tipo}`} className="preview-frame" /></div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de detalle de error */}
       {detalle && (
