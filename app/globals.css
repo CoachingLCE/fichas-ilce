@@ -1505,7 +1505,7 @@ tr.clickable .repx-cellbar:hover .fl{filter:brightness(1.15)}
 .tnav{height:29px;padding:0 10px;font-size:12.5px}
 .topnav-right{gap:7px}
 .fdrop-vercomo{width:132px}
-.iconbtn{width:29px;height:29px}
+.iconbtn{width:36px;height:36px;flex:0 0 auto}
 .topnav-user{font-size:12.5px}
 
 /* ═══════════ Rediseño de densidad/tipografía — tab=fichas y tab=respuestas (pedido de

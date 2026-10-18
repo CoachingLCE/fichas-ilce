@@ -12,7 +12,7 @@ const APLICACIONES = [
   { icono: '💲', color: '#22c55e', nombre: 'Valores de los cursos', desc: 'Productos, descuentos y links de pago', url: 'https://seguimiento-lead-estudiante.vercel.app/productos-valores' },
   { icono: '💬', color: '#22d3ee', nombre: 'Feedback', desc: 'Feedback de estudiantes y su panel', url: 'https://ilce-feedback.vercel.app/admin' },
   { icono: '📋', color: '#8b5cf6', nombre: 'Encuestas', desc: '', url: 'https://encuestas-ilce.vercel.app/' },
-  { icono: '☑️', color: '#14b8a6', nombre: 'Todo-Tareas', desc: 'Tareas con respaldo en la nube', url: 'https://todo-tareas-navy.vercel.app/' },
+  { icono: '☑️', color: '#14b8a6', nombre: 'Todo-Tareas', desc: 'Tareas con respaldo en la nube', url: 'https://todo-tareas-ilce.vercel.app/' },
   { icono: '✍️', color: '#a855f7', nombre: 'Firma de contratos', desc: 'Firma digital de contratos docentes', url: 'https://ilce-firma-contratos.vercel.app/' }
 ];
 
