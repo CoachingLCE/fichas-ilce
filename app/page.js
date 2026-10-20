@@ -12,6 +12,9 @@ export default function LoginRoot() {
   const [mantenerSesion, setMantenerSesion] = useState(true);
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
+  const [modo, setModo] = useState('ingreso');            // 'ingreso' | 'olvide'
+  const [avisoOlvide, setAvisoOlvide] = useState('');
+  const [errorOlvide, setErrorOlvide] = useState('');
   const { login } = useSession();
   const router = useRouter();
 
@@ -32,6 +35,17 @@ export default function LoginRoot() {
     } finally { setCargando(false); }
   }
 
+  async function pedirEnlace(e) {
+    e.preventDefault(); setErrorOlvide(''); setAvisoOlvide(''); setCargando(true);
+    try {
+      const res = await fetch('/api/auth/olvide', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) { setErrorOlvide(d.error || 'No se pudo enviar el enlace.'); return; }
+      setAvisoOlvide(d.mensaje || 'Listo: si ese correo tiene acceso, te enviamos un enlace.');
+    } catch { setErrorOlvide('Error de conexión. Probá de nuevo.'); }
+    finally { setCargando(false); }
+  }
+
   return (
     <div className="flex justify-center pt-24 px-6">
       <IsologoDefs />
@@ -39,7 +53,18 @@ export default function LoginRoot() {
       <div className="w-80 bg-surface2 border border-border rounded-2xl p-7">
         <div className="flex justify-center mb-3"><Isologo size={44} /></div>
         <h1 className="text-center font-display text-lg font-bold text-text leading-tight">Fichas</h1>
-        <p className="text-center text-textSec text-[13px] mb-5 mt-0.5">Ingresá con tu usuario y contraseña</p>
+        <p className="text-center text-textSec text-[13px] mb-5 mt-0.5">{modo === 'olvide' ? 'Te enviamos un enlace para elegir una contraseña nueva' : 'Ingresá con tu usuario y contraseña'}</p>
+        {modo === 'olvide' ? (
+          <form onSubmit={pedirEnlace} data-form-olvide>
+            <label htmlFor="olvide-email" className="text-[13px] font-semibold text-textSec block mb-1">Email</label>
+            <input id="olvide-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nombre@institutoilce.com" className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm mb-3" />
+            {errorOlvide && <p role="alert" className="text-warningText text-[13px] mb-3" data-error-olvide>{errorOlvide}</p>}
+            {avisoOlvide && <p role="status" className="text-successText text-[13px] mb-3" data-aviso-olvide>{avisoOlvide}</p>}
+            <button type="submit" disabled={cargando} className="w-full bg-gradient-to-r from-accentPurple to-accentMagenta text-white rounded-lg py-2.5 font-semibold text-sm disabled:opacity-60">{cargando ? 'Enviando…' : (avisoOlvide ? 'Enviar de nuevo' : 'Enviarme el enlace')}</button>
+            <button type="button" onClick={() => { setModo('ingreso'); setErrorOlvide(''); setAvisoOlvide(''); }} className="block w-full text-center text-[13px] text-textSec underline mt-3 min-h-[32px]" data-volver-ingreso>Volver a ingresar</button>
+          </form>
+        ) : (
+        <>
         <form onSubmit={handleSubmit}>
           <label htmlFor="login-email" className="text-[13px] font-semibold text-textSec block mb-1">Email</label>
           <input id="login-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
@@ -71,6 +96,9 @@ export default function LoginRoot() {
             {cargando ? 'Ingresando…' : 'Ingresar'}
           </button>
         </form>
+        <button type="button" onClick={() => { setModo('olvide'); setError(''); }} className="block w-full text-center text-[13px] text-textSec underline mt-3 min-h-[32px]" data-olvide>¿Olvidaste tu contraseña?</button>
+        </>
+        )}
         <p className="text-textMuted text-[13px] text-center mt-3">
           ¿No tenés contraseña todavía? Pedísela a un administrador.
         </p>
