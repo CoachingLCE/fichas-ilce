@@ -4,7 +4,7 @@ import { readSheet, appendRow, updateRow } from '../../../lib/sheets';
 import { decryptPassword, hashPassword, generarTemporal, estadoPassword } from '../../../lib/passwords';
 import { enviarMailContrasena } from '../../../lib/mailer';
 import { registrarAccion } from '../../../lib/auditoria';
-import { PASSWORD_GENERICA, TABS } from '../../../lib/constants';
+import { PASSWORD_GENERICA, TABS, rolesDeTexto } from '../../../lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,10 +65,10 @@ export async function PATCH(request) {
 
   // Proteger al último Admin
   const tocaQuitarAdmin =
-    (body.nuevosRoles !== undefined && !body.nuevosRoles.includes('Admin') && (target.Roles || '').includes('Admin')) ||
-    (body.activo === false && (target.Roles || '').includes('Admin'));
+    (body.nuevosRoles !== undefined && !body.nuevosRoles.includes('Admin') && rolesDeTexto(target.Roles).includes('Admin')) ||
+    (body.activo === false && rolesDeTexto(target.Roles).includes('Admin'));
   if (tocaQuitarAdmin) {
-    const admins = usuarios.filter((u) => (u.Roles || '').includes('Admin') && (u.Activo || '') !== 'FALSE');
+    const admins = usuarios.filter((u) => rolesDeTexto(u.Roles).includes('Admin') && (u.Activo || '') !== 'FALSE');
     if (admins.length <= 1) return NextResponse.json({ error: 'No se puede desactivar/sacarle el rol al último administrador.' }, { status: 400 });
   }
 
@@ -103,8 +103,8 @@ export async function DELETE(request) {
   const target = usuarios.find((u) => (u.Email || '').toLowerCase() === (body.targetEmail || '').toLowerCase());
   if (!target) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
 
-  if ((target.Roles || '').includes('Admin')) {
-    const admins = usuarios.filter((u) => (u.Roles || '').includes('Admin'));
+  if (rolesDeTexto(target.Roles).includes('Admin')) {
+    const admins = usuarios.filter((u) => rolesDeTexto(u.Roles).includes('Admin'));
     if (admins.length <= 1) return NextResponse.json({ error: 'No se puede eliminar al último administrador.' }, { status: 400 });
   }
   // Sin deleteRows en este proyecto: vaciamos la fila (queda ignorada por findUsuario).

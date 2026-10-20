@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { readSheet } from '../../../lib/sheets';
-import { TABS } from '../../../lib/constants';
+import { TABS, rolesDeTexto } from '../../../lib/constants';
 import { findUsuario, usuarioDeSolicitud } from '../../../lib/auth';
 import { puedeVerComoOtro } from '../../../lib/permisos';
 
@@ -19,7 +19,7 @@ export async function GET(req) {
     .map((u) => ({
       email: u.Email,
       nombre: u.Nombre || u.Email,
-      roles: (u.Roles || '').split(/[,+]/).map((r) => r.trim()).filter(Boolean)
+      roles: rolesDeTexto(u.Roles)
     }))
     .filter((p) => p.email.toLowerCase() !== usuario.email.toLowerCase())
     .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));

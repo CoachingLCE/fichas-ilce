@@ -1,6 +1,6 @@
 'use client';
 import { Fragment, useEffect, useMemo, useState } from 'react';
-import { ROLES } from '../lib/constants';
+import { ROLES, rolesDeTexto } from '../lib/constants';
 import { TIPOS_CAP, GRUPOS_ROLES, INFO_ROL, capacidadesDe, nombreRol } from '../lib/rolesInfo';
 import { RolChip, RolesChips } from './RolChip';
 
@@ -8,7 +8,7 @@ import { RolChip, RolesChips } from './RolChip';
 const IC = { ok: '', err: '', permisos: '', editar: '', eliminar: '', ver: '', clave: '', buscar: '', personas: '' };
 const ICONO_TIPO = { c: IC.ver, g: IC.editar, a: IC.clave };
 
-const rolesDe = (u) => (u.Roles || '').split(/[,+]/).map((r) => r.trim()).filter(Boolean);
+const rolesDe = (u) => rolesDeTexto(u.Roles);
 const inicial = (u) => ((u.Nombre || u.Email || '?').trim()[0] || '?').toUpperCase();
 
 // Chips de funciones permitidas, agrupadas por tipo (consulta / gestión / administración).
