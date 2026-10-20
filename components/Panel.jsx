@@ -25,6 +25,9 @@ import TourGuiado from './TourGuiado';
 import { RolesChips } from './RolChip';
 import { SelectDropdown, FiltroChip } from './SelectDropdown';
 import { claveLugarFila } from '../lib/localidades';
+import BuscadorFijo, { irADestino } from './BuscadorFijo';
+import QueNecesitas from './QueNecesitas';
+import { buscarGuia, tareasDe } from '../lib/guiaFichas';
 import ConstructorFormulario from './ConstructorFormulario';
 import ConstructorEvaluacion from './ConstructorEvaluacion';
 import EvaluacionesLista from './EvaluacionesLista';
@@ -284,6 +287,13 @@ export default function Panel() {
   }
   function editarFicha(slug) { setConstructorSlug(slug); setTab('constructor'); }
   function verInscripcionesDe(curso) { setFCurso(curso); setTab('inscripciones'); }
+  // Destino del buscador fijo y de las tarjetas "¿Qué necesitás hacer?": una solapa, "+ Crear", o algo que ya existe (contraseña, ayuda, novedades).
+  function irGuia(d) {
+    if (!d) return;
+    if (d.tab) { setTab(d.tab); if (d.tab === 'actividadesyformularios') setVistaAyF(null); if (d.tab === 'respuestas') setVistaResp(null); try { window.scrollTo(0, 0); } catch { /* */ } }
+    else if (d.accion === 'crear') setCrearAbierto(true);
+    else irADestino(d, null);
+  }
   // Un solo punto de entrada para "apretar un número/chip del Dashboard y ver de qué fichas
   // se trata": pone ESE filtro puntual (sin tocar los demás que ya estén activos) y salta a
   // Fichas completadas.
@@ -471,6 +481,7 @@ export default function Panel() {
             <Isologo size={32} />
             <span className="topnav-brand-txt">Fichas</span>
           </div>
+          <div className="px-1 pb-2 hidden lg:block" data-buscador-lateral><BuscadorFijo buscar={(q) => buscarGuia(q, usuario)} onIr={irGuia} /></div>
           {/* "+ Crear" va primero, antes que Fichas — es el punto de entrada único para dar de
               alta una Inscripción, Actividad o Formulario (ver el selector más abajo). */}
           {(tienePermisoConstructor(usuario) || tienePermisoGestionActividades(usuario) || tienePermisoFormularios(usuario) || tienePermisoEvaluaciones(usuario)) && (
@@ -564,9 +575,13 @@ export default function Panel() {
           />
         )}
 
+        <div className="lg:hidden mb-3" data-buscador-movil><BuscadorFijo buscar={(q) => buscarGuia(q, usuario)} onIr={irGuia} placeholder="Buscar una tarea o pantalla" /></div>
+
         <PausaSemanal />
 
         {tab === 'buscador' && <Buscador usuario={usuario} irA={(t) => setTab(t)} setQInscripciones={setQ} />}
+        {/* "¿Qué necesitás hacer?" (estilo del Manual académico): tarjetas por tarea, según lo que la persona puede hacer */}
+        {tab === 'fichas' && <QueNecesitas tareas={tareasDe(usuario)} visibles={5} onIr={irGuia} />}
         {tab === 'fichas' && <FichasSection ref={fichasRef} usuario={usuario} rows={rows} onEditar={editarFicha} onVerInscripciones={verInscripcionesDe} irAInscripciones={() => setTab('inscripciones')} showToast={showToast} puedeEditar={tienePermisoConstructor(usuario)} irABuscador={() => setTab('buscador')} />}
         {tab === 'herramientas' && <Herramientas />}
         {error && <div className="note" style={{ borderLeftColor: 'rgb(248 113 113)' }}>{error}</div>}
