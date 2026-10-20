@@ -13,6 +13,7 @@ const APLICACIONES = [
   { icono: '💬', color: '#22d3ee', nombre: 'Feedback', desc: 'Feedback de estudiantes y su panel', url: 'https://ilce-feedback.vercel.app/admin' },
   { icono: '📋', color: '#8b5cf6', nombre: 'Encuestas', desc: '', url: 'https://encuestas-ilce.vercel.app/' },
   { icono: '☑️', color: '#14b8a6', nombre: 'Todo-Tareas', desc: 'Tareas con respaldo en la nube', url: 'https://todo-tareas-ilce.vercel.app/' },
+  { icono: '❓', color: '#f59e0b', nombre: 'Preguntas frecuentes', desc: 'Páginas públicas de ayuda y su panel', url: 'https://preguntasfrecuentes-kappa.vercel.app/panel' },
   { icono: '✍️', color: '#a855f7', nombre: 'Firma de contratos', desc: 'Firma digital de contratos docentes', url: 'https://ilce-firma-contratos.vercel.app/' }
 ];
 
