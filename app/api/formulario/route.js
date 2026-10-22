@@ -5,6 +5,7 @@ import { getFormulario } from '../../../lib/formularios';
 import { cursoAGuardar } from '../../../lib/formularioCurso';
 import { validarEmail, validarValorCampo } from '../../../lib/validacion';
 import { limitador, ipDe, MIN10 } from '../../../lib/limiteRitmo';
+import { enviarConfirmacionFormulario } from '../../../lib/mailer';
 import { demasiadoGrande } from '../../../lib/entradaPublica';
 
 export const dynamic = 'force-dynamic';
@@ -41,5 +42,22 @@ export async function POST(req) {
   } catch (e) {
     return NextResponse.json({ ok: false, error: 'No se pudo guardar' }, { status: 500 });
   }
-  return NextResponse.json({ ok: true });
+  // v1.86.0: correo automático de confirmación, si el formulario lo tiene activado. Nunca hace fallar el envío del formulario: la respuesta ya quedó guardada.
+  // Como el correo sale de ILCE hacia una dirección que escribe cualquiera, hay dos topes (en memoria, mejor esfuerzo): por dirección y por formulario.
+  // El tope por formulario cuida la cuota diaria de Gmail (ya se agotó una vez, el 03/10/2026, con un envío masivo).
+  let correo = 'no';
+  const em = form.confirmacion && form.confirmacion.email;
+  if (em && em.activo && !form.anonimo && r.email) {
+    const HORA = 6 * MIN10;
+    const porDireccion = limitador.intentar(`formmail:${slug}:${String(r.email).toLowerCase()}`, 2, HORA);
+    const porFormulario = porDireccion.permitido ? limitador.intentar(`formmail:todos:${slug}`, 300, HORA) : { permitido: false };
+    if (!porDireccion.permitido || !porFormulario.permitido) correo = 'limitado';
+    else {
+      try {
+        await enviarConfirmacionFormulario({ email: String(r.email).trim(), nombre: String(r.nombre || '').trim().slice(0, 80), formulario: form.titulo, curso: cursoAGuardar(form, r) || '', asunto: em.asunto, cuerpo: em.cuerpo, botones: em.botones });
+        correo = 'enviado';
+      } catch { correo = 'fallo'; }
+    }
+  }
+  return NextResponse.json({ ok: true, correo });
 }

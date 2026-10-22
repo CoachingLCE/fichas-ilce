@@ -27,14 +27,14 @@ const PANTALLAS_FINALES = [
 // Correos que ya tienen vista previa (usan la misma plantilla que se envía).
 const PREVIEWABLES = new Set([
   'Confirmación inscripción', 'Aviso equipo', 'Credenciales acceso',
-  'Resultado actividad', 'Aviso actividad docente', 'Resumen viernes', 'Resumen inscripciones'
+  'Resultado actividad', 'Aviso actividad docente', 'Resumen viernes', 'Resumen inscripciones', 'Confirmación formulario'
 ]);
 
 // Correos que se pueden reintentar automáticamente si fallaron (coincide con REINTENTOS en
 // lib/mailer.js). "Credenciales acceso" queda afuera a propósito: no guarda payload reintentable
 // porque incluiría la contraseña en texto plano una segunda vez en la planilla.
 const REINTENTABLES = new Set([
-  'Confirmación inscripción', 'Aviso equipo', 'Resultado actividad', 'Aviso actividad docente', 'Resultado evaluación final', 'Aviso evaluación final equipo', 'Resumen viernes', 'Resumen inscripciones'
+  'Confirmación inscripción', 'Aviso equipo', 'Resultado actividad', 'Aviso actividad docente', 'Resultado evaluación final', 'Aviso evaluación final equipo', 'Resumen viernes', 'Resumen inscripciones', 'Confirmación formulario'
 ]);
 
 // Pedido de Diego (referencia: disponibilidad-zoom/emails): que la columna "Tipo" se distinga
@@ -50,7 +50,8 @@ const TIPO_COLOR = {
   'Resultado evaluación final': { bg: 'rgba(45,212,191,.14)', fg: 'rgb(45 212 191)' },
   'Aviso evaluación final equipo': { bg: 'rgba(244,114,182,.14)', fg: 'rgb(244 114 182)' },
   'Resumen viernes': { bg: 'rgba(59,130,246,.15)', fg: 'rgb(96 165 250)' },
-  'Resumen inscripciones': { bg: 'rgba(249,115,22,.15)', fg: 'rgb(251 146 60)' }
+  'Resumen inscripciones': { bg: 'rgba(249,115,22,.15)', fg: 'rgb(251 146 60)' },
+  'Confirmación formulario': { bg: 'rgba(56,189,248,.14)', fg: 'rgb(125 211 252)' }
 };
 
 const AUTOMATIZACIONES = [
@@ -62,7 +63,8 @@ const AUTOMATIZACIONES = [
   { evento: 'El estudiante termina una evaluación final', para: 'Al estudiante (con su resultado)', remitente: 'Instituto ILCE', cc: '—', asunto: 'Resultado de tu evaluación final · [evaluación]', tipo: 'Resultado evaluación final' },
   { evento: 'El estudiante termina una evaluación final', para: 'Al equipo cargado en esa evaluación', remitente: 'Instituto ILCE', cc: '—', asunto: '[estudiante] · [evaluación] · Aprobó / No aprobó', tipo: 'Aviso evaluación final equipo' },
   { evento: 'Todos los viernes (automático) — actividades y formularios de la semana, y las alertas de formularios sin respuestas hace más de 30 días', para: 'Sofía, Paula, Lourdes, Victoria y Diego', remitente: 'Plataforma ILCE', cc: '—', asunto: ' Resumen semanal · N actividades y M formularios', tipo: 'Resumen viernes' },
-  { evento: 'Todos los viernes a las 10 h (automático) — fichas de inscripción recibidas en la semana', para: 'Macarena, Alexander y Jesabel', remitente: 'Plataforma ILCE', cc: '—', asunto: ' Fichas de inscripción de la semana · N fichas', tipo: 'Resumen inscripciones' }
+  { evento: 'Todos los viernes a las 10 h (automático) — fichas de inscripción recibidas en la semana', para: 'Macarena, Alexander y Jesabel', remitente: 'Plataforma ILCE', cc: '—', asunto: ' Fichas de inscripción de la semana · N fichas', tipo: 'Resumen inscripciones' },
+  { evento: 'Se responde un formulario que tiene activado el correo de confirmación (se configura en cada formulario, sección “Después de enviar”)', para: 'A quien respondió (si dejó su correo)', remitente: 'Instituto ILCE', cc: '—', asunto: 'El que se configure en cada formulario', tipo: 'Confirmación formulario' }
 ];
 
 export default function EmailsPanel({ usuario }) {

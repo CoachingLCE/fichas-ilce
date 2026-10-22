@@ -7,6 +7,7 @@ import { Isologo } from './Isologo';
 import { PieFinal } from './PieFinal';
 import ControlLetraPublico from './ControlLetraPublico';
 import { letra } from '../lib/escalaLetra';
+import { aplicarVariables, urlSegura } from '../lib/formularioConfirmacion';
 
 // Cada pregunta va en su propia tarjeta, así se distinguen las secciones (pedido de Diego).
 const TARJETA = { background: 'rgb(var(--bg) / .45)', border: '1px solid rgb(var(--border))', borderLeft: '3px solid rgb(var(--accentTeal))', borderRadius: 14, padding: '16px 18px', marginBottom: 16 };
@@ -84,6 +85,7 @@ export default function FormularioForm({ form, vistaPrevia = false, ejemploFinal
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(ejemploFinal);
   const [error, setError] = useState('');
+  const [correoEnviado, setCorreoEnviado] = useState(ejemploFinal && !!(form.confirmacion && form.confirmacion.email && form.confirmacion.email.activo)); // v1.86.0: el servidor avisa si salió el correo de confirmación
 
   const set = (k, v) => { setVal((s) => ({ ...s, [k]: v })); setError(''); };
 
@@ -103,20 +105,35 @@ export default function FormularioForm({ form, vistaPrevia = false, ejemploFinal
       });
       const data = await res.json();
       if (!data.ok) { setError(data.error || 'No se pudo enviar'); setEnviando(false); return; }
+      setCorreoEnviado(data.correo === 'enviado');
       setEnviado(true);
     } catch { setError('Error de conexión'); }
     setEnviando(false);
   }
 
   if (enviado) {
+    // v1.86.0: lo que se ve al terminar lo configura cada formulario (título, texto y botones); sin configurar queda el agradecimiento de siempre.
+    const pantalla = (form.confirmacion && form.confirmacion.pantalla) || { titulo: '', texto: '', botones: [] };
+    const varsFinal = { nombre: String(ejemploFinal ? 'María' : (val.nombre || '')).trim(), formulario: form.titulo, curso: form.cursoFijo || String(val.curso || '') };
+    const botonesFinal = (pantalla.botones || []).filter((b) => b && b.texto && urlSegura(b.url));
     return (
       <div className="quizstage"><div className="quizcard quizcard-form">
         <div className="quiz-band"><div className="quiz-band-top"><div className="kd">FORMULARIO</div><Isologo size={20} /></div><div className="ti">{form.titulo}</div><ControlLetraPublico oculto={vistaPrevia} /></div>
         <div className="quiz-body" style={{ padding: '36px 30px 8px' }}>
           <div style={{ textAlign: 'center' }}>
             <div className="quiz-ring"></div>
-            <h3 style={{ fontSize: letra(22), margin: '4px 0' }}>¡Gracias por responder!</h3>
-            <p className="muted" style={{ fontSize: letra(14) }}>Registramos tus respuestas correctamente.</p>
+            <h3 style={{ fontSize: letra(22), margin: '4px 0' }}>{pantalla.titulo ? aplicarVariables(pantalla.titulo, varsFinal) : '¡Gracias por responder!'}</h3>
+            {pantalla.texto
+              ? <div className="muted" style={{ fontSize: letra(14), lineHeight: 1.55, textAlign: 'left', maxWidth: 440, margin: '10px auto 0' }}>
+                  {aplicarVariables(pantalla.texto, varsFinal).split('\n').map((l, i) => (l.trim() ? <p key={i} style={{ margin: '0 0 10px' }}>{conLinks(l, 'f' + i + '-')}</p> : null))}
+                </div>
+              : <p className="muted" style={{ fontSize: letra(14) }}>Registramos tus respuestas correctamente.</p>}
+            {botonesFinal.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center', marginTop: 16 }}>
+                {botonesFinal.map((b, i) => <a key={i} className="btn btn-teal" href={b.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>{b.texto}</a>)}
+              </div>
+            )}
+            {correoEnviado && !form.anonimo && <p className="muted" style={{ fontSize: letra(12.5), marginTop: 16 }}>También te mandamos un correo de confirmación{ejemploFinal || !val.email ? '' : ` a ${val.email}`}. Si no lo ves, revisá la carpeta de spam.</p>}
           </div>
         </div>
         <PieFinal />

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { CURSOS, colorCurso } from '../lib/constants';
 import FormularioForm from './FormularioForm';
 import { estadoNuevo, estadoActividadEspecial, aEstado, validar, aPayload, paraVistaPrevia, slugify, TIPOS_UI, LIMITES } from '../lib/formularioConstructor';
+import { LIM_CONF, VARIABLES } from '../lib/formularioConfirmacion';
 
 // Constructor de formularios (pedido de Diego: estilo "Nueva edición" de Presentismo — el formulario a la izquierda, por
 // secciones, y una VISTA PREVIA que se va armando en vivo a la derecha). La vista previa es el formulario público REAL
@@ -34,6 +35,8 @@ export default function ConstructorFormulario({ usuario, slugInicial, preseed, o
   const [errorGlobal, setErrorGlobal] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [noEncontrado, setNoEncontrado] = useState(false);
+  const [pvFinal, setPvFinal] = useState(false); // vista previa: formulario o pantalla final
+  const [probando, setProbando] = useState(false);
   const arriba = useRef(null);
 
   useEffect(() => {
@@ -67,6 +70,38 @@ export default function ConstructorFormulario({ usuario, slugInicial, preseed, o
   const agregar = () => { if (est.preguntas.length >= LIMITES.preguntas) return; setEst((s) => ({ ...s, preguntas: [...s.preguntas, { id: nId(), key: '', label: '', tipoUi: 'texto', tipoCambiado: true, orig: null, req: false, ops: '', filas: '', cols: '' }] })); };
   const quitar = (id) => setEst((s) => ({ ...s, preguntas: s.preguntas.filter((q) => q.id !== id) }));
   const mover = (id, d) => setEst((s) => { const L = [...s.preguntas]; const i = L.findIndex((q) => q.id === id); const j = i + d; if (j < 0 || j >= L.length) return s; [L[i], L[j]] = [L[j], L[i]]; return { ...s, preguntas: L }; });
+
+  // v1.86.0 · "Después de enviar": mensaje en pantalla y correo automático, por formulario.
+  const conf = est.confirmacion;
+  const setConf = (parte, patch) => set({ confirmacion: { ...conf, [parte]: { ...conf[parte], ...patch } } });
+  const setBoton = (parte, i, patch) => setConf(parte, { botones: conf[parte].botones.map((b, j) => (j === i ? { ...b, ...patch } : b)) });
+  const sumarBoton = (parte) => { if (conf[parte].botones.length < LIM_CONF.botones) setConf(parte, { botones: [...conf[parte].botones, { texto: '', url: '' }] }); };
+  const quitarBoton = (parte, i) => setConf(parte, { botones: conf[parte].botones.filter((_, j) => j !== i) });
+  async function probarCorreo() {
+    setProbando(true);
+    try {
+      const res = await fetch('/api/formularios/prueba-email', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ solicitanteEmail: usuario.email, formulario: est.titulo, curso: est.modo === 'fijo' ? est.cursoFijo : '', asunto: conf.email.asunto, cuerpo: conf.email.cuerpo, botones: conf.email.botones })
+      });
+      const d = await res.json();
+      if (!d.ok) { setErrorGlobal(d.error || 'No se pudo enviar la prueba'); arriba.current && arriba.current.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      else showToast && showToast('Te mandamos la prueba a ' + d.para);
+    } catch { setErrorGlobal('Error de conexión'); }
+    setProbando(false);
+  }
+  const botonesEditor = (parte) => (
+    <div style={{ marginTop: 6 }}>
+      {conf[parte].botones.map((b, i) => (
+        <div key={i} style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,2fr) auto', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+          <input className="ctrl" aria-label={`Texto del botón ${i + 1}`} value={b.texto} maxLength={LIM_CONF.boton} placeholder="Texto del botón" onChange={(e) => setBoton(parte, i, { texto: e.target.value })} />
+          <input className="ctrl" aria-label={`Enlace del botón ${i + 1}`} value={b.url} maxLength={LIM_CONF.url} placeholder="https://chat.whatsapp.com/…" onChange={(e) => setBoton(parte, i, { url: e.target.value })} />
+          <button className="btn-sm cf-x" type="button" onClick={() => quitarBoton(parte, i)} title="Quitar botón" aria-label="Quitar botón">✕</button>
+        </div>
+      ))}
+      {conf[parte].botones.length < LIM_CONF.botones && <button className="btn-sm" type="button" onClick={() => sumarBoton(parte)}>+ Agregar botón (ej.: grupo de WhatsApp)</button>}
+    </div>
+  );
 
   async function guardar() {
     const e = validar(est, { slugsExistentes, cursosValidos });
@@ -179,6 +214,36 @@ export default function ConstructorFormulario({ usuario, slugInicial, preseed, o
           </div>
 
           <div className="cf-sec">
+            <p className="cf-sec-t">Después de enviar</p>
+            {errores.confirmacion && <div className="cf-err" role="alert" style={{ marginBottom: 8 }}>{errores.confirmacion}</div>}
+            <p className="cf-help" style={{ marginTop: 0 }}>Podés usar {VARIABLES.map(([v], i) => <span key={v}>{i ? ', ' : ''}<b>{v}</b></span>)}: se reemplazan por los datos de cada persona. Si dejás todo vacío, se ve el agradecimiento de siempre.</p>
+
+            <Campo label="Mensaje al terminar (se ve en pantalla)">
+              <input className="ctrl" aria-label="Título del mensaje final" value={conf.pantalla.titulo} maxLength={LIM_CONF.titulo} placeholder="¡Gracias por responder!" onChange={(e) => setConf('pantalla', { titulo: e.target.value })} />
+              <textarea className="ctrl" aria-label="Texto del mensaje final" style={{ minHeight: 90, resize: 'vertical', marginTop: 8 }} value={conf.pantalla.texto} maxLength={LIM_CONF.texto} placeholder={'Ej.: ¡Listo, {nombre}! Tu inscripción quedó registrada. Revisá tu correo y sumate al grupo de WhatsApp para recibir las novedades.'} onChange={(e) => setConf('pantalla', { texto: e.target.value })} />
+              {botonesEditor('pantalla')}
+            </Campo>
+
+            <label className="cf-sw" style={{ marginTop: 14, display: 'flex' }}>
+              <input type="checkbox" checked={conf.email.activo} disabled={est.anonimo === true} onChange={(e) => setConf('email', { activo: e.target.checked })} /> Mandar un correo automático de confirmación a quien responde
+            </label>
+            {est.anonimo === true && <div className="cf-help">Un formulario anónimo no pide el correo, así que no puede mandar este mensaje.</div>}
+            {conf.email.activo && est.anonimo !== true && (
+              <div style={{ marginTop: 8 }}>
+                <Campo label="Asunto" req>
+                  <input className="ctrl" aria-label="Asunto del correo" value={conf.email.asunto} maxLength={LIM_CONF.asunto} placeholder="Ej.: ¡Te esperamos en {formulario}!" onChange={(e) => setConf('email', { asunto: e.target.value })} />
+                </Campo>
+                <Campo label="Mensaje" req help="Separá los párrafos con una línea en blanco. Los enlaces que escribas con https:// se vuelven tocables.">
+                  <textarea className="ctrl" aria-label="Mensaje del correo" style={{ minHeight: 130, resize: 'vertical' }} value={conf.email.cuerpo} maxLength={LIM_CONF.cuerpo} placeholder={'Hola, {nombre}:\n\nRecibimos tu inscripción. Para recibir toda la información y las novedades, sumate al grupo de WhatsApp con el botón de abajo.\n\n¡Gracias!'} onChange={(e) => setConf('email', { cuerpo: e.target.value })} />
+                </Campo>
+                <Campo label="Botones del correo (opcional)">{botonesEditor('email')}</Campo>
+                <button className="btn-sm" type="button" onClick={probarCorreo} disabled={probando || !conf.email.asunto.trim() || !conf.email.cuerpo.trim()}>{probando ? 'Enviando…' : '✉ Enviarme una prueba'}</button>
+                <div className="cf-help">La prueba te llega a tu propio correo ({usuario.email}) y no se guarda nada.{est.editando ? '' : ' Los correos reales salen cuando el formulario está Publicado.'}</div>
+              </div>
+            )}
+          </div>
+
+          <div className="cf-sec">
             <p className="cf-sec-t">Publicación</p>
             <div className="cf-row">
               <Campo label="Estado" help={est.estado === 'Publicada' ? 'Cualquiera con el enlace puede responder.' : 'Solo se ve desde acá hasta que lo publiques.'}>
@@ -206,7 +271,11 @@ export default function ConstructorFormulario({ usuario, slugInicial, preseed, o
         <div className="cf-side">
           <div className="cf-card">
             <p className="cf-pv-t">Vista previa</p>
-            <div className="cf-pv"><FormularioForm form={formVista} vistaPrevia /></div>
+            <div className="cf-seg" role="group" aria-label="Qué mostrar" style={{ marginBottom: 10 }}>
+              <button type="button" className={!pvFinal ? 'on' : ''} onClick={() => setPvFinal(false)}>Formulario</button>
+              <button type="button" className={pvFinal ? 'on' : ''} onClick={() => setPvFinal(true)}>Pantalla final</button>
+            </div>
+            <div className="cf-pv"><FormularioForm key={pvFinal ? 'final' : 'form'} form={formVista} vistaPrevia ejemploFinal={pvFinal} /></div>
             <div className="cf-sum">
               <div><span>Curso</span><b>{est.modo === 'ninguno' ? 'Sin curso' : est.modo === 'fijo' ? (est.cursoFijo || '— sin elegir —') : 'Lo elige quien responde'}</b></div>
               <div><span>Preguntas</span><b>{est.preguntas.length + (est.modo === 'elige' ? 1 : 0)} + correo</b></div>

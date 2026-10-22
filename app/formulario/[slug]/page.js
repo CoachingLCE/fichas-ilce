@@ -38,5 +38,7 @@ export default async function FormularioPublico({ params }) {
       </>
     );
   }
-  return (<><IsologoDefs /><FormularioForm form={form} /></>);
+  // El navegador solo necesita lo que se ve al terminar; el asunto y el texto del correo automático se quedan en el servidor.
+  const paraNavegador = { ...form, confirmacion: form.confirmacion ? { pantalla: form.confirmacion.pantalla } : null };
+  return (<><IsologoDefs /><FormularioForm form={paraNavegador} /></>);
 }

@@ -13,11 +13,14 @@ const ESTADO_META = {
 };
 const norm = (s) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerInscripciones, showToast, puedeEditar, irABuscador, irAInscripciones }, ref) {
+const FichasSection = forwardRef(function FichasSection({ usuario, rows, onVerInscripciones, showToast, puedeEditar, irABuscador, irAInscripciones, onConstruyendo }, ref) {
   // El Constructor de fichas vive DENTRO de "Fichas de inscripción": editar o cargar una
   // edición abre el wizard acá mismo (no navega a una pestaña aparte).
   const [construyendo, setConstruyendo] = useState(null); // slug de la ficha que se está armando, o null
   function onEditar(slug) { setConstruyendo(slug); }
+  // Le avisa al panel cuando se está armando una ficha (para esconder las tarjetas "¿Qué necesitás hacer?" de arriba).
+  useEffect(() => { if (onConstruyendo) onConstruyendo(!!construyendo); /* eslint-disable-next-line */ }, [construyendo]);
+  useEffect(() => () => { if (onConstruyendo) onConstruyendo(false); /* eslint-disable-next-line */ }, []);
   // El botón "Crear nueva ficha de inscripción" vive al lado de las sub-pestañas, en Panel.jsx
   // (no acá adentro), así que Panel necesita poder abrir el Constructor desde afuera.
   useImperativeHandle(ref, () => ({

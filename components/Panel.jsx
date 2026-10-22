@@ -176,6 +176,7 @@ export default function Panel() {
   }, []);
   const [toast, setToast] = useState('');
   const [constructorSlug, setConstructorSlug] = useState(null);
+  const [armandoFicha, setArmandoFicha] = useState(false); // true mientras se arma una ficha dentro de "Fichas de inscripción"
   const [masFiltros, setMasFiltros] = useState(false);
   const [fExterior, setFExterior] = useState(false);
   const [navMenu, setNavMenu] = useState(null);
@@ -581,8 +582,8 @@ export default function Panel() {
 
         {tab === 'buscador' && <Buscador usuario={usuario} irA={(t) => setTab(t)} setQInscripciones={setQ} />}
         {/* "¿Qué necesitás hacer?" (estilo del Manual académico): tarjetas por tarea, según lo que la persona puede hacer */}
-        {tab === 'fichas' && <QueNecesitas tareas={tareasDe(usuario)} visibles={5} onIr={irGuia} />}
-        {tab === 'fichas' && <FichasSection ref={fichasRef} usuario={usuario} rows={rows} onEditar={editarFicha} onVerInscripciones={verInscripcionesDe} irAInscripciones={() => setTab('inscripciones')} showToast={showToast} puedeEditar={tienePermisoConstructor(usuario)} irABuscador={() => setTab('buscador')} />}
+        {tab === 'fichas' && !armandoFicha && <QueNecesitas tareas={tareasDe(usuario)} visibles={5} onIr={irGuia} />}
+        {tab === 'fichas' && <FichasSection ref={fichasRef} usuario={usuario} rows={rows} onEditar={editarFicha} onVerInscripciones={verInscripcionesDe} irAInscripciones={() => setTab('inscripciones')} showToast={showToast} puedeEditar={tienePermisoConstructor(usuario)} irABuscador={() => setTab('buscador')} onConstruyendo={setArmandoFicha} />}
         {tab === 'herramientas' && <Herramientas />}
         {error && <div className="note" style={{ borderLeftColor: 'rgb(248 113 113)' }}>{error}</div>}
         {rows === null && !error && tab !== 'herramientas' && <div className="spin" />}

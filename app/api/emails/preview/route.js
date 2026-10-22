@@ -7,7 +7,8 @@ import {
   asuntoResultadoActividad, plantillaResultadoActividad,
   asuntoAvisoActividadDocente, plantillaAvisoActividadDocente,
   asuntoResumenActividades, plantillaResumenActividades,
-  asuntoResumenInscripciones, plantillaResumenInscripciones
+  asuntoResumenInscripciones, plantillaResumenInscripciones,
+  asuntoConfirmacionFormulario, plantillaConfirmacionFormulario
 } from '../../../../lib/mailer';
 
 export const dynamic = 'force-dynamic';
@@ -70,6 +71,15 @@ export async function GET(req) {
     ];
     asunto = asuntoResumenInscripciones({ filas: filasIns });
     html = plantillaResumenInscripciones({ desde: hoy, hasta: hoy, filas: filasIns });
+  } else if (tipo === 'Confirmación formulario') {
+    const ej = {
+      nombre: e.nombre, formulario: 'Masterclass de Coaching', curso: e.curso,
+      asunto: '¡Te esperamos en {formulario}, {nombre}!',
+      cuerpo: 'Hola, {nombre}:\n\nRecibimos tu inscripción. Para recibir toda la información y las novedades, sumate al grupo de WhatsApp con el botón de abajo.\n\n¡Gracias!',
+      botones: [{ texto: 'Unirme al grupo de WhatsApp', url: 'https://chat.whatsapp.com/ejemplo' }]
+    };
+    asunto = asuntoConfirmacionFormulario(ej);
+    html = plantillaConfirmacionFormulario(ej);
   } else {
     return NextResponse.json({ ok: false, error: 'Ese correo todavía no tiene vista previa' }, { status: 400 });
   }
