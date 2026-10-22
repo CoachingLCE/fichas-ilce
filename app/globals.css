@@ -3039,3 +3039,13 @@ img{image-rendering:auto}
 .cf-v2 .cf-live-dot{position:relative;width:12px;height:12px;border-radius:99px;flex:none;background:rgb(var(--ok,74 222 128));box-shadow:0 0 0 0 rgb(var(--ok,74 222 128) / .6);animation:cfLive 1.8s ease-out infinite}
 @keyframes cfLive{0%{box-shadow:0 0 0 0 rgb(var(--ok,74 222 128) / .55)}70%{box-shadow:0 0 0 11px rgb(var(--ok,74 222 128) / 0)}100%{box-shadow:0 0 0 0 rgb(var(--ok,74 222 128) / 0)}}
 @media(prefers-reduced-motion:reduce){.cf-v2 .cf-live-dot{animation:none}}
+/* Pasos plegables: arrancan cerrados y se abren con un clic. */
+.cf-v2 .cf-step-h{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;border:0;border-bottom:1px solid transparent;transition:background .15s}
+.cf-v2 .cf-step-h[aria-expanded="true"]{border-bottom-color:rgb(var(--border))}
+.cf-v2 .cf-step-h:hover{background:linear-gradient(90deg,rgb(var(--accentPurple) / .22),transparent 75%)}
+.cf-v2 .cf-step-h:focus-visible{outline:2px solid rgb(var(--accentTeal));outline-offset:-3px;border-radius:20px}
+.cf-v2 .cf-step-tt{flex:1;min-width:0}
+.cf-v2 .cf-step-sum{margin-left:auto;max-width:44%;font-size:12.5px;color:rgb(var(--textMuted));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:12px}
+.cf-v2 .cf-step-chev{flex:none;width:30px;height:30px;border-radius:99px;display:flex;align-items:center;justify-content:center;background:rgb(var(--border) / .6);color:rgb(var(--textSec));font-size:13px}
+.cf-v2 .cf-step-b[hidden]{display:none}
+@media(max-width:640px){.cf-v2 .cf-step-sum{display:none}}

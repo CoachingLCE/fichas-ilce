@@ -32,6 +32,9 @@ export default function ConstructorFormulario({ usuario, slugInicial, preseed, o
   const [est, setEst] = useState(null);
   const [tituloOriginal, setTituloOriginal] = useState('');
   const [errores, setErrores] = useState({});
+  // Los pasos arrancan cerrados y se abren con un clic (pedido de Diego). Si al guardar hay errores, se abren solos los pasos que los tienen.
+  const [abiertos, setAbiertos] = useState({ 1: false, 2: false, 3: false, 4: false });
+  const alternar = (n) => setAbiertos((a) => ({ ...a, [n]: !a[n] }));
   const [errorGlobal, setErrorGlobal] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [noEncontrado, setNoEncontrado] = useState(false);
@@ -120,7 +123,15 @@ export default function ConstructorFormulario({ usuario, slugInicial, preseed, o
   async function guardar() {
     const e = validar(est, { slugsExistentes, cursosValidos });
     setErrores(e);
-    if (Object.keys(e).length) { setErrorGlobal('Revisá los campos marcados en rojo.'); arriba.current && arriba.current.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+    if (Object.keys(e).length) {
+      const claves = Object.keys(e);
+      setAbiertos((a) => ({
+        ...a,
+        1: a[1] || claves.some((k) => ['titulo', 'intro', 'curso'].includes(k)),
+        2: a[2] || claves.some((k) => k.startsWith('q')),
+        3: a[3] || claves.includes('confirmacion'),
+        4: a[4] || claves.includes('slug')
+      })); setErrorGlobal('Revisá los campos marcados en rojo.'); arriba.current && arriba.current.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
     setGuardando(true); setErrorGlobal('');
     try {
       const res = await fetch('/api/formularios', {
@@ -151,8 +162,13 @@ export default function ConstructorFormulario({ usuario, slugInicial, preseed, o
       <div className="cf-grid">
         <div className="cf-main">
           <section className="cf-sec cf-step">
-            <header className="cf-step-h"><span className="cf-step-n">1</span><div><h3>Información general</h3><p>Título, introducción y a qué curso pertenece.</p></div></header>
-            <div className="cf-step-b">
+            <button type="button" className="cf-step-h" onClick={() => alternar(1)} aria-expanded={abiertos[1]}>
+              <span className="cf-step-n">1</span>
+              <div className="cf-step-tt"><h3>Información general</h3><p>Título, introducción y a qué curso pertenece.</p></div>
+              {!abiertos[1] && <span className="cf-step-sum">{est.titulo.trim() || 'Sin título todavía'}</span>}
+              <span className="cf-step-chev" aria-hidden="true">{abiertos[1] ? '▴' : '▾'}</span>
+            </button>
+            <div className="cf-step-b" hidden={!abiertos[1]}>
             <Campo label="Título" req err={errores.titulo} help={tituloCambio ? 'Ojo: las respuestas que ya recibió se guardaron con el título anterior y en "Respuestas" van a figurar como otro formulario.' : null}>
               <input className={'ctrl' + (errores.titulo ? ' err' : '')} value={est.titulo} maxLength={LIMITES.titulo + 20} placeholder="Ej: Encuesta de satisfacción 2026" onChange={(e) => set({ titulo: e.target.value })} />
             </Campo>
@@ -188,8 +204,13 @@ export default function ConstructorFormulario({ usuario, slugInicial, preseed, o
           </section>
 
           <section className="cf-sec cf-step">
-            <header className="cf-step-h"><span className="cf-step-n">2</span><div><h3>Preguntas</h3><p>Lo que va a completar quien responde.</p></div></header>
-            <div className="cf-step-b">
+            <button type="button" className="cf-step-h" onClick={() => alternar(2)} aria-expanded={abiertos[2]}>
+              <span className="cf-step-n">2</span>
+              <div className="cf-step-tt"><h3>Preguntas</h3><p>Lo que va a completar quien responde.</p></div>
+              {!abiertos[2] && <span className="cf-step-sum">{est.preguntas.length} {est.preguntas.length === 1 ? 'pregunta' : 'preguntas'} + correo</span>}
+              <span className="cf-step-chev" aria-hidden="true">{abiertos[2] ? '▴' : '▾'}</span>
+            </button>
+            <div className="cf-step-b" hidden={!abiertos[2]}>
             {est.anonimo
               ? <div className="cf-q cf-q-lock"><span className="cf-q-n">✉</span><div><b>Formulario anónimo</b><div className="cf-help" style={{ margin: 0 }}>No se pide el correo: las respuestas figuran como "Anónimo".</div></div></div>
               : <div className="cf-q cf-q-lock"><span className="cf-q-n">✉</span><div><b>Correo electrónico</b> <span className="cf-req">*</span><div className="cf-help" style={{ margin: 0 }}>Se pide siempre, para identificar la respuesta.</div></div></div>}
@@ -232,8 +253,13 @@ export default function ConstructorFormulario({ usuario, slugInicial, preseed, o
           </section>
 
           <section className="cf-sec cf-step">
-            <header className="cf-step-h"><span className="cf-step-n">3</span><div><h3>Después de enviar</h3><p>Opcional. Si lo dejás vacío, se ve el agradecimiento de siempre.</p></div></header>
-            <div className="cf-step-b">
+            <button type="button" className="cf-step-h" onClick={() => alternar(3)} aria-expanded={abiertos[3]}>
+              <span className="cf-step-n">3</span>
+              <div className="cf-step-tt"><h3>Después de enviar</h3><p>Opcional. Si lo dejás vacío, se ve el agradecimiento de siempre.</p></div>
+              {!abiertos[3] && <span className="cf-step-sum">{(conf.pantalla.titulo.trim() || conf.pantalla.texto.trim()) ? 'Mensaje propio' : 'Agradecimiento de siempre'}{conf.email.activo && est.anonimo !== true ? ' · Correo activado' : ''}</span>}
+              <span className="cf-step-chev" aria-hidden="true">{abiertos[3] ? '▴' : '▾'}</span>
+            </button>
+            <div className="cf-step-b" hidden={!abiertos[3]}>
             {errores.confirmacion && <div className="cf-err" role="alert" style={{ marginBottom: 12 }}>{errores.confirmacion}</div>}
             <div className="cf-vars" aria-label="Variables disponibles"><span>Se completan solas:</span>{VARIABLES.map(([v, d]) => <code key={v} title={d}>{v}</code>)}</div>
 
@@ -279,8 +305,13 @@ export default function ConstructorFormulario({ usuario, slugInicial, preseed, o
           </section>
 
           <section className="cf-sec cf-step">
-            <header className="cf-step-h"><span className="cf-step-n">4</span><div><h3>Publicación</h3><p>Cuándo se puede responder y con qué enlace.</p></div></header>
-            <div className="cf-step-b">
+            <button type="button" className="cf-step-h" onClick={() => alternar(4)} aria-expanded={abiertos[4]}>
+              <span className="cf-step-n">4</span>
+              <div className="cf-step-tt"><h3>Publicación</h3><p>Cuándo se puede responder y con qué enlace.</p></div>
+              {!abiertos[4] && <span className="cf-step-sum">{est.estado} · /{slugActual || '…'}</span>}
+              <span className="cf-step-chev" aria-hidden="true">{abiertos[4] ? '▴' : '▾'}</span>
+            </button>
+            <div className="cf-step-b" hidden={!abiertos[4]}>
             <div className="cf-row">
               <Campo label="Estado" help={est.estado === 'Publicada' ? 'Cualquiera con el enlace puede responder.' : 'Solo se ve desde acá hasta que lo publiques.'}>
                 <div className="cf-seg" role="group" aria-label="Estado">
