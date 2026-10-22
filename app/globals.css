@@ -2968,3 +2968,74 @@ img{image-rendering:auto}
 @media (max-width:1023px){
   .navtema{position:sticky;right:0;z-index:5;display:inline-flex;align-items:center;flex:0 0 auto;margin-left:auto;padding-left:10px;background:linear-gradient(to left,rgb(var(--bg)) 78%,transparent)}
 }
+
+
+/* ── Constructor de formularios, versión "premium" (v1.86.1): cada paso es su propia tarjeta, con aire entre una y otra y menos texto. Todo bajo .cf-v2 para no tocar los otros constructores. ── */
+.cf-v2 .cf-main{display:flex;flex-direction:column;gap:26px;min-width:0}
+.cf-v2 .cf-step{background:linear-gradient(180deg,rgb(var(--surface2)),rgb(var(--surface)));border:1px solid rgb(var(--border));border-radius:20px;box-shadow:0 10px 30px -18px rgb(0 0 0 / .55);margin:0;overflow:hidden}
+.cf-v2 .cf-step-h{display:flex;gap:14px;align-items:center;padding:20px 28px;border-bottom:1px solid rgb(var(--border));background:linear-gradient(90deg,rgb(var(--accentPurple) / .14),transparent 70%)}
+.cf-v2 .cf-step-n{width:34px;height:34px;border-radius:99px;flex:none;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:#fff;background:linear-gradient(135deg,rgb(var(--accentPurple)),rgb(var(--accentMagenta)));box-shadow:0 6px 16px -6px rgb(var(--accentMagenta) / .7)}
+.cf-v2 .cf-step-h h3{margin:0;font-size:18px;letter-spacing:-.1px}
+.cf-v2 .cf-step-h p{margin:2px 0 0;font-size:13px;color:rgb(var(--textMuted))}
+.cf-v2 .cf-step-b{padding:26px 28px 28px}
+.cf-v2 .cf-f{margin-bottom:22px}
+.cf-v2 .cf-f>label{font-size:13px;font-weight:600;color:rgb(var(--textSec));margin-bottom:8px}
+.cf-v2 .cf-help{margin-top:7px;line-height:1.4}
+.cf-v2 .cf-row{gap:20px}
+.cf-v2 .cf-modos{gap:14px}
+.cf-v2 .cf-modo{padding:16px;border-radius:14px;transition:border-color .15s,background .15s,transform .15s}
+.cf-v2 .cf-modo:hover{transform:translateY(-1px)}
+.cf-v2 .cf-modo b{margin-bottom:4px}
+.cf-v2 .cf-q{padding:16px 16px 12px;margin-bottom:16px;border-radius:14px}
+.cf-v2 .cf-q-lock{padding:14px 16px}
+.cf-v2 .cf-q-h{margin-bottom:12px}
+.cf-v2 .cf-q-r{margin-bottom:10px}
+.cf-v2 .cf-q-n{background:rgb(var(--accentPurple) / .25);border-color:transparent;color:rgb(var(--accentPurpleTxt));font-weight:700}
+/* interruptores */
+.cf-v2 .cf-sw2{display:flex;align-items:center;gap:12px;margin:0 0 14px;font-size:14px;cursor:pointer}
+.cf-v2 .cf-sw2:last-child{margin-bottom:0}
+.cf-v2 .cf-switch{margin-left:auto;display:inline-flex;cursor:pointer;flex:none}
+.cf-v2 .cf-sw2>input,.cf-v2 .cf-switch>input{position:absolute;opacity:0;width:1px;height:1px}
+.cf-v2 .cf-switch-t{position:relative;width:44px;height:25px;border-radius:99px;flex:none;background:rgb(var(--border));transition:background .18s;display:inline-block}
+.cf-v2 .cf-switch-t:after{content:"";position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:99px;background:#fff;box-shadow:0 2px 5px rgb(0 0 0 / .35);transition:transform .18s}
+.cf-v2 input:checked+.cf-switch-t{background:linear-gradient(90deg,rgb(var(--accentPurple)),rgb(var(--accentMagenta)))}
+.cf-v2 input:checked+.cf-switch-t:after{transform:translateX(19px)}
+.cf-v2 input:focus-visible+.cf-switch-t{outline:2px solid rgb(var(--accentTeal));outline-offset:2px}
+.cf-v2 input:disabled+.cf-switch-t{opacity:.45;cursor:not-allowed}
+/* Después de enviar */
+.cf-v2 .cf-vars{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 20px;font-size:12.5px;color:rgb(var(--textMuted))}
+.cf-v2 .cf-vars code{background:rgb(var(--border) / .55);color:rgb(var(--textSec));border-radius:8px;padding:3px 9px;font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:500;cursor:default;text-decoration:none}
+.cf-v2 .cf-sub-card{border:1px solid rgb(var(--border));border-radius:16px;background:rgb(var(--bg) / .55);padding:20px 20px 6px;margin-bottom:20px;transition:border-color .2s}
+.cf-v2 .cf-sub-card:last-child{margin-bottom:0}
+.cf-v2 .cf-sub-card.on{border-color:rgb(var(--accentPurple) / .7)}
+.cf-v2 .cf-sub-h{display:flex;gap:14px;align-items:center;margin-bottom:20px}
+.cf-v2 .cf-sub-h b{display:block;font-size:15.5px}
+.cf-v2 .cf-sub-h small{display:block;font-size:12.5px;color:rgb(var(--textMuted));margin-top:2px}
+.cf-v2 .cf-sub-ic{width:38px;height:38px;border-radius:12px;flex:none;display:flex;align-items:center;justify-content:center;font-size:17px;background:rgb(var(--accentPurple) / .22);color:rgb(var(--accentPurpleTxt))}
+.cf-v2 .cf-sub-b{border-top:1px solid rgb(var(--border));padding-top:20px}
+.cf-v2 .cf-test{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:2px 0 16px}
+.cf-v2 .cf-test .cf-help{margin:0}
+/* barra de guardar: flotante, aparte de las tarjetas */
+.cf-v2 .cf-acts{margin:0;padding:14px 18px;border:1px solid rgb(var(--border));border-radius:16px;background:rgb(var(--surface2) / .92);backdrop-filter:blur(8px);box-shadow:0 -8px 28px -14px rgb(0 0 0 / .6)}
+.cf-v2 .cf-side .cf-card{border-radius:20px;padding:24px;box-shadow:0 10px 30px -18px rgb(0 0 0 / .55)}
+@media(max-width:640px){
+  .cf-v2 .cf-main{gap:18px}
+  .cf-v2 .cf-step-h{padding:16px 18px}
+  .cf-v2 .cf-step-b{padding:20px 18px 22px}
+  .cf-v2 .cf-sub-card{padding:16px 14px 4px}
+  .cf-v2 .cf-acts{padding-right:84px}
+}
+.cf-v2 .cf-btns{margin:0 0 16px}
+.cf-v2 .cf-btn-fila{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px}
+.cf-v2 .cf-btn-campos{flex:1;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:10px}
+.cf-v2 .cf-btn-fila .btn-sm{margin-top:2px}
+@media(max-width:640px){.cf-v2 .cf-btn-campos{grid-template-columns:1fr}}
+.cf-v2 .cf-grid{grid-template-columns:minmax(0,1fr) 430px;gap:28px}
+@media(max-width:1300px){.cf-v2 .cf-grid{grid-template-columns:minmax(0,1fr) 380px;gap:22px}}
+@media(max-width:960px){.cf-v2 .cf-grid{grid-template-columns:1fr}}
+.cf-v2 .cf-live{display:flex;align-items:center;gap:12px;margin:0 0 16px}
+.cf-v2 .cf-live b{display:block;font-size:16px}
+.cf-v2 .cf-live small{display:block;font-size:12.5px;color:rgb(var(--textMuted));margin-top:1px}
+.cf-v2 .cf-live-dot{position:relative;width:12px;height:12px;border-radius:99px;flex:none;background:rgb(var(--ok,74 222 128));box-shadow:0 0 0 0 rgb(var(--ok,74 222 128) / .6);animation:cfLive 1.8s ease-out infinite}
+@keyframes cfLive{0%{box-shadow:0 0 0 0 rgb(var(--ok,74 222 128) / .55)}70%{box-shadow:0 0 0 11px rgb(var(--ok,74 222 128) / 0)}100%{box-shadow:0 0 0 0 rgb(var(--ok,74 222 128) / 0)}}
+@media(prefers-reduced-motion:reduce){.cf-v2 .cf-live-dot{animation:none}}
